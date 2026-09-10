@@ -16,14 +16,3 @@ y temario, avisos por semana y lista de pendientes.
 | `app.js` | Toda la lógica de renderizado |
 
 Para cambiar contenido: `data.js` casi siempre, `eval.js` para evaluación y temario.
-
-## Guardado
-
-El guardado de marcas y notas necesita un `config.js` local:
-
-```js
-window.CONFIG = { BIN_ID: "...", API_KEY: "..." };
-```
-
-Está en `.gitignore` y no se sube. Sin él la página funciona igual,
-pero las marcas duran solo la sesión.
