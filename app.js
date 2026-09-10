@@ -136,16 +136,15 @@ const semanaProgreso=(()=>{const n=new Date();
       box.innerHTML='<div class="n7-empty">Nada evaluable en los próximos siete días.</div>';
       return;
     }
-    const T={ex:"Examen",en:"Entrega",cl:"Lab / clase",cf:"Conflicto"};
-    box.innerHTML=`<div class="n7-head">Próximos 7 días · ${evs.length} ${evs.length===1?"cosa":"cosas"}</div>`+
+    const T={ex:"Examen",en:"Entrega",cl:"Clase",cf:"Choque de horario"};
+    box.innerHTML=`<div class="n7-head">Próximos 7 días</div>`+
       evs.map(e=>{
         const S=SUBJ[e.id];
         const d=Math.round((new Date(e.date+"T12:00:00")-new Date(iso(desde)+"T12:00:00"))/86400000);
         const cuando=d===0?"hoy":d===1?"mañana":"en "+d+" días";
         return `<button class="n7-card ${e.type}" data-ev="${CAL.indexOf(e)}" style="--sc:${S.c}">`+
-          `<span class="n7-when">${cuando}</span>`+
-          `<span class="n7-txt"><b>${esc(S.n)}</b><em>${esc(e.what)}</em></span>`+
-          `<span class="pill p-${e.type}">${T[e.type]}</span></button>`;
+          `<span class="n7-txt"><b>${T[e.type]} de ${esc(S.n)}</b><em>${esc(e.hora||e.label)}</em></span>`+
+          `<span class="n7-when">${cuando}</span></button>`;
       }).join("");
   }
 
@@ -157,10 +156,17 @@ const semanaProgreso=(()=>{const n=new Date();
     if(!card){ if(!ev.target.closest("#hoy-detail")) box.hidden=true; return; }
     const e=CAL[parseInt(card.dataset.ev)], S=SUBJ[e.id];
     const T={ex:"Examen",en:"Entrega",cl:"Laboratorio o clase",cf:"Conflicto de horario"};
+    const filas=[["Cuándo", e.label+(e.hora?" · "+e.hora:"")]];
+    if(e.aula) filas.push(["Dónde", e.aula]);
+    if(e.formato) filas.push(["Formato", e.formato]);
+    filas.push(["Peso", e.w]);
+    if(e.temario) filas.push(["Entra", e.temario]);
     box.hidden=false; box.style.borderLeftColor=S.c;
-    box.innerHTML=`<div class="ev-head"><b style="color:${S.c}">${esc(S.n)}</b>`+
-      `<span class="pill p-${e.type}">${esc(e.w)}</span><button class="ev-close" aria-label="Cerrar">×</button></div>`+
-      `<div class="ev-meta">${esc(e.label)} · semana ${e.wk} · ${T[e.type]}</div><p>${esc(e.what)}</p>`;
+    box.innerHTML=`<div class="ev-head"><b style="color:${S.c}">${T[e.type]} de ${esc(S.n)}</b>`+
+      `<button class="ev-close" aria-label="Cerrar">×</button></div>`+
+      `<div class="ev-meta">Semana ${e.wk}</div>`+
+      `<dl class="ev-dl">`+filas.map(f=>`<dt>${esc(f[0])}</dt><dd>${esc(f[1])}</dd>`).join("")+`</dl>`+
+      (e.temario?"":`<p class="nodata">Temario concreto: pendiente de que lo publique el profesor.</p>`);
   });
 
   $("#dPrev").addEventListener("click",()=>{ver.setDate(ver.getDate()-1);draw();});
