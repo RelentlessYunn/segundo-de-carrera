@@ -8,16 +8,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=5">
+<link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body>
 <header class="top">
-  <div class="spectrum" aria-hidden="true"></div>
   <div class="glow" aria-hidden="true"></div>
   <div class="wrap">
     <div class="hero">
       <div class="eyebrow"><span class="dot"></span>Curso 2026 / 2027</div>
-      <h1>Segundo<span>de carrera</span></h1>
+      <h1>Segundo de carrera</h1>
+      <div class="sub">Primer cuatrimestre</div>
       <div class="who">Doble Grado en Ingeniería Informática y Administración de Empresas · UC3M</div>
       <div class="stats">
         <div class="stat"><b>7</b><span>asignaturas</span></div>
@@ -25,7 +25,7 @@
         <div class="stat"><b>2</b><span>campus</span></div>
       </div>
     </div>
-    <div class="ring" id="ring">
+    <div class="ring">
       <svg viewBox="0 0 120 120" aria-hidden="true">
         <circle class="r-bg" cx="60" cy="60" r="52"></circle>
         <circle class="r-fg" cx="60" cy="60" r="52" id="ringArc"></circle>
@@ -36,14 +36,32 @@
 </header>
 
 <nav class="bar"><div class="wrap">
-  <a href="#horario" data-tab="horario">Horario</a>
-  <a href="#asignaturas" data-tab="asignaturas">Asignaturas</a>
-  <a href="#profesorado" data-tab="profesorado">Profesorado</a>
-  <a href="#calendario" data-tab="calendario">Exámenes</a>
-  <a href="#pendientes" data-tab="pendientes">Pendientes</a>
-</div>
-  <div class="wrap srch"><input id="q" type="search" placeholder="Buscar asignatura, profesor, aula o examen…" autocomplete="off"><div id="qres" class="qres" hidden></div></div>
-</nav>
+  <div class="tabs">
+    <a href="#horario" data-tab="horario">Horario</a>
+    <a href="#asignaturas" data-tab="asignaturas">Asignaturas</a>
+    <a href="#profesorado" data-tab="profesorado">Profesorado</a>
+    <a href="#calendario" data-tab="calendario">Exámenes</a>
+    <a href="#pendientes" data-tab="pendientes">Pendientes</a>
+  </div>
+  <div class="navtools">
+    <button class="icon" id="qBtn" aria-label="Buscar" title="Buscar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+    </button>
+    <a class="icon" href="#notas" aria-label="Notas" title="Notas">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 4h11l5 5v11H4z"></path><path d="M15 4v5h5"></path><path d="M8 13h8M8 17h5"></path></svg>
+    </a>
+  </div>
+  <div class="srch" id="srchBox" hidden>
+    <input id="q" type="search" placeholder="Asignatura, profesor, aula, examen…" autocomplete="off">
+    <button class="icon" id="qClose" aria-label="Cerrar buscador">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M6 6l12 12M18 6L6 18"></path></svg>
+    </button>
+    <div id="qres" class="qres" hidden></div>
+  </div>
+</div></nav>
 
 <div class="wrap">
 
@@ -58,11 +76,11 @@
       <button class="d-hoy" id="dHoy">Hoy</button>
     </div>
     <div id="dayFlags"></div>
-    <div id="reco"></div>
     <div id="todayList"></div>
   </div>
   <div class="n7" id="countdown"></div>
   <div id="hoy-detail" class="ev-detail" hidden></div>
+  <div id="reco"></div>
 </section>
 
 <section id="horario">
@@ -140,9 +158,9 @@
 <footer><div class="wrap"><p>Montado a partir de tu horario personal de la UC3M, el horario del grupo 1081, las guías docentes 2026/27 y los materiales de presentación de cada asignatura. Los datos de profesorado proceden del directorio público de la universidad. Lo que en los documentos originales estaba marcado como provisional sigue estándolo aquí.</p><p><a href="#notas" id="linkNotas">·</a></p></div></footer>
 
 </div>
-<script src="config.js?v=5" onerror="void 0"></script>
-<script src="data.js?v=5"></script>
-<script src="eval.js?v=5"></script>
-<script src="app.js?v=5"></script>
+<script src="config.js?v=6" onerror="void 0"></script>
+<script src="data.js?v=6"></script>
+<script src="eval.js?v=6"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>

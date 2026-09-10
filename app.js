@@ -600,6 +600,10 @@ initData();
       el.classList.remove("enter");
       void el.offsetWidth;          /* fuerza el reinicio de la animación */
       el.classList.add("enter");
+      [...el.children].forEach((hijo,i)=>{
+        hijo.style.setProperty("--d", (i*55)+"ms");
+        hijo.classList.remove("stagger"); void hijo.offsetWidth; hijo.classList.add("stagger");
+      });
     });
     if(scroll) window.scrollTo({top:0,behavior:"instant"});
     if(history.replaceState) history.replaceState(null,"","#"+tab);
@@ -616,7 +620,12 @@ initData();
 
 /* --- buscador --- */
 (function(){
-  const inp=$("#q"), out=$("#qres"); if(!inp||!out) return;
+  const inp=$("#q"), out=$("#qres"), box=$("#srchBox"), btn=$("#qBtn"), cerrar=$("#qClose");
+  if(!inp||!out||!box) return;
+  function abrirB(){ box.hidden=false; box.classList.add("open"); setTimeout(()=>inp.focus(),40); }
+  function cerrarB(){ box.classList.remove("open"); out.hidden=true; inp.value=""; setTimeout(()=>{box.hidden=true;},180); }
+  btn&&btn.addEventListener("click",()=>box.hidden?abrirB():cerrarB());
+  cerrar&&cerrar.addEventListener("click",cerrarB);
   const norm=t=>String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 
   /* índice: asignaturas, profesores, aulas y fechas evaluables */
@@ -654,10 +663,10 @@ initData();
   out.addEventListener("click",ev=>{
     const b=ev.target.closest(".qrow"); if(!b)return;
     location.hash=b.dataset.tab;
-    out.hidden=true; inp.value="";
+    cerrarB();
   });
-  document.addEventListener("click",ev=>{ if(!ev.target.closest(".srch")) out.hidden=true; });
-  inp.addEventListener("keydown",ev=>{ if(ev.key==="Escape"){ out.hidden=true; inp.value=""; } });
+  document.addEventListener("click",ev=>{ if(!ev.target.closest(".srch")&&!ev.target.closest("#qBtn")) out.hidden=true; });
+  inp.addEventListener("keydown",ev=>{ if(ev.key==="Escape") cerrarB(); });
 })();
 
 /* --- notas para Claude: texto plano, guardado en la nube --- */

@@ -463,16 +463,6 @@ section{padding-top:26px}
     }
 
 /* ---------- buscador ---------- */
-.srch{position:relative;padding-bottom:9px}
-.srch input{
-  width:100%;font:inherit;font-size:.86rem;padding:8px 12px;
-  border:1px solid var(--rule);border-radius:7px;background:var(--card);color:var(--ink);
-}
-.srch input:focus{outline:2px solid var(--ink);outline-offset:-1px;border-color:var(--ink)}
-.qres{
-  position:absolute;left:22px;right:22px;top:100%;z-index:60;max-height:56vh;overflow-y:auto;
-  background:var(--card);border:1px solid var(--rule);border-radius:8px;box-shadow:0 8px 24px rgba(23,28,36,.12);
-}
 .qres[hidden]{display:none}
 .qrow{
   display:flex;align-items:center;gap:11px;width:100%;text-align:left;font:inherit;cursor:pointer;
@@ -506,7 +496,7 @@ details.reco ul{padding:0 20px 14px 38px;font-size:.86rem}
 .notas-estado{margin-top:8px;font-size:.78rem;color:var(--ink-3);min-height:1.2em}
 #linkNotas{color:var(--rule);text-decoration:none}
 
-@media (max-width:620px){ .qres{left:14px;right:14px} .srch input{font-size:.82rem} }
+@media (max-width:620px){   }
 
 /* ==========================================================
    CABECERA
@@ -518,12 +508,6 @@ header.top{
     radial-gradient(900px 380px at 95% 120%, #1D2B45 0%, transparent 55%),
     linear-gradient(160deg,#141922 0%,#171C24 55%,#12161E 100%);
 }
-header.top .spectrum{
-  position:absolute;inset:0 0 auto 0;height:3px;
-  background:linear-gradient(90deg,#D01F63 0 14.2%,#BE7000 14.2% 28.4%,#1E6FC4 28.4% 42.6%,
-    #0F7A63 42.6% 56.8%,#6B3FC8 56.8% 71%,#A02E8F 71% 85.2%,#3F51A8 85.2% 100%);
-  opacity:.9;
-}
 header.top .glow{
   position:absolute;width:520px;height:520px;right:-140px;top:-240px;pointer-events:none;
   background:radial-gradient(circle,rgba(110,150,220,.16) 0%,transparent 65%);
@@ -531,18 +515,12 @@ header.top .glow{
 }
 @keyframes flotar{from{transform:translate3d(0,0,0)}to{transform:translate3d(-40px,30px,0)}}
 header.top .wrap{display:flex;flex-wrap:wrap;gap:28px;justify-content:space-between;align-items:center;position:relative}
-.hero{min-width:0;flex:1}
 .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.74rem;font-weight:600;
   letter-spacing:.06em;text-transform:uppercase;color:#96A3B6;margin-bottom:12px}
 .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:#3FBF8F;box-shadow:0 0 0 0 rgba(63,191,143,.6);
   animation:latido 2.4s ease-out infinite}
 @keyframes latido{0%{box-shadow:0 0 0 0 rgba(63,191,143,.55)}70%{box-shadow:0 0 0 9px rgba(63,191,143,0)}100%{box-shadow:0 0 0 0 rgba(63,191,143,0)}}
-header.top h1{
-  font-size:clamp(2.2rem,6vw,3.6rem);font-weight:800;letter-spacing:-.042em;line-height:.98;color:#fff;
-}
-header.top h1 span{display:block;font-weight:400;color:#8F9CB0;letter-spacing:-.02em}
 header.top .who{font-size:.88rem;color:#93A0B4;margin-top:14px;max-width:56ch}
-.stats{display:flex;gap:26px;margin-top:20px}
 .stat b{display:block;font-size:1.5rem;font-weight:800;letter-spacing:-.03em;line-height:1}
 .stat span{font-size:.72rem;color:#8894A8;letter-spacing:.03em}
 
@@ -558,15 +536,6 @@ header.top .who{font-size:.88rem;color:#93A0B4;margin-top:14px;max-width:56ch}
 /* ==========================================================
    BARRA DE PESTAÑAS — sin scroll
    ========================================================== */
-nav.bar .wrap{display:flex;gap:4px;justify-content:flex-start;flex-wrap:wrap;padding-top:6px;padding-bottom:6px}
-nav.bar a{
-  flex:0 1 auto;padding:9px 15px;font-size:.85rem;font-weight:500;color:var(--ink-2);
-  text-decoration:none;white-space:nowrap;border-radius:7px;border-bottom:0;cursor:pointer;
-  transition:background .18s ease,color .18s ease,transform .18s ease;
-}
-nav.bar a:hover{background:#E7ECF1;color:var(--ink)}
-nav.bar a.on{background:var(--ink);color:#fff;font-weight:600}
-nav.bar a:active{transform:translateY(1px)}
 
 /* ==========================================================
    MOVIMIENTO
@@ -587,14 +556,98 @@ details.acc>summary:hover,details.reco>summary:hover{color:var(--ink)}
 @media (max-width:620px){
   header.top{padding:30px 0 26px}
   header.top .wrap{gap:20px}
-  .stats{gap:18px;margin-top:16px}
-  .stat b{font-size:1.25rem}
+    .stat b{font-size:1.25rem}
   .ring{width:104px;height:104px}
   .ring-txt b{font-size:1.25rem}
-  nav.bar a{padding:8px 11px;font-size:.79rem}
-  header.top .who{font-size:.82rem}
+    header.top .who{font-size:.82rem}
 }
 @media (prefers-reduced-motion:reduce){
   .enter,.eyebrow .dot,header.top .glow{animation:none!important}
   .r-fg,.fill,.bar div{transition:none!important}
+}
+
+/* ---------- cabecera: título compacto ---------- */
+.hero{min-width:0;flex:1 1 auto;max-width:640px}
+header.top h1{
+  font-size:clamp(1.9rem,4vw,2.9rem);font-weight:800;letter-spacing:-.04em;line-height:1;
+  color:#fff;
+  background:linear-gradient(92deg,#FFFFFF 0%,#CBD6E6 55%,#8FA6C8 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+header.top .sub{
+  margin-top:8px;font-size:1rem;font-weight:500;color:#8DA0BC;letter-spacing:-.01em;
+}
+header.top .who{font-size:.85rem;color:#7F8EA4;margin-top:12px;max-width:52ch}
+.stats{display:flex;gap:24px;margin-top:18px}
+
+/* ---------- barra ---------- */
+nav.bar .wrap{display:flex;align-items:center;gap:8px;position:relative;padding-top:7px;padding-bottom:7px}
+.tabs{display:flex;align-items:center;gap:3px;flex-wrap:wrap;flex:1;min-width:0}
+nav.bar a[data-tab]{
+  padding:8px 14px;font-size:.85rem;font-weight:500;line-height:1.2;color:var(--ink-2);
+  text-decoration:none;white-space:nowrap;border-radius:8px;cursor:pointer;position:relative;
+  transition:background .18s ease,color .18s ease;
+}
+nav.bar a[data-tab]:hover{background:#E7ECF1;color:var(--ink)}
+nav.bar a[data-tab].on{background:var(--ink);color:#fff;font-weight:600}
+.navtools{display:flex;gap:4px;flex:0 0 auto}
+.icon{
+  display:flex;align-items:center;justify-content:center;width:34px;height:34px;flex:0 0 auto;
+  border:1px solid transparent;border-radius:8px;background:transparent;color:var(--ink-3);cursor:pointer;
+  transition:background .18s ease,color .18s ease,border-color .18s ease;
+}
+.icon svg{width:17px;height:17px}
+.icon:hover{background:#E7ECF1;color:var(--ink)}
+
+/* buscador desplegable */
+.srch{position:absolute;inset:5px 0;display:flex;align-items:center;gap:6px;
+  background:var(--paper);z-index:5;opacity:0;transform:translateY(-4px);
+  transition:opacity .18s ease,transform .18s ease}
+.srch.open{opacity:1;transform:none}
+.srch[hidden]{display:none}
+.srch input{
+  flex:1;min-width:0;font:inherit;font-size:.88rem;padding:8px 13px;
+  border:1px solid var(--ink);border-radius:8px;background:var(--card);color:var(--ink);
+}
+.srch input:focus{outline:none}
+.qres{
+  position:absolute;left:0;right:44px;top:calc(100% + 6px);z-index:60;max-height:58vh;overflow-y:auto;
+  background:var(--card);border:1px solid var(--rule);border-radius:10px;
+  box-shadow:0 12px 30px rgba(23,28,36,.15);animation:entrar .18s ease both;
+}
+.qres[hidden]{display:none}
+
+/* ---------- movimiento ---------- */
+.stagger{animation:subir .42s cubic-bezier(.22,.7,.25,1) both;animation-delay:var(--d,0ms)}
+@keyframes subir{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.enter{animation:aparecer .3s ease both}
+@keyframes aparecer{from{opacity:0}to{opacity:1}}
+.hero>*{animation:subir .5s cubic-bezier(.22,.7,.25,1) both}
+.hero>*:nth-child(1){animation-delay:.02s}
+.hero>*:nth-child(2){animation-delay:.09s}
+.hero>*:nth-child(3){animation-delay:.16s}
+.hero>*:nth-child(4){animation-delay:.23s}
+.hero>*:nth-child(5){animation-delay:.30s}
+.ring{animation:subir .6s cubic-bezier(.22,.7,.25,1) both;animation-delay:.2s}
+.stat b{transition:transform .2s ease}
+.stat:hover b{transform:translateY(-2px)}
+.n7-card:hover{background:#F7F9FB;padding-left:22px}
+.n7-card{transition:background .16s ease,padding-left .16s ease}
+.qrow{transition:background .14s ease,padding-left .14s ease}
+.qrow:hover{padding-left:17px}
+.subject>.sh{transition:background .2s ease}
+.subject:hover>.sh{background:#FBFCFD}
+details.reco[open]>summary{color:var(--ink)}
+#reco{margin-top:12px}
+
+@media (prefers-reduced-motion:reduce){
+  .stagger,.enter,.hero>*,.ring,.qres{animation:none!important}
+}
+@media (max-width:620px){
+  .tabs{gap:2px}
+  nav.bar a[data-tab]{padding:7px 10px;font-size:.78rem}
+  .icon{width:30px;height:30px}
+  .qres{right:38px}
+  header.top h1{font-size:clamp(1.6rem,7vw,2.1rem)}
+  header.top .sub{font-size:.9rem}
 }
