@@ -417,3 +417,90 @@ ul.plain .aula{margin-top:4px}
 .ev-dl dt{color:var(--ink-3)}
 .ev-dl dd{margin:0;color:var(--ink)}
 .ev-detail .nodata{margin:12px 0 0}
+
+/* ==========================================================
+   MÓVIL — teléfonos en vertical
+   ========================================================== */
+@media (max-width:620px){
+  .wrap{padding:0 14px}
+  section{padding:30px 0 4px}
+  h2{font-size:1.25rem}
+  .shead{padding-bottom:10px;margin-bottom:14px}
+  .shead p{font-size:.85rem}
+
+  /* cabecera */
+  header.top{padding:22px 0 20px}
+  header.top .wrap{gap:14px}
+  header.top .who{font-size:.83rem}
+  .weekbox{width:100%;display:flex;align-items:baseline;gap:10px;padding:10px 14px}
+  .weekbox .n{font-size:1.5rem}
+  .weekbox .l{margin-top:0}
+  nav.bar a{padding:12px 11px;font-size:.8rem}
+
+  /* visor de día */
+  .today .hd{padding:12px 14px;gap:8px}
+  .d-when b{font-size:.95rem;line-height:1.25}
+  .d-when span{font-size:.74rem}
+  .d-nav{width:30px;height:30px;font-size:1.1rem}
+  .d-hoy{padding:6px 10px;font-size:.74rem}
+  .trow{padding:10px 14px;gap:10px;flex-wrap:wrap}
+  .trow time{flex:0 0 84px;font-size:.8rem}
+  .trow .m b{font-size:.88rem}
+  .trow .m em{font-size:.76rem}
+  .trow .aula{margin-left:0;font-size:.76rem;padding:2px 7px}
+  .d-flag{padding:8px 14px;font-size:.8rem}
+  .n7-head{padding:9px 14px}
+  .n7-txt b{font-size:.84rem}
+  .n7-txt em{font-size:.75rem}
+
+  /* calendario: los puntos sustituyen a las etiquetas */
+  .m-title{padding:9px 10px;gap:4px}
+  .m-name{flex:0 0 13ch;font-size:.95rem}
+  .m-nav{width:30px;height:30px}
+  .m-hoy{padding:6px 10px;font-size:.74rem}
+  .m-grid.head div{padding:7px 2px;font-size:.7rem}
+  .m-grid.days{grid-auto-rows:66px}
+  .m-day{flex-flow:row wrap;align-content:flex-start;gap:3px;padding:4px 3px}
+  .m-date{width:100%;align-self:auto;text-align:center;margin-bottom:1px;font-size:.72rem}
+  .m-wk{position:static;width:100%;text-align:center;font-size:.55rem;margin-bottom:-2px}
+  .m-tag{width:100%;text-align:center;font-size:.53rem;line-height:1.1}
+  .m-chip{width:auto;padding:3px;border:0;background:none!important;border-radius:50%}
+  .m-chip span{display:none}
+  .m-chip i{width:10px;height:10px}
+  .m-chip.ex i{box-shadow:0 0 0 2px #FBD5D2}
+  .m-chip.en i{box-shadow:0 0 0 2px #DCD2F3}
+
+  /* fichas de asignatura */
+  .subject>.sh{padding:13px 14px;gap:5px 10px}
+  .subject>.sh h3{font-size:1.05rem}
+  .fact{font-size:.68rem;padding:2px 7px}
+  .pcol>.panel{padding:14px}
+  ul.plain li{flex-direction:column;align-items:flex-start;gap:4px}
+  ul.plain .d{text-align:left}
+  dl.kv{grid-template-columns:76px 1fr;font-size:.82rem}
+  .bar div{font-size:.66rem}
+  .calc-row{font-size:.79rem}
+  .calc-row input{width:58px}
+  .ev-dl{grid-template-columns:72px 1fr;font-size:.83rem}
+
+  /* selector de semana y avisos */
+  .wk-pick button{padding:7px 10px}
+  .wk-pick button b{font-size:.82rem}
+  .wk-pick button span{font-size:.63rem}
+  .acaja{padding:14px}
+  .aviso-head h3{font-size:1.1rem}
+
+  /* tablas y filtros */
+  th,td{padding:8px 10px;font-size:.82rem}
+  .filters button{font-size:.74rem;padding:5px 10px}
+  .tools button{font-size:.78rem;padding:7px 11px}
+
+  footer{padding:20px 0 46px}
+}
+
+/* pantallas muy estrechas */
+@media (max-width:380px){
+  .m-grid.days{grid-auto-rows:58px}
+  .m-name{flex:0 0 11ch;font-size:.88rem}
+  .trow time{flex:0 0 72px}
+}

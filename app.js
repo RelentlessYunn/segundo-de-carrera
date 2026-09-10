@@ -167,6 +167,7 @@ const semanaProgreso=(()=>{const n=new Date();
       `<div class="ev-meta">Semana ${e.wk}</div>`+
       `<dl class="ev-dl">`+filas.map(f=>`<dt>${esc(f[0])}</dt><dd>${esc(f[1])}</dd>`).join("")+`</dl>`+
       (e.temario?"":`<p class="nodata">Temario concreto: pendiente de que lo publique el profesor.</p>`);
+    box.scrollIntoView({block:"nearest",behavior:"smooth"});
   });
 
   $("#dPrev").addEventListener("click",()=>{ver.setDate(ver.getDate()-1);draw();});
@@ -513,6 +514,7 @@ initData();
     box.innerHTML=`<div class="ev-head"><b style="color:${S.c}">${esc(S.n)}</b>`+
       `<span class="pill p-${e.type}">${esc(e.w)}</span><button class="ev-close" aria-label="Cerrar">×</button></div>`+
       `<div class="ev-meta">${esc(e.label)} · semana ${e.wk} · ${T[e.type]}</div><p>${esc(e.what)}</p>`;
+    box.scrollIntoView({block:"nearest",behavior:"smooth"});
   });
 
   document.addEventListener("click",ev=>{
