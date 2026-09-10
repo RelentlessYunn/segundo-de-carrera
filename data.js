@@ -3,13 +3,13 @@ const DAYS=["Lunes","Martes","Miércoles","Jueves","Viernes"];
 const T0=540;
 
 const SUBJ={
- ed :{n:"Estructura de Datos",ab:"ED",       c:"#D01F63",s:"#FCE7EF",ects:6,dept:"Informática",grp:"1081",cam:"LEG"},
- talf:{n:"Tª Autómatas y Leng. Formales",ab:"TALF",c:"#BE7000",s:"#FBEEDA",ects:6,dept:"Informática",grp:"82",cam:"LEG"},
- is :{n:"Ingeniería del Software",ab:"IS",   c:"#1E6FC4",s:"#E4EFFA",ects:6,dept:"Informática",grp:"82",cam:"LEG"},
- ec :{n:"Estructura de Computadores",ab:"EC",c:"#0F7A63",s:"#DFF1EC",ects:6,dept:"Informática",grp:"82",cam:"LEG"},
- eco:{n:"Principios de Economía",ab:"ECO",    c:"#6B3FC8",s:"#EDE6FA",ects:6,dept:"Economía",grp:"801",cam:"GET"},
- dcp:{n:"Int. Dcho. Civil Patrimonial",ab:"DCP",c:"#A02E8F",s:"#F8E5F4",ects:6,dept:"Derecho Privado",grp:"801",cam:"GET"},
- est:{n:"Estadística II",ab:"EST",            c:"#3F51A8",s:"#E6E9F7",ects:6,dept:"Estadística",grp:"801",cam:"GET"}
+ ed :{n:"Estructura de Datos",ab:"ED",cuatri:1,       c:"#D01F63",s:"#FCE7EF",ects:6,dept:"Informática",grp:"1081",cam:"LEG"},
+ talf:{n:"Tª Autómatas y Leng. Formales",ab:"TALF",cuatri:1,c:"#BE7000",s:"#FBEEDA",ects:6,dept:"Informática",grp:"82",cam:"LEG"},
+ is :{n:"Ingeniería del Software",ab:"IS",cuatri:1,   c:"#1E6FC4",s:"#E4EFFA",ects:6,dept:"Informática",grp:"82",cam:"LEG"},
+ ec :{n:"Estructura de Computadores",ab:"EC",cuatri:1,c:"#0F7A63",s:"#DFF1EC",ects:6,dept:"Informática",grp:"82",cam:"LEG"},
+ eco:{n:"Principios de Economía",ab:"ECO",cuatri:1,    c:"#6B3FC8",s:"#EDE6FA",ects:6,dept:"Economía",grp:"801",cam:"GET"},
+ dcp:{n:"Int. Dcho. Civil Patrimonial",ab:"DCP",cuatri:1,c:"#A02E8F",s:"#F8E5F4",ects:6,dept:"Derecho Privado",grp:"801",cam:"GET"},
+ est:{n:"Estadística II",ab:"EST",cuatri:1,            c:"#3F51A8",s:"#E6E9F7",ects:6,dept:"Estadística",grp:"801",cam:"GET"}
 };
 
 const CLASSES=[
@@ -78,7 +78,6 @@ const CAL=[
  {id:"is",  date:"2026-10-09",wk:"S5", label:"5–9 oct",     what:"Examen parcial I de teoría",w:"15 %",type:"ex"},
  {id:"ed",  date:"2026-10-15",wk:"S6", label:"jue 15 oct",  what:"Primer parcial: bloque 1, ítems 1 a 5. Presencial y escrito, aula 2.3.C01",w:"25 %",type:"ex",hora:"09:00–10:30",aula:"Aula 2.3.C01",formato:"Presencial y escrito"},
  {id:"is",  date:"2026-10-16",wk:"S6", label:"vie 16 oct",  what:"Práctica en aula, 17:15",w:"clase",type:"cl"},
- {id:"ed",  date:"2026-10-19",wk:"S7", label:"lun 19 oct",  what:"Sesión extra del 1081, 12:30, aula 2.3.C04 — choca con Economía",w:"conflicto",type:"cf"},
  {id:"ec",  date:"2026-10-23",wk:"S7", label:"19–23 oct",   what:"Laboratorio 2 y entrega de la Práctica 1",w:"entrega",type:"en"},
  {id:"eco", date:"2026-10-26",wk:"S8", label:"26–31 oct",   what:"Test online 1 en Aula Global",w:"8 % final",type:"ex",hora:"Abre lunes 9:00, cierra sábado 14:00",formato:"10 preguntas, intentos ilimitados de 8 min 30, cuenta el mejor"},
  {id:"dcp", date:"2026-10-28",wk:"S8", label:"mié 28 oct",  what:"Cuestionario de autoevaluación tipo test",w:"1 pto / 10",type:"ex",hora:"12:30–14:00",aula:"Aula 6.1.02",formato:"Tipo test"},
@@ -89,7 +88,6 @@ const CAL=[
  {id:"talf",date:"2026-11-06",wk:"S9", label:"vie 6 nov",   what:"EC1: temas 2, 3 y 4 más JFLAP 1",w:"25 % aprox.",type:"ex",hora:"10:45–12:15",aula:"Aula 2.3.C03",formato:"Presencial y escrito"},
  {id:"ed",  date:"2026-11-13",wk:"S10",label:"vie 13 nov",  what:"Segundo parcial: bloque 2, ítem 6. Presencial y escrito, aula 2.2.C04",w:"25 %",type:"ex",hora:"09:00–10:30",aula:"Aula 2.2.C04",formato:"Presencial y escrito"},
  {id:"talf",date:"2026-11-13",wk:"S10",label:"vie 13 nov",  what:"Sesión de ejercicios, aula 4.0.E04, 12:30",w:"clase",type:"cl"},
- {id:"ed",  date:"2026-11-16",wk:"S11",label:"lun 16 nov",  what:"Sesión extra del 1081, 12:30, aula 2.3.D05 — choca con Economía",w:"conflicto",type:"cf"},
  {id:"eco", date:"2026-11-18",wk:"S11",label:"mié 18 nov",  what:"Evaluación en clase 2",w:"12 % final",type:"ex",hora:"10:45–12:15",aula:"Aula 10.1.6",formato:"Escrito en clase, folios en blanco y bolígrafo"},
  {id:"ec",  date:"2026-11-20",wk:"S11",label:"16–20 nov",   what:"Laboratorio 4",w:"laboratorio",type:"cl"},
  {id:"is",  date:"2026-11-20",wk:"S11",label:"vie 20 nov",  what:"Práctica en aula, 17:15",w:"clase",type:"cl"},
@@ -104,21 +102,10 @@ const CAL=[
  {id:"talf",date:"2026-12-11",wk:"S14",label:"vie 11 dic",  what:"EC2: temas 5, 6 y 7 más JFLAP 2, 3 y 4",w:"25 % aprox.",type:"ex",hora:"10:45–12:15",formato:"Presencial y escrito"}
 ];
 
-const WEEKS=[
- ["S1","7 – 11 sep","Arranque de las siete asignaturas"],
- ["S2","14 – 18 sep","Cambio de grupo de Estructura de Datos"],
- ["S3","21 – 25 sep","Laboratorio 1 de Estructura de Computadores"],
- ["S4","28 sep – 2 oct","JFLAP 1"],
- ["S5","5 – 9 oct","Parcial I de Ingeniería del Software y evaluación en clase 1 de Economía"],
- ["S6","12 – 16 oct","Primer parcial de Estructura de Datos"],
- ["S7","19 – 23 oct","Laboratorio 2 y entrega de la Práctica 1"],
- ["S8","26 – 30 oct","Test online 1 de Economía, cuestionario de Derecho Civil y laboratorio 3"],
- ["S9","2 – 6 nov","JFLAP 2, parcial de Estructura de Computadores y EC1 de TALF"],
- ["S10","9 – 13 nov","Segundo parcial de Estructura de Datos"],
- ["S11","16 – 20 nov","Evaluación en clase 2 de Economía y laboratorio 4"],
- ["S12","23 – 27 nov","JFLAP 3"],
- ["S13","30 nov – 4 dic","Parcial II de Ingeniería del Software y entrega de la Práctica 2"],
- ["S14","7 – 11 dic","Test online 2, trabajo de Ingeniería del Software, caso final de Derecho Civil, JFLAP 4 y EC2"]
+/* Los cuatrimestres. Las semanas se calculan solas a partir de estas fechas. */
+const CUATRIS=[
+ {n:1, ini:"2026-09-07", fin:"2026-12-11"},
+ {n:2, ini:"2027-01-26", fin:"2027-05-07"}
 ];
 
 const CHECKS=[
@@ -176,7 +163,7 @@ const ACAD={
 };
 
 /* ===== Avisos por semana. Redactados a mano; los eventos se añaden solos ===== */
-const AVISOS={
+const AVISOS={1:{
 1:["Semana de arranque. Baja de Aula Global la guía docente de las siete asignaturas y comprueba cuáles te faltan.","Estadística II es la única de la que no tienes nada: ni evaluación, ni porcentajes, ni calendario. Empieza por ahí."],
 2:["Es la semana del cambio de grupo de Estructura de Datos. Manda el correo a Israel González Carrasco y guarda su respuesta.","Hasta que Aula Global refleje el 1081 sigues matriculado en el 1082: si cae alguna entrega, pregunta dónde se sube.","Busca pareja para los JFLAP de TALF. La primera sesión es el 2 de octubre y es obligatoria."],
 3:["El jueves 24 tienes sesión extra de TALF a las 15:30 en el aula 1.0.F03, fuera de tu horario normal.","Primer laboratorio de Estructura de Computadores. Instala WepSIM antes para no perder la sesión montando el entorno."],
@@ -191,4 +178,4 @@ const AVISOS={
 12:["Semana ligera: solo JFLAP 3, y su horario está sin cerrar entre las 10:45 y las 19–21 h. Confirma con Araceli Sanchis cuál manda.","Úsala para el trabajo de Ingeniería del Software y para empezar a repasar árboles y grafos de cara al final."],
 13:["Parcial II de Ingeniería del Software y entrega de la práctica 2 de Estructura de Computadores.","Última sesión extra del 1081 el lunes 30, con el mismo choque de siempre."],
 14:["Cinco cosas en cinco días: test online 2 de Economía, entrega del trabajo de Ingeniería del Software, caso final de Derecho Civil, JFLAP 4 y EC2 de TALF.","Si has ido adelantando el trabajo de Ingeniería del Software, esta semana es llevadera. Si no, va a doler.","Las clases acaban el viernes 11. Los exámenes ordinarios van del 16 al 22 de diciembre y del 11 al 25 de enero."]
-};
+}, 2:{}};

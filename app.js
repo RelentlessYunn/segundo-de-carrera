@@ -24,12 +24,40 @@ function rolChips(p){
 
 const hhmm=m=>String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");
 const CURSO_INI=new Date(2026,8,7), CURSO_FIN=new Date(2026,11,12);
-const semanaActual=(()=>{const w=Math.floor((new Date()-CURSO_INI)/86400000/7)+1;return (w>=1&&w<=14)?w:0;})();
-/* Para el progreso: antes del curso 0, durante la semana real, después del 11 dic el temario está completo */
-const semanaProgreso=(()=>{const n=new Date();
-  if(n<CURSO_INI) return 0;
-  const w=Math.floor((n-CURSO_INI)/86400000/7)+1;
-  return w>14?15:w;})();
+const isoD=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+
+/* Semanas de un cuatrimestre, calculadas de sus fechas de inicio y fin. */
+function semanasDe(c){
+  const out=[], ini=new Date(c.ini+"T12:00:00"), fin=new Date(c.fin+"T12:00:00");
+  /* el cuatrimestre puede empezar en martes: las semanas se anclan al lunes */
+  const d=new Date(ini); d.setDate(d.getDate()-((d.getDay()+6)%7));
+  let n=1;
+  while(d<=fin){
+    const a=new Date(d), b=new Date(d); b.setDate(b.getDate()+4);
+    out.push({c:c.n, n, from:isoD(a), to:isoD(b), label:etiquetaRango(a,b)});
+    d.setDate(d.getDate()+7); n++;
+  }
+  return out;
+}
+function etiquetaRango(a,b){
+  const M=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  return a.getMonth()===b.getMonth()
+    ? `${a.getDate()} – ${b.getDate()} ${M[b.getMonth()]}`
+    : `${a.getDate()} ${M[a.getMonth()]} – ${b.getDate()} ${M[b.getMonth()]}`;
+}
+const SEMANAS=CUATRIS.flatMap(semanasDe);
+/* En qué semana cae una fecha */
+const semanaEn=key=>SEMANAS.find(w=>key>=w.from&&key<=w.to)||null;
+const HOY_KEY=isoD(new Date());
+const semActual=semanaEn(HOY_KEY);
+const semanaActual=semActual&&semActual.c===1?semActual.n:0;
+/* Para el progreso del temario: si el cuatrimestre ya acabó, cuenta como completo */
+const semanaProgreso=(()=>{
+  const hoy=new Date();
+  if(hoy<new Date(CUATRIS[0].ini+"T12:00:00")) return 0;
+  if(hoy>new Date(CUATRIS[0].fin+"T12:00:00")) return 99;
+  return semanaActual||0;
+})();
 
 /* --- rejilla --- */
 (function(){
@@ -74,9 +102,14 @@ const semanaProgreso=(()=>{const n=new Date();
   let ver=new Date(hoy);
 
   /* contador de semana en la cabecera */
-  if(hoy<CURSO_INI){$("#wknum").textContent="—";$("#wklbl").textContent="empieza el 7 de septiembre";}
-  else if(!semanaActual){$("#wknum").textContent="Fin";$("#wklbl").textContent="periodo lectivo terminado";}
-  else{$("#wknum").textContent="S"+semanaActual;$("#wklbl").textContent="semana "+semanaActual+" de 14 — "+WEEKS[semanaActual-1][1];}
+  if(semActual){
+    const total=SEMANAS.filter(w=>w.c===semActual.c).length;
+    $("#wknum").textContent="S"+semActual.n;
+    $("#wklbl").textContent=`semana ${semActual.n} de ${total} · ${semActual.c}.º cuatrimestre — ${semActual.label}`;
+  } else {
+    $("#wknum").textContent="—";
+    $("#wklbl").textContent = hoy<new Date(CUATRIS[0].ini) ? "empieza el 7 de septiembre" : "fuera de periodo lectivo";
+  }
 
   /* una clase cuenta ese día si cae en su rango semanal o en su lista de días sueltos */
   const clasesDe=(key,idx)=>CLASSES
@@ -94,7 +127,7 @@ const semanaProgreso=(()=>{const n=new Date();
     const tr=ACAD.tramos.filter(t=>key>=t.from&&key<=t.to)
              .sort((x,y)=>({nolectivo:0,examen:1,clases:2})[x.tipo]-({nolectivo:0,examen:1,clases:2})[y.tipo])[0];
     const evs=CAL.filter(e=>e.date===key);
-    const n=Math.floor((ver-CURSO_INI)/86400000/7)+1;
+    const sem=semanaEn(key);
 
     if(sin) flags.push(["sin","Sin clase"+(sin.campus?" · solo "+(sin.campus==="leg"?"Leganés":"Getafe"):"")]);
     if(tr&&tr.tipo!=="clases") flags.push([tr.tipo==="examen"?"exa":"nol",tr.t]);
@@ -109,7 +142,7 @@ const semanaProgreso=(()=>{const n=new Date();
     if(!cs.length){
       $("#todayList").innerHTML='<div class="empty">'+
         (sin?"No hay clase: día festivo.":(idx<0||idx>4)?"Fin de semana.":"No tienes clase este día.")+'</div>';
-      $("#todayMeta").textContent=(n>=1&&n<=14)?"Semana "+n:"";
+      $("#todayMeta").textContent=sem?`Semana ${sem.n} · ${sem.c}.º cuatri`:"";
     }else{
       const m=hoy.getHours()*60+hoy.getMinutes();
       $("#todayList").innerHTML=cs.map(c=>{
@@ -120,10 +153,21 @@ const semanaProgreso=(()=>{const n=new Date();
           `<span class="aula">${esc(c.au)}</span></div>`;
       }).join("");
       const campus=[...new Set(cs.map(c=>SUBJ[c.id].cam==="GET"?"Getafe":"Leganés"))].join(" y ");
-      $("#todayMeta").textContent=cs.length+" clases · "+campus+((n>=1&&n<=14)?" · semana "+n:"");
+      $("#todayMeta").textContent=cs.length+" clases · "+campus+(sem?" · semana "+sem.n:"");
     }
     $("#dHoy").hidden=esHoy;
     proximos(ver);
+    recomendaciones(sem);
+  }
+
+  /* recomendaciones de la semana, plegadas */
+  function recomendaciones(sem){
+    const box=$("#reco"); if(!box) return;
+    const lista=(sem&&AVISOS[sem.c]&&AVISOS[sem.c][sem.n])||null;
+    if(!lista){ box.innerHTML=""; return; }
+    box.innerHTML=`<details class="reco"><summary>Recomendado para la semana ${sem.n}`+
+      `<span>${lista.length} ${lista.length===1?"aviso":"avisos"}</span></summary>`+
+      `<ul class="tight">`+lista.map(t=>`<li>${esc(t)}</li>`).join("")+`</ul></details>`;
   }
 
   /* qué cae en los siete días siguientes al que estás viendo */
@@ -344,25 +388,6 @@ $("#profbody").innerHTML=PROFS.map(p=>{
  draw();
 })();
 
-/* --- ics --- */
-$("#icsbtn").addEventListener("click",()=>{
- const pad=n=>String(n).padStart(2,"0");
- let ics="BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Shengyu Chen//UC3M C1 2026-27//ES\r\nCALSCALE:GREGORIAN\r\n";
- CAL.forEach((e,i)=>{
-  const d=e.date.replace(/-/g,""), nx=new Date(e.date+"T00:00:00"); nx.setDate(nx.getDate()+1);
-  ics+="BEGIN:VEVENT\r\nUID:uc3m"+i+"@shengyu\r\nDTSTAMP:20260909T000000Z\r\n"+
-   "DTSTART;VALUE=DATE:"+d+"\r\nDTEND;VALUE=DATE:"+nx.getFullYear()+pad(nx.getMonth()+1)+pad(nx.getDate())+"\r\n"+
-   "SUMMARY:"+SUBJ[e.id].n+" — "+e.w+"\r\nDESCRIPTION:"+e.what.replace(/,/g,"\\,")+"\r\n"+
-   "BEGIN:VALARM\r\nTRIGGER:-P2D\r\nACTION:DISPLAY\r\nDESCRIPTION:"+SUBJ[e.id].n+"\r\nEND:VALARM\r\nEND:VEVENT\r\n";
- });
- ics+="END:VCALENDAR";
- const a=document.createElement("a");
- a.href=URL.createObjectURL(new Blob([ics],{type:"text/calendar"}));
- a.download="cuatrimestre1-2026-27.ics"; a.click();
-});
-
-/* --- semanas --- */
-
 /* --- guardado en la nube --- */
 /* Las credenciales viven en config.js, que NO se sube a GitHub (ver .gitignore).
    Sin ese archivo la página funciona igual, pero las marcas y notas no se guardan. */
@@ -441,7 +466,6 @@ initData();
   const tramoDe=key=>ACAD.tramos.filter(t=>key>=t.from&&key<=t.to)
         .sort((x,y)=>({sinclase:0,nolectivo:1,examen:2,clases:3})[x.tipo]-({sinclase:0,nolectivo:1,examen:2,clases:3})[y.tipo])[0];
 
-  const fb=$("#month-filters");
   let cur=months.findIndex(mo=>mo.y===hoy.getFullYear()&&mo.m===hoy.getMonth());
   if(cur<0) cur=0;
 
@@ -537,12 +561,20 @@ initData();
   /* el horario semanal y el calendario del mes comparten pestaña */
   const TABS={
     horario:["hoy","horario","planificador"], asignaturas:["asignaturas"],
-    avisos:["avisos"], profesorado:["profesorado"], calendario:["calendario"], pendientes:["pendientes"]
+    profesorado:["profesorado"], calendario:["calendario"], pendientes:["pendientes"]
   };
   const links=[...document.querySelectorAll("nav.bar a[data-tab]")];
   const todas=Object.values(TABS).flat();
 
   function abrir(tab,scroll){
+    if(tab==="notas"){
+      todas.forEach(id=>{const el=document.getElementById(id); if(el) el.hidden=true;});
+      const nt=document.getElementById("notas"); if(nt) nt.hidden=false;
+      links.forEach(l=>l.classList.remove("on"));
+      if(scroll) window.scrollTo({top:0});
+      return;
+    }
+    const nt=document.getElementById("notas"); if(nt) nt.hidden=true;
     if(!TABS[tab]) tab="horario";
     todas.forEach(id=>{
       const el=document.getElementById(id);
@@ -561,59 +593,84 @@ initData();
   abrir(location.hash.slice(1)||"horario",false);
 })();
 
-/* --- semanas --- */
+
+/* --- buscador --- */
 (function(){
-  const pick=$("#wk-pick"), zone=$("#avisozone"); if(!pick||!zone) return;
-  const TIPO={ex:"Examen",en:"Entrega",cl:"Lab / clase",cf:"Conflicto"};
-  let sel=semanaActual||1;
+  const inp=$("#q"), out=$("#qres"); if(!inp||!out) return;
+  const norm=t=>String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 
-  const rango=n=>{
-    const a=new Date(CURSO_INI); a.setDate(a.getDate()+(n-1)*7);
-    const b=new Date(a); b.setDate(b.getDate()+6);
-    const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-    return [iso(a),iso(b)];
-  };
-  const evsDe=n=>{const[a,b]=rango(n);return CAL.filter(e=>e.date>=a&&e.date<=b).sort((x,y)=>x.date.localeCompare(y.date));};
-  const sinClaseDe=n=>{const[a,b]=rango(n);return ACAD.sinClase.filter(f=>f.date>=a&&f.date<=b);};
-
-  pick.innerHTML=WEEKS.map((w,i)=>{
-    const n=i+1, est=n<semanaActual?"pasada":(n===semanaActual?"ahora":"");
-    return `<button data-w="${n}" class="${n===sel?"on":""} ${est}"><b>S${n}</b><span>${w[1]}</span></button>`;
-  }).join("");
-
-  function lista(evs){
-    return evs.length
-      ? `<ul class="plain">`+evs.map(e=>`<li><span><span class="sw" style="background:${SUBJ[e.id].c}"></span>${esc(e.what)}</span>`+
-          `<span class="d">${esc(e.label)} <span class="pill p-${e.type}">${TIPO[e.type]}</span></span></li>`).join("")+`</ul>`
-      : `<p class="nodata">Nada evaluable.</p>`;
-  }
-
-  function draw(){
-    const w=WEEKS[sel-1];
-    const sc=sinClaseDe(sel);
-    let h=`<div class="aviso-head"><h3>Semana ${sel}</h3><span>${esc(w[1])}</span></div>`;
-
-    h+=`<div class="aviso-grid">`;
-    h+=`<div class="acaja"><h4>Recomendado esta semana</h4><ul class="tight">`+
-       (AVISOS[sel]||["Sin avisos."]).map(t=>`<li>${esc(t)}</li>`).join("")+`</ul>`;
-    if(sc.length) h+=`<div class="min" style="background:#FCE6E6;border-left-color:#B3261E">Sin clase: `+
-       sc.map(f=>{const d=new Date(f.date+"T12:00:00");
-         return `${d.getDate()}/${d.getMonth()+1}${f.campus?" (solo "+(f.campus==="leg"?"Leganés":"Getafe")+")":""}`;}).join(", ")+`</div>`;
-    h+=`</div>`;
-
-    h+=`<div class="acaja"><h4>Cae esta semana</h4>${lista(evsDe(sel))}`+
-       (sel<14?`<h4 style="margin-top:16px">Y la semana que viene</h4>${lista(evsDe(sel+1))}`:"")+`</div>`;
-    h+=`</div>`;
-    zone.innerHTML=h;
-  }
-
-  pick.addEventListener("click",ev=>{
-    const b=ev.target.closest("button"); if(!b)return;
-    sel=parseInt(b.dataset.w);
-    [...pick.children].forEach(x=>x.classList.toggle("on",x===b));
-    draw();
+  /* índice: asignaturas, profesores, aulas y fechas evaluables */
+  const idx=[];
+  Object.keys(SUBJ).forEach(k=>{
+    const S=SUBJ[k];
+    idx.push({t:S.n, s:`${S.ects} ECTS · ${S.dept} · ${S.cam==="GET"?"Getafe":"Leganés"}`, tab:"asignaturas", c:S.c, k:[S.n,S.ab,S.dept]});
   });
-  draw();
+  PROFS.forEach(p=>{
+    const S=SUBJ[p.id];
+    idx.push({t:p.name, s:`${S.n}${p.office?" · "+p.office:""}`, tab:"profesorado", c:S.c, k:[p.name,p.mail,p.office,S.n]});
+  });
+  const aulas={};
+  CLASSES.forEach(c=>{ (aulas[c.au]=aulas[c.au]||[]).push(SUBJ[c.id].n); });
+  Object.keys(aulas).forEach(a=>{
+    idx.push({t:a, s:[...new Set(aulas[a])].join(", "), tab:"horario", c:"#8B95A3", k:[a]});
+  });
+  CAL.forEach(e=>{
+    const S=SUBJ[e.id];
+    idx.push({t:e.what, s:`${S.n} · ${e.label}${e.aula?" · "+e.aula:""}`, tab:"calendario", c:S.c, k:[e.what,S.n,S.ab,e.label,e.aula,e.formato]});
+  });
+
+  function buscar(q){
+    const n=norm(q);
+    if(n.length<2) return [];
+    return idx.filter(x=>x.k.filter(Boolean).some(v=>norm(v).includes(n))).slice(0,12);
+  }
+  inp.addEventListener("input",()=>{
+    const r=buscar(inp.value);
+    if(!r.length){ out.hidden=true; out.innerHTML=""; return; }
+    out.hidden=false;
+    out.innerHTML=r.map(x=>`<button class="qrow" data-tab="${x.tab}"><i style="background:${x.c}"></i>`+
+      `<span><b>${esc(x.t)}</b><em>${esc(x.s)}</em></span></button>`).join("");
+  });
+  out.addEventListener("click",ev=>{
+    const b=ev.target.closest(".qrow"); if(!b)return;
+    location.hash=b.dataset.tab;
+    out.hidden=true; inp.value="";
+  });
+  document.addEventListener("click",ev=>{ if(!ev.target.closest(".srch")) out.hidden=true; });
+  inp.addEventListener("keydown",ev=>{ if(ev.key==="Escape"){ out.hidden=true; inp.value=""; } });
+})();
+
+/* --- notas para Claude: texto plano, guardado en la nube --- */
+(function(){
+  const ta=$("#notasTxt"), est=$("#notasEstado"); if(!ta) return;
+  let t=null;
+  const clave="notas";
+  async function cargar(){
+    if(!BIN_ID||!API_KEY){ est.textContent="Sin guardado: falta config.js."; return; }
+    try{
+      const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`,{headers:{"X-Access-Key":API_KEY}});
+      const d=await r.json();
+      ta.value=(d.record&&d.record[clave])||"";
+      est.textContent="Guardado al día.";
+    }catch(e){ est.textContent="No se pudieron cargar las notas."; }
+  }
+  ta.addEventListener("input",()=>{
+    clearTimeout(t); est.textContent="Escribiendo…";
+    t=setTimeout(async()=>{
+      if(!BIN_ID||!API_KEY){ est.textContent="Sin guardado: falta config.js."; return; }
+      try{
+        const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`,{headers:{"X-Access-Key":API_KEY}});
+        const d=await r.json();
+        const rec=Object.assign({},d.record||{});
+        rec[clave]=ta.value;
+        const w=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`,{
+          method:"PUT",headers:{"Content-Type":"application/json","X-Access-Key":API_KEY},
+          body:JSON.stringify(rec)});
+        est.textContent=w.ok?"Guardado.":"No se pudo guardar.";
+      }catch(e){ est.textContent="No se pudo guardar."; }
+    },1200);
+  });
+  cargar();
 })();
 
 /* --- comprobación de datos: avisa por consola si algo no cuadra --- */
