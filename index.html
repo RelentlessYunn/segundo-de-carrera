@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cuatrimestre 1 · 2026/27 — Shengyu Chen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div>
+    <h1>Primer cuatrimestre 2026/27</h1>
+    <div class="who">Shengyu Chen — Doble Grado en Ingeniería Informática y Administración de Empresas, UC3M. Siete asignaturas, 42 ECTS, dos campus.</div>
+  </div>
+  <div class="weekbox"><div class="n" id="wknum">—</div><div class="l" id="wklbl">cargando</div></div>
+</div></header>
+
+<nav class="bar"><div class="wrap">
+  <a href="#hoy">Hoy</a>
+  <a href="#horario">Horario</a>
+  <a href="#planificador">Calendario</a>
+  <a href="#asignaturas">Asignaturas</a>
+  <a href="#avisos">Qué se te viene</a>
+  <a href="#profesorado">Profesorado</a>
+  <a href="#calendario">Exámenes y entregas</a>
+  <a href="#pendientes">Pendientes</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="hoy" style="padding-top:28px">
+  <div class="today">
+    <div class="hd"><b id="todayName">Hoy</b><span id="todayMeta"></span></div>
+    <div id="todayList"></div>
+  </div>
+  <div class="cds" id="countdown"></div>
+</section>
+
+<section id="horario">
+  <div class="shead"><h2>Horario semanal</h2><p>Cada asignatura tiene su color y lo mantiene en toda la página.</p></div>
+  <div class="statusbar">
+    <span class="s ok">✓ Sin choques fijos</span>
+    <span class="s wr">⚠ 1 choque en fechas concretas</span>
+    <span class="s">Getafe y Leganés el mismo día: lunes y miércoles</span>
+    <span class="sep"></span>
+    <span class="key">
+      <span><i class="kbox"></i>choque posible</span>
+      <span><i class="kbox hatch"></i>fechas sueltas</span>
+    </span>
+  </div>
+  <div class="calbox">
+    <div class="calhead" id="calhead"></div>
+    <div class="calbody" id="calbody"></div>
+  </div>
+  <div class="dayblocks" id="dayblocks"></div>
+  <div class="key" id="subjkey" style="margin-top:14px;font-size:.82rem"></div>
+</section>
+
+<section id="planificador">
+  <div class="shead">
+    <h2>Planificador mensual</h2>
+    <p>Todo el curso, de septiembre a junio. Pulsa cualquier evento para ver el detalle.</p>
+  </div>
+  <div class="filters" id="month-filters" style="margin-bottom:16px"></div>
+  <div id="month-grids"></div>
+</section>
+
+<section id="asignaturas">
+  <div class="shead"><h2>Asignaturas</h2><p>Las siete con la misma ficha: horario y aulas, profesorado, evaluación y fechas propias.</p></div>
+  <div id="subjzone"></div>
+</section>
+
+<section id="avisos">
+  <div class="shead"><h2>Qué se te viene</h2><p>Lo que cae esta semana y la siguiente, con lo que conviene hacer ya.</p></div>
+  <div class="wk-pick" id="wk-pick"></div>
+  <div id="avisozone"></div>
+</section>
+
+<section id="profesorado">
+  <div class="shead"><h2>Profesorado</h2><p>Directorio público de la UC3M, consultado el 9 de septiembre de 2026. La universidad no publica horarios de tutoría en abierto: se anuncian en Aula Global o se piden por correo.</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Asignatura</th><th>Profesor</th><th>Correo</th><th>Despacho</th></tr></thead>
+    <tbody id="profbody"></tbody>
+  </table></div>
+</section>
+
+<section id="calendario">
+  <div class="shead"><h2>Exámenes y entregas</h2><p>Todo lo evaluable del cuatrimestre en orden.</p></div>
+  <div class="tools">
+    <button id="icsbtn">Descargar calendario (.ics)</button>
+    <button onclick="window.print()">Imprimir</button>
+  </div>
+  <div class="filters" id="filters"></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Fecha</th><th>Sem.</th><th>Asignatura</th><th>Qué es</th><th>Peso</th></tr></thead>
+    <tbody id="calrows"></tbody>
+  </table></div>
+</section>
+
+<section id="pendientes">
+  <div class="shead"><h2>Pendientes</h2><p>Las marcas y las notas se guardan en la nube y siguen ahí al recargar.</p></div>
+  <div class="note"><h3>Gestiones con fecha</h3><div class="savestate" id="savestate"></div><div id="checks"></div></div>
+  <div class="note">
+    <h3>El choque que el cambio de grupo no arregla</h3>
+    <p>El 1081 tiene cuatro sesiones de prácticas los lunes de 12:30 a 14:00: 5 y 19 de octubre, 16 y 30 de noviembre. Esos cuatro lunes tienes magistral de Principios de Economía a la misma hora, y estás en Getafe desde las 09:00. No es solo un solape de horas: son dos campus distintos.</p>
+    <p>Cambiar de grupo arregla la teoría, pero no esto. Pregunta a Israel González Carrasco si esas cuatro sesiones son de asistencia obligatoria o evaluable. Si lo son, el 1081 no te vale tal cual.</p>
+  </div>
+  <div class="note">
+    <h3>Semanas que van a doler</h3>
+    <p><b>Semana 8 (26–30 oct).</b> Tres pruebas en tres asignaturas más el laboratorio 3. El test de Economía se puede repetir hasta el sábado: no lo dejes para el último día.</p>
+    <p><b>Semana 9 (2–6 nov).</b> El jueves encadenas JFLAP 2 a las 15:30 y el parcial de Estructura de Computadores a las 17:15; el viernes cae la EC1 de TALF. Llega con todo preparado desde el miércoles.</p>
+    <p><b>Semana 14 (7–11 dic).</b> Cinco entregas o pruebas. La única que puedes adelantar es el trabajo de Ingeniería del Software: hazlo en las prácticas de octubre y noviembre.</p>
+  </div>
+</section>
+
+<footer><div class="wrap"><p>Montado a partir de tu horario personal de la UC3M, el horario del grupo 1081, las guías docentes 2026/27 y los materiales de presentación de cada asignatura. Los datos de profesorado proceden del directorio público de la universidad. Lo que en los documentos originales estaba marcado como provisional sigue estándolo aquí.</p></div></footer>
+
+</div>
+<script src="config.js" onerror="void 0"></script>
+<script src="data.js"></script>
+<script src="eval.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
