@@ -60,38 +60,83 @@ const semanaProgreso=(()=>{const n=new Date();
    const cam=[...new Set(list.map(c=>SUBJ[c.id].cam==="GET"?"Getafe":"Leganés"))].join(" y ");
    return '<div class="dayblock"><h3>'+dn+"<em>"+cam+"</em></h3>"+list.map(c=>{
      const S=SUBJ[c.id];
-     return '<div class="trow"><span class="sw" style="background:'+S.c+'"></span><time>'+hhmm(c.a)+"–"+hhmm(c.b)+'</time><div class="m"><b>'+esc(S.n)+"</b><em>"+esc(c.t)+" · grupo "+c.grp+" · "+esc(c.au)+" · "+esc(c.r)+"</em></div></div>";
+     return '<div class="trow"><span class="sw" style="background:'+S.c+'"></span><time>'+hhmm(c.a)+"–"+hhmm(c.b)+'</time><div class="m"><b>'+esc(S.n)+"</b><em>"+esc(c.t)+" · grupo "+c.grp+" · "+esc(c.r)+'</em></div><span class="aula">'+esc(c.au)+"</span></div>";
    }).join("")+"</div>";
  }).join("");
 })();
 
-/* --- hoy --- */
+/* --- hoy, con navegación por días --- */
 (function(){
- const now=new Date();
- if(now<CURSO_INI){$("#wknum").textContent="—";$("#wklbl").textContent="empieza el 7 de septiembre";}
- else if(!semanaActual){$("#wknum").textContent="Fin";$("#wklbl").textContent="periodo lectivo terminado";}
- else{$("#wknum").textContent="S"+semanaActual;$("#wklbl").textContent="semana "+semanaActual+" de 14 — "+WEEKS[semanaActual-1][1];}
+  const DN=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+  const MN=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  const hoy=new Date(); const hoyStr=iso(hoy);
+  let ver=new Date(hoy);
 
- const dow=now.getDay(), idx=dow-1;
- const dn=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
- const mn=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
- $("#todayName").textContent=dn[dow]+", "+now.getDate()+" de "+mn[now.getMonth()];
- if(idx<0||idx>4||now<CURSO_INI||now>CURSO_FIN){
-   $("#todayList").innerHTML='<div class="empty">No hay clase hoy.</div>';
- }else{
-   const cs=CLASSES.filter(c=>c.d===idx).sort((a,b)=>a.a-b.a);
-   const m=now.getHours()*60+now.getMinutes();
-   $("#todayList").innerHTML=cs.map(c=>{
-     const S=SUBJ[c.id], on=m>=c.a&&m<=c.b;
-     return '<div class="trow'+(on?" now":"")+'"><span class="sw" style="background:'+S.c+'"></span><time>'+hhmm(c.a)+"–"+hhmm(c.b)+'</time><div class="m"><b>'+esc(S.n)+"</b><em>"+esc(c.t)+" · "+esc(c.au)+" · "+(S.cam==="GET"?"Getafe":"Leganés")+"</em></div></div>";
-   }).join("");
-   $("#todayMeta").textContent=cs.length+" clases · "+[...new Set(cs.map(c=>SUBJ[c.id].cam==="GET"?"Getafe":"Leganés"))].join(" y ");
- }
- const soon=CAL.filter(e=>new Date(e.date+"T23:59:59")>=now).slice(0,4);
- $("#countdown").innerHTML=soon.map(e=>{
-   const d=Math.ceil((new Date(e.date+"T09:00:00")-now)/86400000);
-   return '<div class="cd" style="border-top-color:'+SUBJ[e.id].c+'"><b>'+esc(SUBJ[e.id].n)+"</b><span>"+esc(e.label)+" — "+(d<=0?"hoy":"en "+d+(d===1?" día":" días"))+"</span></div>";
- }).join("")||'<div class="cd"><b>Nada pendiente</b><span>no quedan pruebas</span></div>';
+  /* contador de semana en la cabecera */
+  if(hoy<CURSO_INI){$("#wknum").textContent="—";$("#wklbl").textContent="empieza el 7 de septiembre";}
+  else if(!semanaActual){$("#wknum").textContent="Fin";$("#wklbl").textContent="periodo lectivo terminado";}
+  else{$("#wknum").textContent="S"+semanaActual;$("#wklbl").textContent="semana "+semanaActual+" de 14 — "+WEEKS[semanaActual-1][1];}
+
+  /* una clase cuenta ese día si cae en su rango semanal o en su lista de días sueltos */
+  const clasesDe=(key,idx)=>CLASSES
+    .filter(c=>c.d===idx && (c.dates ? c.dates.includes(key) : (key>=c.from && key<=c.to)))
+    .sort((x,y)=>x.a-y.a);
+
+  function draw(){
+    const key=iso(ver), idx=ver.getDay()-1;
+    const esHoy=key===hoyStr;
+    $("#todayName").textContent=(esHoy?"Hoy · ":"")+DN[ver.getDay()]+", "+ver.getDate()+" de "+MN[ver.getMonth()];
+
+    /* avisos del día */
+    const flags=[];
+    const sin=ACAD.sinClase.find(x=>x.date===key);
+    const tr=ACAD.tramos.filter(t=>key>=t.from&&key<=t.to)
+             .sort((x,y)=>({nolectivo:0,examen:1,clases:2})[x.tipo]-({nolectivo:0,examen:1,clases:2})[y.tipo])[0];
+    const evs=CAL.filter(e=>e.date===key);
+    const n=Math.floor((ver-CURSO_INI)/86400000/7)+1;
+
+    if(sin) flags.push(["sin","Sin clase"+(sin.campus?" · solo "+(sin.campus==="leg"?"Leganés":"Getafe"):"")]);
+    if(tr&&tr.tipo!=="clases") flags.push([tr.tipo==="examen"?"exa":"nol",tr.t]);
+    evs.forEach(e=>flags.push([e.type==="ex"?"exa":e.type==="cf"?"cf":"ev",
+      SUBJ[e.id].n+" · "+e.what]));
+    $("#dayFlags").innerHTML=flags.length
+      ? '<div class="d-flags">'+flags.map(f=>`<div class="d-flag f-${f[0]}">${esc(f[1])}</div>`).join("")+'</div>'
+      : "";
+
+    /* clases */
+    const cs=(idx<0||idx>4||sin)?[]:clasesDe(key,idx);
+    if(!cs.length){
+      $("#todayList").innerHTML='<div class="empty">'+
+        (sin?"No hay clase: día festivo.":(idx<0||idx>4)?"Fin de semana.":"No tienes clase este día.")+'</div>';
+      $("#todayMeta").textContent=(n>=1&&n<=14)?"Semana "+n:"";
+    }else{
+      const m=hoy.getHours()*60+hoy.getMinutes();
+      $("#todayList").innerHTML=cs.map(c=>{
+        const S=SUBJ[c.id], on=esHoy&&m>=c.a&&m<=c.b;
+        return `<div class="trow${on?" now":""}"><span class="sw" style="background:${S.c}"></span>`+
+          `<time>${hhmm(c.a)}–${hhmm(c.b)}</time>`+
+          `<div class="m"><b>${esc(S.n)}</b><em>${esc(c.t)} · ${S.cam==="GET"?"Getafe":"Leganés"}</em></div>`+
+          `<span class="aula">${esc(c.au)}</span></div>`;
+      }).join("");
+      const campus=[...new Set(cs.map(c=>SUBJ[c.id].cam==="GET"?"Getafe":"Leganés"))].join(" y ");
+      $("#todayMeta").textContent=cs.length+" clases · "+campus+((n>=1&&n<=14)?" · semana "+n:"");
+    }
+    $("#dHoy").hidden=esHoy;
+  }
+
+  $("#dPrev").addEventListener("click",()=>{ver.setDate(ver.getDate()-1);draw();});
+  $("#dNext").addEventListener("click",()=>{ver.setDate(ver.getDate()+1);draw();});
+  $("#dHoy").addEventListener("click",()=>{ver=new Date(hoy);draw();});
+  draw();
+
+  /* próximas fechas */
+  const soon=CAL.filter(e=>new Date(e.date+"T23:59:59")>=hoy).slice(0,4);
+  $("#countdown").innerHTML=soon.map(e=>{
+    const d=Math.ceil((new Date(e.date+"T09:00:00")-hoy)/86400000);
+    return `<div class="cd" style="border-top-color:${SUBJ[e.id].c}"><b>${esc(SUBJ[e.id].n)}</b>`+
+      `<span>${esc(e.label)} — ${d<=0?"hoy":"en "+d+(d===1?" día":" días")}</span></div>`;
+  }).join("")||'<div class="cd"><b>Nada pendiente</b><span>no quedan pruebas</span></div>';
 })();
 
 /* --- fichas de asignatura y calculadora --- */
@@ -109,10 +154,11 @@ const semanaProgreso=(()=>{const n=new Date();
     const dates=CAL.filter(c=>c.id===k).sort((a,b)=>a.date.localeCompare(b.date));
 
     let h=`<div class="subject"><div class="sh" style="border-left-color:${S.c}"><h3 style="color:${S.c}">${esc(S.n)}</h3><div class="facts">`+
-      `<span class="fact">${S.ects} ECTS</span><span class="fact">${esc(S.dept)}</span><span class="fact">grupo ${S.grp}</span><span class="fact fact-${S.cam==="GET"?"get":"leg"}">${S.cam==="GET"?"Getafe":"Leganés"}</span>${(S.ag||[]).map(a=>`<span class="fact" style="background:#EEF1F5">Aula Global ${esc(a)}</span>`).join("")}</div></div>`;
+      `<span class="fact">${S.ects} ECTS</span><span class="fact">${esc(S.dept)}</span><span class="fact">grupo ${S.grp}</span><span class="fact fact-${S.cam==="GET"?"get":"leg"}">${S.cam==="GET"?"Getafe":"Leganés"}</span></div></div>`;
 
     let pH=`<div class="panel"><h4>Horario y aulas</h4><ul class="plain">`+
-      cls.map(c=>`<li><span><b>${DAYS[c.d]}</b> ${esc(c.t)}<br><span style='color:var(--ink-3);font-size:.8rem'>${esc(c.au)}</span></span><span class='d'>${hhmm(c.a)}–${hhmm(c.b)}<br>${esc(c.r)}</span></li>`).join("")+
+      cls.map(c=>`<li><span><b>${DAYS[c.d]}</b> ${esc(c.t)}<br><span class="aula">${esc(c.au)}</span></span>`+
+        `<span class='d'>${hhmm(c.a)}–${hhmm(c.b)}<br>${esc(c.r)}</span></li>`).join("")+
       `</ul></div>`;
 
     let pP=`<div class="panel"><h4>Profesorado</h4>`+profs.map(p=>{

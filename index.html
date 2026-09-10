@@ -33,7 +33,13 @@
 
 <section id="hoy" style="padding-top:28px">
   <div class="today">
-    <div class="hd"><b id="todayName">Hoy</b><span id="todayMeta"></span></div>
+    <div class="hd">
+      <button class="d-nav" id="dPrev" aria-label="Día anterior">‹</button>
+      <div class="d-when"><b id="todayName">Hoy</b><span id="todayMeta"></span></div>
+      <button class="d-nav" id="dNext" aria-label="Día siguiente">›</button>
+      <button class="d-hoy" id="dHoy">Hoy</button>
+    </div>
+    <div id="dayFlags"></div>
     <div id="todayList"></div>
   </div>
   <div class="cds" id="countdown"></div>
