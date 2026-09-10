@@ -532,14 +532,33 @@ initData();
   draw(cur);
 })();
 
-/* --- nav --- */
+/* --- pestañas: una sección cada vez --- */
 (function(){
- const links=[...document.querySelectorAll("nav.bar a")];
- const secs=links.map(a=>document.querySelector(a.getAttribute("href")));
- const io=new IntersectionObserver(es=>es.forEach(e=>{
-   if(e.isIntersecting){const i=secs.indexOf(e.target);links.forEach((l,j)=>l.classList.toggle("on",j===i));}
- }),{rootMargin:"-70px 0px -70% 0px"});
- secs.forEach(s=>s&&io.observe(s));
+  /* el horario semanal y el calendario del mes comparten pestaña */
+  const TABS={
+    hoy:["hoy"], horario:["horario","planificador"], asignaturas:["asignaturas"],
+    avisos:["avisos"], profesorado:["profesorado"], calendario:["calendario"], pendientes:["pendientes"]
+  };
+  const links=[...document.querySelectorAll("nav.bar a[data-tab]")];
+  const todas=Object.values(TABS).flat();
+
+  function abrir(tab,scroll){
+    if(!TABS[tab]) tab="hoy";
+    todas.forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.hidden=!TABS[tab].includes(id);
+    });
+    links.forEach(l=>l.classList.toggle("on",l.dataset.tab===tab));
+    if(scroll) window.scrollTo({top:0,behavior:"instant"});
+    if(history.replaceState) history.replaceState(null,"","#"+tab);
+  }
+
+  links.forEach(l=>l.addEventListener("click",ev=>{
+    ev.preventDefault();
+    abrir(l.dataset.tab,true);
+  }));
+  window.addEventListener("hashchange",()=>abrir(location.hash.slice(1),true));
+  abrir(location.hash.slice(1)||"hoy",false);
 })();
 
 /* --- qué se te viene --- */
