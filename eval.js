@@ -68,8 +68,20 @@ dcp:{
   "Las magistrales acaban el 30 de noviembre; las prácticas siguen hasta el 9 de diciembre. Dos talleres de redacción de contratos, semanas 3 y 10."],
  weeks:[["1","Temas 1 y 2: personas, capacidad jurídica y de obrar. Práctica: caso sobre capacidad"],["2","Representación voluntaria y legal. Práctica: personas jurídicas y representación"],["3","Tema 3: el contrato. Práctica: taller de redacción"],["4","Tema 4: interpretación, eficacia e ineficacia. Práctica: ineficacia contractual"],["5","Tema 5: teoría general de las obligaciones. Práctica: régimen general"],["6","Tema 6: cumplimiento. Práctica: caso sobre pago"],["7","Tema 7: extinción y modificación. Práctica: caso correspondiente"],["8","Tema 8: incumplimiento. Práctica: cuestionario de continua"],["9","Tema 8 continuación. Práctica: caso sobre incumplimiento"],["10","Tema 9: compraventa, donación y arrendamiento. Práctica: taller II"],["11","Tema 10: otros contratos. Práctica: tipos contractuales"],["12","Tema 11: responsabilidad extracontractual. Práctica: caso correspondiente"],["13","Temas 12 y 13: derechos reales. Práctica: dominio y Registro de la Propiedad"],["14","Temas 14 y 15: familia y sucesiones. Práctica: caso final"]]},
 est:{
- bar:null,
- min:"Sin datos. Es la única asignatura de la que no tienes guía docente.",
- rules:["Falta el sistema de evaluación, los porcentajes y el calendario de continua.","Bájalos de Aula Global y esta ficha se completa igual que las demás."],
- weeks:null}
+ calc:{escala:"10",min:{i:3,n:4,txt:"un 4 sobre 10 en el examen final"}},
+ bar:[["Parcial 1",17.5],["Parcial 2",17.5],["Actividades en clase",5],["Examen final",60]],
+ min:"<b>Un 4 sobre 10 en el examen final.</b> Sin ese 4 no apruebas, aunque la media dé.",
+ rules:[
+  "<strong>Dos parciales</strong> — 17,5 % cada uno.",
+  "<strong>Actividades en clase</strong> — 5 %. Pueden ser una sola evaluación o varias; el número y las fechas los fija cada grupo según el ritmo de la clase, así que estate atento en las prácticas de los lunes.",
+  "<strong>Examen final</strong> — 60 % y nota mínima de 4 para aprobar.",
+  "<strong>Requisito previo</strong> — la asignatura presupone Estadística I.",
+  "<strong>Software</strong> — parte de las prácticas puede aplicarse a datos reales con software estadístico.",
+  "<strong>Tutorías</strong> — la guía recomienda pedirlas en grupo las semanas previas a los parciales y al final.",
+  "<strong>Material</strong> — Peña, <em>Regresión y diseño de experimentos</em> (Alianza, 2002) y Newbold, <em>Estadística para administración y economía</em> (Pearson, 2008). Complementaria: Ross, <em>Introducción a la Estadística</em>."],
+ weeks:[["Tema 1","Inferencia sobre una población: estimadores puntuales, estimación de media y varianza, distribución de la media en el muestreo e intervalos de confianza (varianza conocida y desconocida, muestras grandes, t de Student, varianza)"],
+  ["Tema 2","Contraste de hipótesis: hipótesis nula y alternativa, los dos tipos de error, potencia, p-valor y pasos generales de un contraste"],
+  ["Tema 3","Comparaciones entre dos poblaciones: muestras independientes, inferencia sobre medias en muestras pequeñas y grandes, comparación de varianzas y distribución F"],
+  ["Tema 4","Regresión lineal simple: especificación del modelo, mínimos cuadrados, inferencia sobre la pendiente y la varianza, estimación de una respuesta promedio y predicción"],
+  ["Tema 5","Diagnóstico y regresión múltiple: análisis de residuos, descomposición ADEVA, transformaciones para linealizar, forma matricial e introducción a la regresión lineal múltiple"]]}
 };

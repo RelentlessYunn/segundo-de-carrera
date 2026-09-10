@@ -35,19 +35,19 @@ const CLASSES=[
 
 const PROFS=[
  /* rol: "teoria" (Leganés) · "magistral" / "practicas" (Getafe) · "asistente" · coord:true si coordina */
- {id:"ed",name:"Isabel Segura Bedmar",rol:"teoria",coord:false,mail:"isegura@inf.uc3m.es",office:"",
+ {id:"ed",name:"Isabel Segura Bedmar",rol:"teoria",coord:false,mail:"isegura@inf.uc3m.es",office:"2.2.B05 · Sabatini, Leganés",
   note:""},
  {id:"ed",name:"Israel González Carrasco",rol:"",coord:true,mail:"igcarras@inf.uc3m.es",office:"2.2.B13 · Sabatini, Leganés",
   note:"Tutorías por cita previa por correo. En el asunto: nombre completo, curso, asignatura y número de grupo (81)."},
  {id:"talf",name:"Araceli Sanchis de Miguel",rol:"teoria",coord:true,mail:"masm@inf.uc3m.es",office:"2.1.B11 · Sabatini, Leganés",
   note:"Pregúntale por las fechas de JFLAP 3 y de la EC2, que siguen sin cuadrar."},
- {id:"is",name:"José María Álvarez Rodríguez",rol:"teoria",coord:false,mail:"joalvare@inf.uc3m.es",office:"",
+ {id:"is",name:"José María Álvarez Rodríguez",rol:"teoria",coord:false,mail:"joalvare@inf.uc3m.es",office:"2.1.B07 · Sabatini, Leganés",
   note:""},
  {id:"is",name:"Eduardo Cibrián Sánchez",rol:"",coord:true,mail:"ecibrian@inf.uc3m.es",office:"",
   note:""},
  {id:"ec",name:"Alejandro Calderón Mateos",rol:"teoria",coord:false,mail:"acaldero@inf.uc3m.es",office:"2.2.B17 · Sabatini, Leganés",
   note:"Autor de WepSIM, el simulador que vais a usar."},
- {id:"ec",name:"Félix García Carballeira",rol:"",coord:true,mail:"fgcarbal@inf.uc3m.es",office:"",
+ {id:"ec",name:"Félix García Carballeira",rol:"",coord:true,mail:"fgcarbal@inf.uc3m.es",office:"2.2.B19 · Sabatini, Leganés",
   note:""},
  {id:"eco",name:"Javier Sánchez Bachiller",rol:"magistral",coord:false,mail:"javiersb@eco.uc3m.es",office:"",
   note:""},
@@ -59,12 +59,12 @@ const PROFS=[
   note:""},
  {id:"dcp",name:"Yolanda Bergel Sainz de Baranda",rol:"",coord:true,mail:"ybergel@der-pr.uc3m.es",office:"15.2.77 · López Aranguren, Getafe",
   note:""},
- {id:"est",name:"Regina Kaiser Remiro",rol:"magistral",coord:true,mail:"kaiser@est-econ.uc3m.es",office:"",
+ {id:"est",name:"Regina Kaiser Remiro",rol:"magistral",coord:true,mail:"kaiser@est-econ.uc3m.es",office:"10.1.17 · Campomanes, Getafe",
   note:""},
  {id:"est",name:"Carmen Vanessa Montero Contreras",rol:"practicas",coord:false,mail:"carmonte@est-econ.uc3m.es",office:"",
   note:""},
  {id:"est",name:"Sandra Benítez Peña",rol:"",coord:false,mail:"sbenitez@est-econ.uc3m.es",office:"",
-  note:"Aparece como coordinadora del curso de magistral en Aula Global, pero la coordinación de la asignatura es de Regina Kaiser. Confírmalo en clase."}
+  note:"Figura como coordinadora del curso de magistral en Aula Global. La coordinación de la asignatura es de Regina Kaiser, según la guía docente oficial."}
 ];
 
 const CAL=[
@@ -122,7 +122,7 @@ const WEEKS=[
 ];
 
 const CHECKS=[
- ["Rellenar la ficha de Estadística II","Falta el sistema de evaluación, los porcentajes, los mínimos y el calendario de continua. Es la única asignatura incompleta. Está en Aula Global, curso M1.204.13160-77 (magistral) y C2.233.13160-801 (prácticas)."],
+ ["Preguntar las fechas de las actividades de Estadística II","El 5 % de actividades en clase no tiene fechas fijas: las decide cada grupo sobre la marcha. Pregunta en las prácticas de los lunes."],
  ["Confirmar el grupo de magistral de Getafe","Tu horario dice 76 en Derecho, 76 en Economía y 78 en Estadística, pero Aula Global los llama 75, 75 y 77. Para las entregas manda el código de Aula Global."],
  ["Apuntar las fechas de los exámenes finales","El calendario oficial solo da las ventanas: 16–22 de diciembre y 11–25 de enero. El día de cada asignatura lo publica el calendario de exámenes de la titulación."],
  ["Dejar por escrito el cambio de grupo","Correo a Israel González Carrasco confirmando que asistes al 1081 desde el 16 de septiembre. Hasta que Aula Global lo refleje sigues matriculado en el 1082 y las entregas van a ese grupo."],

@@ -536,14 +536,14 @@ initData();
 (function(){
   /* el horario semanal y el calendario del mes comparten pestaña */
   const TABS={
-    hoy:["hoy"], horario:["horario","planificador"], asignaturas:["asignaturas"],
+    horario:["hoy","horario","planificador"], asignaturas:["asignaturas"],
     avisos:["avisos"], profesorado:["profesorado"], calendario:["calendario"], pendientes:["pendientes"]
   };
   const links=[...document.querySelectorAll("nav.bar a[data-tab]")];
   const todas=Object.values(TABS).flat();
 
   function abrir(tab,scroll){
-    if(!TABS[tab]) tab="hoy";
+    if(!TABS[tab]) tab="horario";
     todas.forEach(id=>{
       const el=document.getElementById(id);
       if(el) el.hidden=!TABS[tab].includes(id);
@@ -558,10 +558,10 @@ initData();
     abrir(l.dataset.tab,true);
   }));
   window.addEventListener("hashchange",()=>abrir(location.hash.slice(1),true));
-  abrir(location.hash.slice(1)||"hoy",false);
+  abrir(location.hash.slice(1)||"horario",false);
 })();
 
-/* --- qué se te viene --- */
+/* --- semanas --- */
 (function(){
   const pick=$("#wk-pick"), zone=$("#avisozone"); if(!pick||!zone) return;
   const TIPO={ex:"Examen",en:"Entrega",cl:"Lab / clase",cf:"Conflicto"};
