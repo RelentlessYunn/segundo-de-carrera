@@ -102,14 +102,27 @@ const semanaProgreso=(()=>{
   let ver=new Date(hoy);
 
   /* contador de semana en la cabecera */
-  if(semActual){
-    const total=SEMANAS.filter(w=>w.c===semActual.c).length;
-    $("#wknum").textContent="S"+semActual.n;
-    $("#wklbl").textContent=`semana ${semActual.n} de ${total} · ${semActual.c}.º cuatrimestre — ${semActual.label}`;
-  } else {
-    $("#wknum").textContent="—";
-    $("#wklbl").textContent = hoy<new Date(CUATRIS[0].ini) ? "empieza el 7 de septiembre" : "fuera de periodo lectivo";
-  }
+  (function(){
+    const arc=document.getElementById("ringArc");
+    const L=2*Math.PI*52;
+    let pct=0;
+    if(semActual){
+      const total=SEMANAS.filter(w=>w.c===semActual.c).length;
+      pct=semActual.n/total;
+      $("#wknum").textContent="S"+semActual.n;
+      $("#wklbl").textContent=`de ${total} · ${semActual.c}.º cuatri`;
+    } else {
+      const antes=hoy<new Date(CUATRIS[0].ini+"T12:00:00");
+      $("#wknum").textContent=antes?"—":"Fin";
+      $("#wklbl").textContent=antes?"aún no empieza":"sin clases";
+      pct=antes?0:1;
+    }
+    if(arc){
+      arc.style.strokeDasharray=L;
+      arc.style.strokeDashoffset=L;
+      requestAnimationFrame(()=>{ arc.style.strokeDashoffset=L*(1-pct); });
+    }
+  })();
 
   /* una clase cuenta ese día si cae en su rango semanal o en su lista de días sueltos */
   const clasesDe=(key,idx)=>CLASSES
@@ -581,6 +594,13 @@ initData();
       if(el) el.hidden=!TABS[tab].includes(id);
     });
     links.forEach(l=>l.classList.toggle("on",l.dataset.tab===tab));
+    TABS[tab].forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el) return;
+      el.classList.remove("enter");
+      void el.offsetWidth;          /* fuerza el reinicio de la animación */
+      el.classList.add("enter");
+    });
     if(scroll) window.scrollTo({top:0,behavior:"instant"});
     if(history.replaceState) history.replaceState(null,"","#"+tab);
   }

@@ -3,20 +3,37 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cuatrimestre 1 · 2026/27 — Shengyu Chen</title>
+<title>Segundo de Carrera · 2026/27</title>
+<meta name="theme-color" content="#171C24">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=4">
+<link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
-<header class="top"><div class="wrap">
-  <div>
-    <h1>Primer cuatrimestre 2026/27</h1>
-    <div class="who">Shengyu Chen — Doble Grado en Ingeniería Informática y Administración de Empresas, UC3M. Siete asignaturas, 42 ECTS, dos campus.</div>
+<header class="top">
+  <div class="spectrum" aria-hidden="true"></div>
+  <div class="glow" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="hero">
+      <div class="eyebrow"><span class="dot"></span>Curso 2026 / 2027</div>
+      <h1>Segundo<span>de carrera</span></h1>
+      <div class="who">Doble Grado en Ingeniería Informática y Administración de Empresas · UC3M</div>
+      <div class="stats">
+        <div class="stat"><b>7</b><span>asignaturas</span></div>
+        <div class="stat"><b>42</b><span>ECTS</span></div>
+        <div class="stat"><b>2</b><span>campus</span></div>
+      </div>
+    </div>
+    <div class="ring" id="ring">
+      <svg viewBox="0 0 120 120" aria-hidden="true">
+        <circle class="r-bg" cx="60" cy="60" r="52"></circle>
+        <circle class="r-fg" cx="60" cy="60" r="52" id="ringArc"></circle>
+      </svg>
+      <div class="ring-txt"><b id="wknum">—</b><span id="wklbl">cargando</span></div>
+    </div>
   </div>
-  <div class="weekbox"><div class="n" id="wknum">—</div><div class="l" id="wklbl">cargando</div></div>
-</div></header>
+</header>
 
 <nav class="bar"><div class="wrap">
   <a href="#horario" data-tab="horario">Horario</a>
@@ -123,9 +140,9 @@
 <footer><div class="wrap"><p>Montado a partir de tu horario personal de la UC3M, el horario del grupo 1081, las guías docentes 2026/27 y los materiales de presentación de cada asignatura. Los datos de profesorado proceden del directorio público de la universidad. Lo que en los documentos originales estaba marcado como provisional sigue estándolo aquí.</p><p><a href="#notas" id="linkNotas">·</a></p></div></footer>
 
 </div>
-<script src="config.js?v=4" onerror="void 0"></script>
-<script src="data.js?v=4"></script>
-<script src="eval.js?v=4"></script>
-<script src="app.js?v=4"></script>
+<script src="config.js?v=5" onerror="void 0"></script>
+<script src="data.js?v=5"></script>
+<script src="eval.js?v=5"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>
