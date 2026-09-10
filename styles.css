@@ -367,14 +367,15 @@ ul.plain .aula{margin-top:4px}
 .ev s{font-size:.74rem;font-weight:700;color:var(--ink);margin-top:3px}
 
 /* ---------- visor de día ---------- */
-.today .hd{gap:10px;flex-wrap:nowrap}
-.d-when{flex:1;min-width:0;display:flex;flex-direction:column}
+.today .hd{gap:12px;flex-wrap:nowrap;align-items:center}
+.d-arrows{display:flex;gap:4px;flex:0 0 auto}
+.d-when{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
 .d-when b{font-size:1.05rem}
 .d-when span{font-size:.8rem;color:var(--ink-3)}
 .d-nav{font:inherit;font-size:1.25rem;line-height:1;width:32px;height:32px;flex:0 0 auto;
   border:1px solid var(--rule);background:var(--card);color:var(--ink);border-radius:6px;cursor:pointer}
 .d-nav:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
-.d-hoy{font:inherit;font-size:.78rem;font-weight:600;padding:6px 12px;flex:0 0 auto;
+.d-hoy{font:inherit;font-size:.78rem;font-weight:600;padding:7px 14px;flex:0 0 auto;margin-left:auto;
   border:1px solid var(--rule);background:var(--card);color:var(--ink-2);border-radius:6px;cursor:pointer}
 .d-hoy:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
 .d-hoy[hidden]{display:none}
@@ -386,3 +387,27 @@ ul.plain .aula{margin-top:4px}
 .f-nol{background:#ECEAF6;color:#4B3F8F}
 .f-cf{background:#FDF0D8;color:#8A5A00}
 .f-ev{background:#EFEAFA;color:#54389B}
+
+/* ---------- próximos 7 días ---------- */
+.n7{margin-top:12px;background:var(--card);border:1px solid var(--rule);border-radius:var(--r);overflow:hidden}
+.n7-head{padding:11px 18px;font-size:.76rem;font-weight:700;color:var(--ink-3);border-bottom:1px solid var(--rule-2);background:#F7F9FB}
+.n7-empty{padding:16px 18px;color:var(--ink-3);font-size:.88rem}
+.n7-card{
+  display:flex;align-items:center;gap:14px;width:100%;text-align:left;font:inherit;cursor:pointer;
+  padding:11px 18px;border:0;border-bottom:1px solid var(--rule-2);border-left:4px solid var(--sc);
+  background:var(--card);
+}
+.n7-card:last-child{border-bottom:0}
+.n7-card:hover{background:#F7F9FB}
+.n7-when{flex:0 0 82px;font-size:.79rem;font-weight:700;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.n7-txt{flex:1;min-width:0}
+.n7-txt b{display:block;font-size:.88rem;font-weight:600}
+.n7-txt em{display:block;font-style:normal;font-size:.79rem;color:var(--ink-3);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.n7-card .pill{flex:0 0 auto}
+.n7-card.ex{background:#FFFBFB}
+#hoy-detail{margin-top:12px}
+@media (max-width:700px){
+  .n7-when{flex-basis:64px;font-size:.72rem}
+  .n7-card{gap:10px;padding:10px 14px}
+}

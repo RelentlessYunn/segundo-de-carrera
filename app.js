@@ -123,20 +123,51 @@ const semanaProgreso=(()=>{const n=new Date();
       $("#todayMeta").textContent=cs.length+" clases · "+campus+((n>=1&&n<=14)?" · semana "+n:"");
     }
     $("#dHoy").hidden=esHoy;
+    proximos(ver);
   }
+
+  /* qué cae en los siete días siguientes al que estás viendo */
+  function proximos(desde){
+    const a=new Date(desde), b=new Date(desde); b.setDate(b.getDate()+7);
+    const ka=iso(a), kb=iso(b);
+    const evs=CAL.filter(e=>e.date>=ka&&e.date<=kb).sort((x,y)=>x.date.localeCompare(y.date));
+    const box=$("#countdown");
+    if(!evs.length){
+      box.innerHTML='<div class="n7-empty">Nada evaluable en los próximos siete días.</div>';
+      return;
+    }
+    const T={ex:"Examen",en:"Entrega",cl:"Lab / clase",cf:"Conflicto"};
+    box.innerHTML=`<div class="n7-head">Próximos 7 días · ${evs.length} ${evs.length===1?"cosa":"cosas"}</div>`+
+      evs.map(e=>{
+        const S=SUBJ[e.id];
+        const d=Math.round((new Date(e.date+"T12:00:00")-new Date(iso(desde)+"T12:00:00"))/86400000);
+        const cuando=d===0?"hoy":d===1?"mañana":"en "+d+" días";
+        return `<button class="n7-card ${e.type}" data-ev="${CAL.indexOf(e)}" style="--sc:${S.c}">`+
+          `<span class="n7-when">${cuando}</span>`+
+          `<span class="n7-txt"><b>${esc(S.n)}</b><em>${esc(e.what)}</em></span>`+
+          `<span class="pill p-${e.type}">${T[e.type]}</span></button>`;
+      }).join("");
+  }
+
+  /* detalle al pulsar, igual que en el calendario */
+  document.addEventListener("click",ev=>{
+    const box=document.getElementById("hoy-detail"); if(!box) return;
+    if(ev.target.classList.contains("ev-close")){ box.hidden=true; return; }
+    const card=ev.target.closest(".n7-card");
+    if(!card){ if(!ev.target.closest("#hoy-detail")) box.hidden=true; return; }
+    const e=CAL[parseInt(card.dataset.ev)], S=SUBJ[e.id];
+    const T={ex:"Examen",en:"Entrega",cl:"Laboratorio o clase",cf:"Conflicto de horario"};
+    box.hidden=false; box.style.borderLeftColor=S.c;
+    box.innerHTML=`<div class="ev-head"><b style="color:${S.c}">${esc(S.n)}</b>`+
+      `<span class="pill p-${e.type}">${esc(e.w)}</span><button class="ev-close" aria-label="Cerrar">×</button></div>`+
+      `<div class="ev-meta">${esc(e.label)} · semana ${e.wk} · ${T[e.type]}</div><p>${esc(e.what)}</p>`;
+  });
 
   $("#dPrev").addEventListener("click",()=>{ver.setDate(ver.getDate()-1);draw();});
   $("#dNext").addEventListener("click",()=>{ver.setDate(ver.getDate()+1);draw();});
   $("#dHoy").addEventListener("click",()=>{ver=new Date(hoy);draw();});
   draw();
 
-  /* próximas fechas */
-  const soon=CAL.filter(e=>new Date(e.date+"T23:59:59")>=hoy).slice(0,4);
-  $("#countdown").innerHTML=soon.map(e=>{
-    const d=Math.ceil((new Date(e.date+"T09:00:00")-hoy)/86400000);
-    return `<div class="cd" style="border-top-color:${SUBJ[e.id].c}"><b>${esc(SUBJ[e.id].n)}</b>`+
-      `<span>${esc(e.label)} — ${d<=0?"hoy":"en "+d+(d===1?" día":" días")}</span></div>`;
-  }).join("")||'<div class="cd"><b>Nada pendiente</b><span>no quedan pruebas</span></div>';
 })();
 
 /* --- fichas de asignatura y calculadora --- */
