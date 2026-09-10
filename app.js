@@ -615,3 +615,19 @@ initData();
   });
   draw();
 })();
+
+/* --- comprobación de datos: avisa por consola si algo no cuadra --- */
+(function(){
+  const errores=[];
+  const coords={};
+  PROFS.forEach(p=>{ if(p.coord) (coords[p.id]=coords[p.id]||[]).push(p.name); });
+  Object.keys(SUBJ).forEach(k=>{
+    const c=coords[k]||[];
+    if(c.length>1) errores.push(`${SUBJ[k].n}: ${c.length} coordinadores (${c.join(", ")}). Solo puede haber uno.`);
+    if(c.length===0) errores.push(`${SUBJ[k].n}: sin coordinador.`);
+    if(!PROFS.some(p=>p.id===k&&p.rol)) errores.push(`${SUBJ[k].n}: sin nadie que dé clase.`);
+  });
+  CAL.forEach(e=>{ if(!SUBJ[e.id]) errores.push(`Fecha ${e.label}: asignatura desconocida (${e.id}).`); });
+  CLASSES.forEach(c=>{ if(!c.from&&!c.dates) errores.push(`Clase de ${SUBJ[c.id].ab} el día ${c.d}: sin fechas.`); });
+  if(errores.length) console.warn("Revisar datos:\n- "+errores.join("\n- "));
+})();

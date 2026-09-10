@@ -63,8 +63,8 @@ const PROFS=[
   note:""},
  {id:"est",name:"Carmen Vanessa Montero Contreras",rol:"practicas",coord:false,mail:"carmonte@est-econ.uc3m.es",office:"",
   note:""},
- {id:"est",name:"Sandra Benítez Peña",rol:"",coord:true,mail:"sbenitez@est-econ.uc3m.es",office:"",
-  note:""}
+ {id:"est",name:"Sandra Benítez Peña",rol:"",coord:false,mail:"sbenitez@est-econ.uc3m.es",office:"",
+  note:"Aparece como coordinadora del curso de magistral en Aula Global, pero la coordinación de la asignatura es de Regina Kaiser. Confírmalo en clase."}
 ];
 
 const CAL=[
