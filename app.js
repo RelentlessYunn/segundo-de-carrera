@@ -89,46 +89,14 @@ const semanaProgreso=(()=>{
 })();
 
 
-/* Resumen rápido de una asignatura, para el visor de día */
+/* Ficha de la asignatura desplegada desde el visor de día.
+   Es la misma que en la pestaña Asignaturas, sin el acordeón del temario. */
 function pintarResumen(k){
   const box=document.getElementById("subjPeek"); if(!box) return;
-  const S=SUBJ[k], E=EVAL[k];
   if(box.dataset.k===k && !box.hidden){ box.hidden=true; box.dataset.k=""; return; }
   box.dataset.k=k;
-
-  const clases=CLASSES.filter(c=>c.id===k).sort((a,b)=>a.d-b.d||a.a-b.a);
-  const profes=PROFS.filter(p=>p.id===k&&p.rol);
-  const coord=PROFS.find(p=>p.id===k&&p.coord);
-  const hoyKey=isoD(new Date());
-  const proximas=CAL.filter(e=>e.id===k&&e.date>=hoyKey).slice(0,3);
-
-  let h=`<div class="peek-head" style="border-left-color:${S.c}">`+
-    `<b style="color:${S.c}">${esc(S.n)}</b>`+
-    `<span class="fact fact-${S.cam==="GET"?"get":"leg"}">${S.cam==="GET"?"Getafe":"Leganés"}</span>`+
-    `<span class="fact">grupo ${S.grp}</span>`+
-    `<button class="ev-close" aria-label="Cerrar">×</button></div><div class="peek-body">`;
-
-  h+=`<div><h5>Horario</h5><ul class="plain">`+clases.map(c=>
-      `<li><span><b>${DAYS[c.d]}</b> ${esc(c.t)}</span><span class="d">${hhmm(c.a)}–${hhmm(c.b)} <span class="aula">${esc(c.au)}</span></span></li>`).join("")+`</ul></div>`;
-
-  h+=`<div><h5>Quién la da</h5><ul class="plain">`+profes.map(p=>
-      `<li><span>${esc(p.name)}</span><span class="d">${esc(p.mail)}</span></li>`).join("")+
-      (coord?`<li><span>${esc(coord.name)}</span><span class="d">coordina</span></li>`:"")+`</ul></div>`;
-
-  h+=`<div><h5>Evaluación</h5>`;
-  if(E.bar){
-    h+=`<ul class="plain">`+E.bar.map(b=>`<li><span>${esc(b[0])}</span><span class="d">${b[1]}%</span></li>`).join("")+`</ul>`;
-    h+=`<div class="min">${E.min}</div>`;
-  } else h+=`<p class="nodata">Sin datos.</p>`;
-  h+=`</div>`;
-
-  h+=`<div><h5>Lo siguiente</h5>`+
-    (proximas.length
-      ? `<ul class="plain">`+proximas.map(e=>`<li><span>${esc(e.what)}</span><span class="d">${esc(e.label)}</span></li>`).join("")+`</ul>`
-      : `<p class="nodata">Nada pendiente.</p>`)+
-    `<a class="mailbtn peek-link" href="#asignaturas">Ver ficha completa</a></div>`;
-
-  box.innerHTML=h+`</div>`;
+  box.innerHTML=`<button class="ev-close peek-x" aria-label="Cerrar">×</button>`+
+    window.fichaHTML(k,{acordeon:false, scope:"peek"});
   box.hidden=false;
   box.scrollIntoView({block:"nearest",behavior:"smooth"});
 }
@@ -136,9 +104,7 @@ document.addEventListener("click",ev=>{
   const t=ev.target.closest("[data-peek]");
   if(t){ pintarResumen(t.dataset.peek); return; }
   const box=document.getElementById("subjPeek");
-  if(box && ev.target.classList.contains("ev-close") && ev.target.closest("#subjPeek")){
-    box.hidden=true; box.dataset.k="";
-  }
+  if(box && ev.target.classList.contains("peek-x")){ box.hidden=true; box.dataset.k=""; }
 });
 
 /* --- rejilla --- */
@@ -307,7 +273,9 @@ document.addEventListener("click",ev=>{
     return `rgb(${m(r)},${m(g)},${m(b)})`;
   };
 
-  $("#subjzone").innerHTML=Object.keys(SUBJ).map(k=>{
+  window.fichaHTML=function(k,opts){
+    opts=opts||{};
+    const acc=opts.acordeon!==false, sc=opts.scope||"main";
     const S=SUBJ[k], E=EVAL[k];
     const cls=CLASSES.filter(c=>c.id===k).sort((a,b)=>a.d-b.d||a.a-b.a);
     const profs=PROFS.filter(p=>p.id===k);
@@ -346,10 +314,15 @@ document.addEventListener("click",ev=>{
       pE+='<div class="bar">'+E.bar.map((b,i)=>`<div style="flex:${b[1]};background:${shade(S.c,i,E.bar.length)}">${b[1]}%</div>`).join("")+"</div>";
       pE+='<div class="barkey">'+E.bar.map((b,i)=>`<span><i style="background:${shade(S.c,i,E.bar.length)}"></i>${esc(b[0])}</span>`).join("")+"</div>";
       pE+='<div class="calc">';
+      const esPts=E.calc&&E.calc.escala==="pts";   /* Derecho Civil puntúa sobre 10 puntos, no en % */
       E.bar.forEach((b,i)=>{
-        pE+=`<div class="calc-row"><label for="g_${k}_${i}">${esc(b[0])} <span style="color:var(--ink-3)">(${b[1]}%)</span></label><input type="number" id="g_${k}_${i}" min="0" max="10" step="0.1" placeholder="Nota" data-subj="${k}" data-w="${b[1]}" class="g-input"></div>`;
+        const tope=esPts?(b[1]/10):10;
+        pE+=`<div class="calc-row"><label for="g_${sc}_${k}_${i}">${esc(b[0])} `+
+            `<span style="color:var(--ink-3)">(${esPts?"máx. "+tope+" ptos":b[1]+"%"})</span></label>`+
+            `<input type="number" id="g_${sc}_${k}_${i}" min="0" max="${tope}" step="0.1" placeholder="Nota" `+
+            `data-subj="${k}" data-scope="${sc}" data-w="${b[1]}" class="g-input"></div>`;
       });
-      pE+=`<div class="calc-res" id="res-${k}"><span>Acumulado: <b>0.00</b> ptos</span></div></div>`;
+      pE+=`<div class="calc-res" id="res-${sc}-${k}"><span>Acumulado: <b>0.00</b> ptos</span></div></div>`;
     }
     pE+=`<div class="min">${E.min}</div></div>`;
 
@@ -360,18 +333,17 @@ document.addEventListener("click",ev=>{
 
     /* Dos columnas que se apilan por separado: así ninguna estira a la otra */
     h+=`<div class="panels"><div class="pcol">${pH}${pE}</div><div class="pcol">${pP}${pF}</div></div>`;
-    h+=`<details class="acc"><summary>Reglas de evaluación y contenido semanal</summary><div>`;
-    h+=`<ul class="tight" style="margin-bottom:16px">`+E.rules.map(r=>`<li>${r}</li>`).join("")+"</ul>";
+    let extra=`<ul class="tight" style="margin-bottom:16px">`+E.rules.map(r=>`<li>${r}</li>`).join("")+"</ul>";
     if(E.weeks){
       const numerado=E.weeks.every(w=>/^\d+$/.test(w[0]));
       if(numerado){
         const total=E.weeks.length;
         const hechas=Math.max(0,Math.min(total,semanaProgreso-1));
         const pct=Math.round(hechas/total*100);
-        h+=`<div class="prog"><div class="track"><div class="fill" style="width:${pct}%"></div></div>`+
-           `<span class="lbl">${hechas} de ${total} semanas · ${pct}%</span></div>`;
+        extra=`<div class="prog"><div class="track"><div class="fill" style="width:${pct}%"></div></div>`+
+           `<span class="lbl">${hechas} de ${total} semanas · ${pct}%</span></div>`+extra;
       }
-      h+=`<div class="tbl"><table><thead><tr><th style="width:88px">${numerado?"Semana":"Bloque"}</th><th>Contenido</th></tr></thead><tbody>`+
+      extra+=`<div class="tbl"><table><thead><tr><th style="width:88px">${numerado?"Semana":"Bloque"}</th><th>Contenido</th></tr></thead><tbody>`+
        E.weeks.map(w=>{
          let cls="";
          if(numerado&&semanaProgreso){
@@ -382,14 +354,16 @@ document.addEventListener("click",ev=>{
          return `<tr${cls}><td class='num' style='color:var(--ink-3)'>${w[0]}</td><td>${w[1]}</td></tr>`;
        }).join("")+"</tbody></table></div>";
     }
-    return h+"</div></details></div>";
-  }).join("");
+    return h + (acc ? `<details class="acc"><summary>Reglas de evaluación y contenido semanal</summary><div>${extra}</div></details>` : "") + "</div>";
+  };
+  $("#subjzone").innerHTML=Object.keys(SUBJ).map(k=>window.fichaHTML(k)).join("");
 
   /* cálculo en vivo */
-  window.recalcular=subj=>{
+  window.recalcular=(subj,sc)=>{
+    sc=sc||"main";
     const E=EVAL[subj], C=(E&&E.calc)||{escala:"10"};
     const pts=C.escala==="pts";
-    const inputs=document.querySelectorAll(`.g-input[data-subj="${subj}"]`);
+    const inputs=document.querySelectorAll(`.g-input[data-subj="${subj}"][data-scope="${sc}"]`);
     let total=0, restante=0, hasData=false;
     inputs.forEach((inp,i)=>{
       const val=parseFloat(inp.value), w=parseFloat(inp.dataset.w);
@@ -398,7 +372,7 @@ document.addEventListener("click",ev=>{
       if(!isNaN(val)){ total+=Math.min(val,tope)*aporta; hasData=true; }
       else restante+=tope*aporta;
     });
-    const el=document.getElementById(`res-${subj}`);
+    const el=document.getElementById(`res-${sc}-${subj}`);
     if(!el) return;
     if(!hasData){ el.innerHTML=`<span>Acumulado: <b>0.00</b> ptos</span>`; return; }
 
@@ -426,7 +400,7 @@ document.addEventListener("click",ev=>{
     el.innerHTML=html;
   };
   document.addEventListener("input",e=>{
-    if(e.target.classList.contains("g-input")) window.recalcular(e.target.dataset.subj);
+    if(e.target.classList.contains("g-input")) window.recalcular(e.target.dataset.subj, e.target.dataset.scope);
   });
 
   document.addEventListener("click",async e=>{
@@ -508,7 +482,7 @@ async function initData(){
     savedChecks.forEach(i=>{const cb=document.getElementById(`ck${i}`); if(cb) cb.checked=true;});
     Object.keys(savedGrades).forEach(id=>{
       const inp=document.getElementById(id);
-      if(inp){ inp.value=savedGrades[id]; window.recalcular(inp.dataset.subj); }
+      if(inp){ inp.value=savedGrades[id]; window.recalcular(inp.dataset.subj, inp.dataset.scope); }
     });
     estado("Datos sincronizados.");
   }catch(e){
@@ -525,7 +499,7 @@ function guardar(){
     const checks=[];
     CHECKS.forEach((_,i)=>{ if(document.getElementById(`ck${i}`).checked) checks.push(i); });
     const grades={};
-    document.querySelectorAll(".g-input").forEach(inp=>{ if(inp.value!=="") grades[inp.id]=inp.value; });
+    document.querySelectorAll('.g-input[data-scope="main"]').forEach(inp=>{ if(inp.value!=="") grades[inp.id]=inp.value; });
     try{
       const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`,{
         method:"PUT",
