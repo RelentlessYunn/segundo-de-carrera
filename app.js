@@ -617,57 +617,6 @@ initData();
 })();
 
 
-/* --- buscador --- */
-(function(){
-  const inp=$("#q"), out=$("#qres"), box=$("#srchBox"), btn=$("#qBtn"), cerrar=$("#qClose");
-  if(!inp||!out||!box) return;
-  function abrirB(){ box.hidden=false; box.classList.add("open"); setTimeout(()=>inp.focus(),40); }
-  function cerrarB(){ box.classList.remove("open"); out.hidden=true; inp.value=""; setTimeout(()=>{box.hidden=true;},180); }
-  btn&&btn.addEventListener("click",()=>box.hidden?abrirB():cerrarB());
-  cerrar&&cerrar.addEventListener("click",cerrarB);
-  const norm=t=>String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-
-  /* índice: asignaturas, profesores, aulas y fechas evaluables */
-  const idx=[];
-  Object.keys(SUBJ).forEach(k=>{
-    const S=SUBJ[k];
-    idx.push({t:S.n, s:`${S.ects} ECTS · ${S.dept} · ${S.cam==="GET"?"Getafe":"Leganés"}`, tab:"asignaturas", c:S.c, k:[S.n,S.ab,S.dept]});
-  });
-  PROFS.forEach(p=>{
-    const S=SUBJ[p.id];
-    idx.push({t:p.name, s:`${S.n}${p.office?" · "+p.office:""}`, tab:"profesorado", c:S.c, k:[p.name,p.mail,p.office,S.n]});
-  });
-  const aulas={};
-  CLASSES.forEach(c=>{ (aulas[c.au]=aulas[c.au]||[]).push(SUBJ[c.id].n); });
-  Object.keys(aulas).forEach(a=>{
-    idx.push({t:a, s:[...new Set(aulas[a])].join(", "), tab:"horario", c:"#8B95A3", k:[a]});
-  });
-  CAL.forEach(e=>{
-    const S=SUBJ[e.id];
-    idx.push({t:e.what, s:`${S.n} · ${e.label}${e.aula?" · "+e.aula:""}`, tab:"calendario", c:S.c, k:[e.what,S.n,S.ab,e.label,e.aula,e.formato]});
-  });
-
-  function buscar(q){
-    const n=norm(q);
-    if(n.length<2) return [];
-    return idx.filter(x=>x.k.filter(Boolean).some(v=>norm(v).includes(n))).slice(0,12);
-  }
-  inp.addEventListener("input",()=>{
-    const r=buscar(inp.value);
-    if(!r.length){ out.hidden=true; out.innerHTML=""; return; }
-    out.hidden=false;
-    out.innerHTML=r.map(x=>`<button class="qrow" data-tab="${x.tab}"><i style="background:${x.c}"></i>`+
-      `<span><b>${esc(x.t)}</b><em>${esc(x.s)}</em></span></button>`).join("");
-  });
-  out.addEventListener("click",ev=>{
-    const b=ev.target.closest(".qrow"); if(!b)return;
-    location.hash=b.dataset.tab;
-    cerrarB();
-  });
-  document.addEventListener("click",ev=>{ if(!ev.target.closest(".srch")&&!ev.target.closest("#qBtn")) out.hidden=true; });
-  inp.addEventListener("keydown",ev=>{ if(ev.key==="Escape") cerrarB(); });
-})();
-
 /* --- notas para Claude: texto plano, guardado en la nube --- */
 (function(){
   const ta=$("#notasTxt"), est=$("#notasEstado"); if(!ta) return;
