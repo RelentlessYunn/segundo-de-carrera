@@ -96,7 +96,16 @@ function pintarResumen(k){
   if(box.dataset.k===k && !box.hidden){ box.hidden=true; box.dataset.k=""; return; }
   box.dataset.k=k;
   box.innerHTML=`<button class="ev-close peek-x" aria-label="Cerrar">×</button>`+
-    window.fichaHTML(k,{acordeon:false, scope:"peek"});
+    window.fichaHTML(k,{acordeon:false, scope:"peek", editable:false});
+  /* copia las notas de la ficha principal, que es donde se editan */
+  box.querySelectorAll('.g-input[data-scope="peek"]').forEach(inp=>{
+    const origen=document.getElementById(inp.id.replace("g_peek_","g_main_"));
+    if(origen) inp.value=origen.value;
+  });
+  if(window.recalcular) window.recalcular(k,"peek");
+  const nota=box.querySelector(".calc");
+  if(nota) nota.insertAdjacentHTML("beforeend",
+    `<div class="calc-ro">Las notas se editan en <a href="#asignaturas">Asignaturas</a>.</div>`);
   box.hidden=false;
   box.scrollIntoView({block:"nearest",behavior:"smooth"});
 }
@@ -275,7 +284,7 @@ document.addEventListener("click",ev=>{
 
   window.fichaHTML=function(k,opts){
     opts=opts||{};
-    const acc=opts.acordeon!==false, sc=opts.scope||"main";
+    const acc=opts.acordeon!==false, sc=opts.scope||"main", editable=opts.editable!==false;
     const S=SUBJ[k], E=EVAL[k];
     const cls=CLASSES.filter(c=>c.id===k).sort((a,b)=>a.d-b.d||a.a-b.a);
     const profs=PROFS.filter(p=>p.id===k);
@@ -319,8 +328,9 @@ document.addEventListener("click",ev=>{
         const tope=esPts?(b[1]/10):10;
         pE+=`<div class="calc-row"><label for="g_${sc}_${k}_${i}">${esc(b[0])} `+
             `<span style="color:var(--ink-3)">(${esPts?"máx. "+tope+" ptos":b[1]+"%"})</span></label>`+
-            `<input type="number" id="g_${sc}_${k}_${i}" min="0" max="${tope}" step="0.1" placeholder="Nota" `+
-            `data-subj="${k}" data-scope="${sc}" data-w="${b[1]}" class="g-input"></div>`;
+            `<input type="number" id="g_${sc}_${k}_${i}" min="0" max="${tope}" step="0.1" `+
+            `placeholder="${editable?"Nota":"—"}" ${editable?"":"readonly tabindex=\"-1\""} `+
+            `data-subj="${k}" data-scope="${sc}" data-w="${b[1]}" class="g-input${editable?"":" ro"}"></div>`;
       });
       pE+=`<div class="calc-res" id="res-${sc}-${k}"><span>Acumulado: <b>0.00</b> ptos</span></div></div>`;
     }

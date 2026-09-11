@@ -647,3 +647,9 @@ details.reco[open]>summary{color:var(--ink)}
 }
 .peek-x:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
 .peek[hidden]{display:none}
+
+/* ---------- calculadora de solo lectura ---------- */
+.g-input.ro{background:#F1F4F7;color:var(--ink-2);border-color:var(--rule-2);cursor:default}
+.g-input.ro:focus{outline:none}
+.calc-ro{margin-top:10px;padding-top:9px;border-top:1px dashed var(--rule);font-size:.76rem;color:var(--ink-3)}
+.calc-ro a{color:var(--ink-2);font-weight:600}
