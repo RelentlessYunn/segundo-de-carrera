@@ -88,6 +88,59 @@ const semanaProgreso=(()=>{
   return semanaActual||0;
 })();
 
+
+/* Resumen rápido de una asignatura, para el visor de día */
+function pintarResumen(k){
+  const box=document.getElementById("subjPeek"); if(!box) return;
+  const S=SUBJ[k], E=EVAL[k];
+  if(box.dataset.k===k && !box.hidden){ box.hidden=true; box.dataset.k=""; return; }
+  box.dataset.k=k;
+
+  const clases=CLASSES.filter(c=>c.id===k).sort((a,b)=>a.d-b.d||a.a-b.a);
+  const profes=PROFS.filter(p=>p.id===k&&p.rol);
+  const coord=PROFS.find(p=>p.id===k&&p.coord);
+  const hoyKey=isoD(new Date());
+  const proximas=CAL.filter(e=>e.id===k&&e.date>=hoyKey).slice(0,3);
+
+  let h=`<div class="peek-head" style="border-left-color:${S.c}">`+
+    `<b style="color:${S.c}">${esc(S.n)}</b>`+
+    `<span class="fact fact-${S.cam==="GET"?"get":"leg"}">${S.cam==="GET"?"Getafe":"Leganés"}</span>`+
+    `<span class="fact">grupo ${S.grp}</span>`+
+    `<button class="ev-close" aria-label="Cerrar">×</button></div><div class="peek-body">`;
+
+  h+=`<div><h5>Horario</h5><ul class="plain">`+clases.map(c=>
+      `<li><span><b>${DAYS[c.d]}</b> ${esc(c.t)}</span><span class="d">${hhmm(c.a)}–${hhmm(c.b)} <span class="aula">${esc(c.au)}</span></span></li>`).join("")+`</ul></div>`;
+
+  h+=`<div><h5>Quién la da</h5><ul class="plain">`+profes.map(p=>
+      `<li><span>${esc(p.name)}</span><span class="d">${esc(p.mail)}</span></li>`).join("")+
+      (coord?`<li><span>${esc(coord.name)}</span><span class="d">coordina</span></li>`:"")+`</ul></div>`;
+
+  h+=`<div><h5>Evaluación</h5>`;
+  if(E.bar){
+    h+=`<ul class="plain">`+E.bar.map(b=>`<li><span>${esc(b[0])}</span><span class="d">${b[1]}%</span></li>`).join("")+`</ul>`;
+    h+=`<div class="min">${E.min}</div>`;
+  } else h+=`<p class="nodata">Sin datos.</p>`;
+  h+=`</div>`;
+
+  h+=`<div><h5>Lo siguiente</h5>`+
+    (proximas.length
+      ? `<ul class="plain">`+proximas.map(e=>`<li><span>${esc(e.what)}</span><span class="d">${esc(e.label)}</span></li>`).join("")+`</ul>`
+      : `<p class="nodata">Nada pendiente.</p>`)+
+    `<a class="mailbtn peek-link" href="#asignaturas">Ver ficha completa</a></div>`;
+
+  box.innerHTML=h+`</div>`;
+  box.hidden=false;
+  box.scrollIntoView({block:"nearest",behavior:"smooth"});
+}
+document.addEventListener("click",ev=>{
+  const t=ev.target.closest("[data-peek]");
+  if(t){ pintarResumen(t.dataset.peek); return; }
+  const box=document.getElementById("subjPeek");
+  if(box && ev.target.classList.contains("ev-close") && ev.target.closest("#subjPeek")){
+    box.hidden=true; box.dataset.k="";
+  }
+});
+
 /* --- rejilla --- */
 (function(){
  $("#calhead").innerHTML="<div></div>"+DAYS.map(d=>"<div>"+d+"</div>").join("");
@@ -188,10 +241,10 @@ const semanaProgreso=(()=>{
       const m=hoy.getHours()*60+hoy.getMinutes();
       $("#todayList").innerHTML=cs.map(c=>{
         const S=SUBJ[c.id], on=esHoy&&m>=c.a&&m<=c.b;
-        return `<div class="trow${on?" now":""}"><span class="sw" style="background:${S.c}"></span>`+
+        return `<button class="trow tap${on?" now":""}" data-peek="${c.id}"><span class="sw" style="background:${S.c}"></span>`+
           `<time>${hhmm(c.a)}–${hhmm(c.b)}</time>`+
           `<div class="m"><b>${esc(S.n)}</b><em>${esc(c.t)} · ${S.cam==="GET"?"Getafe":"Leganés"}</em></div>`+
-          `<span class="aula">${esc(c.au)}</span></div>`;
+          `<span class="aula">${esc(c.au)}</span></button>`;
       }).join("");
       const campus=[...new Set(cs.map(c=>SUBJ[c.id].cam==="GET"?"Getafe":"Leganés"))].join(" y ");
       $("#todayMeta").textContent=cs.length+" clases · "+campus+(sem?" · semana "+sem.n:"");
