@@ -482,7 +482,6 @@ initData();
   let cur=months.findIndex(mo=>mo.y===hoy.getFullYear()&&mo.m===hoy.getMonth());
   if(cur<0) cur=0;
 
-  fb.innerHTML="";
 
 
 
