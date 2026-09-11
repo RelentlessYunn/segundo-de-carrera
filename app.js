@@ -25,6 +25,35 @@ function rolChips(p){
 const hhmm=m=>String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");
 const CURSO_INI=new Date(2026,8,7), CURSO_FIN=new Date(2026,11,12);
 const isoD=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const TIPO={ex:"Examen",en:"Entrega",cl:"Clase",cf:"Choque de horario"};
+const TIPO_LARGO={ex:"Examen",en:"Entrega",cl:"Laboratorio o clase",cf:"Conflicto de horario"};
+
+/* Panel de detalle de una fecha. Lo usan el visor de día y el calendario. */
+function pintarDetalle(idBox, ev){
+  const box=document.getElementById(idBox); if(!box) return;
+  const S=SUBJ[ev.id];
+  const filas=[["Cuándo", ev.label+(ev.hora?" · "+ev.hora:"")]];
+  if(ev.aula) filas.push(["Dónde", ev.aula]);
+  if(ev.formato) filas.push(["Formato", ev.formato]);
+  filas.push(["Peso", ev.w]);
+  if(ev.temario) filas.push(["Entra", ev.temario]);
+  box.hidden=false;
+  box.style.borderLeftColor=S.c;
+  box.innerHTML=`<div class="ev-head"><b style="color:${S.c}">${TIPO_LARGO[ev.type]} de ${esc(S.n)}</b>`+
+    `<button class="ev-close" aria-label="Cerrar">×</button></div>`+
+    `<div class="ev-meta">Semana ${ev.wk}</div>`+
+    `<dl class="ev-dl">`+filas.map(f=>`<dt>${esc(f[0])}</dt><dd>${esc(f[1])}</dd>`).join("")+`</dl>`+
+    (ev.temario?"":`<p class="nodata">Temario concreto: pendiente de que lo publique el profesor.</p>`);
+  box.scrollIntoView({block:"nearest",behavior:"smooth"});
+}
+/* Cierra un panel al pulsar la equis o fuera de él */
+function cerrarDetalleAl(idBox, selectorAbre){
+  document.addEventListener("click",ev=>{
+    const box=document.getElementById(idBox); if(!box) return;
+    if(ev.target.classList.contains("ev-close")){ box.hidden=true; return; }
+    if(!ev.target.closest(selectorAbre) && !ev.target.closest("#"+idBox)) box.hidden=true;
+  });
+}
 
 /* Semanas de un cuatrimestre, calculadas de sus fechas de inicio y fin. */
 function semanasDe(c){
@@ -97,8 +126,7 @@ const semanaProgreso=(()=>{
 (function(){
   const DN=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
   const MN=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-  const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-  const hoy=new Date(); const hoyStr=iso(hoy);
+  const hoy=new Date(); const hoyStr=isoD(hoy);
   let ver=new Date(hoy);
 
   /* contador de semana en la cabecera */
@@ -130,7 +158,7 @@ const semanaProgreso=(()=>{
     .sort((x,y)=>x.a-y.a);
 
   function draw(){
-    const key=iso(ver), idx=ver.getDay()-1;
+    const key=isoD(ver), idx=ver.getDay()-1;
     const esHoy=key===hoyStr;
     $("#todayName").textContent=(esHoy?"Hoy · ":"")+DN[ver.getDay()]+", "+ver.getDate()+" de "+MN[ver.getMonth()];
 
@@ -186,46 +214,30 @@ const semanaProgreso=(()=>{
   /* qué cae en los siete días siguientes al que estás viendo */
   function proximos(desde){
     const a=new Date(desde), b=new Date(desde); b.setDate(b.getDate()+7);
-    const ka=iso(a), kb=iso(b);
+    const ka=isoD(a), kb=isoD(b);
     const evs=CAL.filter(e=>e.date>=ka&&e.date<=kb).sort((x,y)=>x.date.localeCompare(y.date));
     const box=$("#countdown");
     if(!evs.length){
       box.innerHTML='<div class="n7-empty">Nada evaluable en los próximos siete días.</div>';
       return;
     }
-    const T={ex:"Examen",en:"Entrega",cl:"Clase",cf:"Choque de horario"};
     box.innerHTML=`<div class="n7-head">Próximos 7 días</div>`+
       evs.map(e=>{
         const S=SUBJ[e.id];
-        const d=Math.round((new Date(e.date+"T12:00:00")-new Date(iso(desde)+"T12:00:00"))/86400000);
+        const d=Math.round((new Date(e.date+"T12:00:00")-new Date(isoD(desde)+"T12:00:00"))/86400000);
         const cuando=d===0?"hoy":d===1?"mañana":"en "+d+" días";
         return `<button class="n7-card ${e.type}" data-ev="${CAL.indexOf(e)}" style="--sc:${S.c}">`+
-          `<span class="n7-txt"><b>${T[e.type]} de ${esc(S.n)}</b><em>${esc(e.hora||e.label)}</em></span>`+
+          `<span class="n7-txt"><b>${TIPO[e.type]} de ${esc(S.n)}</b><em>${esc(e.hora||e.label)}</em></span>`+
           `<span class="n7-when">${cuando}</span></button>`;
       }).join("");
   }
 
-  /* detalle al pulsar, igual que en el calendario */
+  /* detalle al pulsar */
   document.addEventListener("click",ev=>{
-    const box=document.getElementById("hoy-detail"); if(!box) return;
-    if(ev.target.classList.contains("ev-close")){ box.hidden=true; return; }
     const card=ev.target.closest(".n7-card");
-    if(!card){ if(!ev.target.closest("#hoy-detail")) box.hidden=true; return; }
-    const e=CAL[parseInt(card.dataset.ev)], S=SUBJ[e.id];
-    const T={ex:"Examen",en:"Entrega",cl:"Laboratorio o clase",cf:"Conflicto de horario"};
-    const filas=[["Cuándo", e.label+(e.hora?" · "+e.hora:"")]];
-    if(e.aula) filas.push(["Dónde", e.aula]);
-    if(e.formato) filas.push(["Formato", e.formato]);
-    filas.push(["Peso", e.w]);
-    if(e.temario) filas.push(["Entra", e.temario]);
-    box.hidden=false; box.style.borderLeftColor=S.c;
-    box.innerHTML=`<div class="ev-head"><b style="color:${S.c}">${T[e.type]} de ${esc(S.n)}</b>`+
-      `<button class="ev-close" aria-label="Cerrar">×</button></div>`+
-      `<div class="ev-meta">Semana ${e.wk}</div>`+
-      `<dl class="ev-dl">`+filas.map(f=>`<dt>${esc(f[0])}</dt><dd>${esc(f[1])}</dd>`).join("")+`</dl>`+
-      (e.temario?"":`<p class="nodata">Temario concreto: pendiente de que lo publique el profesor.</p>`);
-    box.scrollIntoView({block:"nearest",behavior:"smooth"});
+    if(card) pintarDetalle("hoy-detail", CAL[parseInt(card.dataset.ev)]);
   });
+  cerrarDetalleAl("hoy-detail",".n7-card");
 
   $("#dPrev").addEventListener("click",()=>{ver.setDate(ver.getDate()-1);draw();});
   $("#dNext").addEventListener("click",()=>{ver.setDate(ver.getDate()+1);draw();});
@@ -266,7 +278,12 @@ const semanaProgreso=(()=>{
       if(p.note) x+=`<p class='nodata' style='margin:9px 0 0'>${esc(p.note)}</p>`;
       if(p.mail){
         const sub=encodeURIComponent(`Shengyu Chen — Doble Grado Informática + ADE — ${S.n} — grupo ${S.grp}`);
-        x+=`<a class='mailbtn' href='mailto:${p.mail}?subject=${sub}'>Escribir correo</a>`;
+        /* mailto solo funciona si hay cliente de correo configurado, así que
+           se ofrece también Gmail web y copiar la dirección */
+        x+=`<div class="mailrow">`+
+           `<a class="mailbtn" target="_blank" rel="noopener" href="https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(p.mail)}&su=${sub}">Escribir en Gmail</a>`+
+           `<button class="mailcopy" data-mail="${p.mail}">Copiar dirección</button>`+
+           `</div>`;
       }
       return x+"</div>";
     }).join("")+"</div>";
@@ -357,6 +374,18 @@ const semanaProgreso=(()=>{
   };
   document.addEventListener("input",e=>{
     if(e.target.classList.contains("g-input")) window.recalcular(e.target.dataset.subj);
+  });
+
+  document.addEventListener("click",async e=>{
+    const b=e.target.closest(".mailcopy"); if(!b) return;
+    const txt=b.dataset.mail, antes=b.textContent;
+    try{
+      if(navigator.clipboard) await navigator.clipboard.writeText(txt);
+      else { const t=document.createElement("textarea"); t.value=txt; document.body.appendChild(t);
+             t.select(); document.execCommand("copy"); t.remove(); }
+      b.textContent="Copiada"; b.classList.add("ok");
+    }catch(err){ b.textContent=txt; }
+    setTimeout(()=>{ b.textContent=antes; b.classList.remove("ok"); },1600);
   });
 })();
 
@@ -460,16 +489,14 @@ initData();
 (function(){
   const MN=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
   const DOW=["L","M","X","J","V","S","D"];
-  const TIPO={ex:"Examen",en:"Entrega",cl:"Lab / clase",cf:"Conflicto"};
-
+  
   /* meses del curso: de septiembre 2026 a junio 2027 */
   const months=[];
   for(let d=new Date(2026,8,1); d<=new Date(2027,5,1); d.setMonth(d.getMonth()+1))
     months.push({y:d.getFullYear(),m:d.getMonth()});
 
   const hoy=new Date();
-  const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-  const hoyStr=iso(hoy);
+  const hoyStr=isoD(hoy);
 
   const wkTag=dt=>{
     if(dt.getDay()!==1) return "";
@@ -505,7 +532,7 @@ initData();
     }
 
     for(let d=1;d<=total;d++){
-      const dt=new Date(mo.y,mo.m,d), key=iso(dt);
+      const dt=new Date(mo.y,mo.m,d), key=isoD(dt);
       const finde=dt.getDay()===0||dt.getDay()===6;
       const sin=ACAD.sinClase.find(x=>x.date===key);
       const tr=tramoDe(key);
@@ -540,18 +567,10 @@ initData();
   }
 
   document.addEventListener("click",ev=>{
-    const box=document.getElementById("ev-detail"); if(!box) return;
-    if(ev.target.classList.contains("ev-close")){ box.hidden=true; return; }
     const chip=ev.target.closest(".m-chip");
-    if(!chip){ if(!ev.target.closest("#ev-detail")) box.hidden=true; return; }
-    const e=CAL[parseInt(chip.dataset.ev)], S=SUBJ[e.id];
-    const T={ex:"Examen",en:"Entrega",cl:"Laboratorio o clase",cf:"Conflicto de horario"};
-    box.hidden=false; box.style.borderLeftColor=S.c;
-    box.innerHTML=`<div class="ev-head"><b style="color:${S.c}">${esc(S.n)}</b>`+
-      `<span class="pill p-${e.type}">${esc(e.w)}</span><button class="ev-close" aria-label="Cerrar">×</button></div>`+
-      `<div class="ev-meta">${esc(e.label)} · semana ${e.wk} · ${T[e.type]}</div><p>${esc(e.what)}</p>`;
-    box.scrollIntoView({block:"nearest",behavior:"smooth"});
+    if(chip) pintarDetalle("ev-detail", CAL[parseInt(chip.dataset.ev)]);
   });
+  cerrarDetalleAl("ev-detail",".m-chip");
 
   document.addEventListener("click",ev=>{
     const b=ev.target.closest("[data-go]"); if(!b)return;
