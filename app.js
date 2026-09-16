@@ -725,6 +725,12 @@ initData();
     if(!PROFS.some(p=>p.id===k&&p.rol)) errores.push(`${SUBJ[k].n}: sin nadie que dé clase.`);
   });
   CAL.forEach(e=>{ if(!SUBJ[e.id]) errores.push(`Fecha ${e.label}: asignatura desconocida (${e.id}).`); });
+  /* una prueba presencial tiene que caer en un día con clase de esa asignatura */
+  CAL.filter(e=>!e.online&&e.type!=="cf").forEach(e=>{
+    const i=new Date(e.date+"T12:00:00").getDay()-1;
+    const hay=CLASSES.some(c=>c.id===e.id&&c.d===i&&(c.dates?c.dates.includes(e.date):(e.date>=c.from&&e.date<=c.to)));
+    if(!hay) errores.push(`${SUBJ[e.id].n}: "${e.what.slice(0,40)}" cae el ${e.date}, día sin clase de esa asignatura.`);
+  });
   CLASSES.forEach(c=>{ if(!c.from&&!c.dates) errores.push(`Clase de ${SUBJ[c.id].ab} el día ${c.d}: sin fechas.`); });
   if(errores.length) console.warn("Revisar datos:\n- "+errores.join("\n- "));
 })();
