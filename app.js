@@ -691,28 +691,35 @@ initData();
   const UMBRAL=70;
   let x0=null,y0=null,dx=0,arrastrando=false,bloqueado=false;
 
-  /* Solo se bloquea el gesto si el dedo está sobre algo que de verdad
-     puede desplazarse en horizontal, no por el simple hecho de ser tabla. */
-  function zonaLibre(el){
-    if(el.closest("input,textarea,select")) return false;
+  /* Devuelve el contenedor desplazable en horizontal bajo el dedo, si lo hay. */
+  function scrollerHorizontal(el){
     let n=el;
     while(n && n!==document.body){
       if(n.scrollWidth-n.clientWidth>4){
-        const est=getComputedStyle(n).overflowX;
-        if(est==="auto"||est==="scroll") return false;
+        const ox=getComputedStyle(n).overflowX;
+        if(ox==="auto"||ox==="scroll") return n;
       }
       n=n.parentElement;
     }
-    return true;
+    return null;
   }
+  /* Solo se cede el gesto si esa tabla aún puede desplazarse hacia ese lado. */
+  function cedeAlScroller(sc,mx){
+    if(!sc) return false;
+    const max=sc.scrollWidth-sc.clientWidth;
+    return mx<0 ? sc.scrollLeft<max-1 : sc.scrollLeft>1;
+  }
+
   const idx=()=>orden.indexOf((location.hash.slice(1)||"horario"));
 
   function poner(t,op){ if(lienzo){ lienzo.style.transform=`translate3d(${t}px,0,0)`; lienzo.style.opacity=op; } }
   function limpiar(){ if(lienzo){ lienzo.style.transform=""; lienzo.style.opacity=""; lienzo.classList.remove("arrastrando","soltando"); } }
 
+  let scroller=null;
   document.addEventListener("touchstart",e=>{
-    if(e.touches.length!==1||!zonaLibre(e.target)||!lienzo){x0=null;return;}
+    if(e.touches.length!==1||!lienzo||e.target.closest("input,textarea,select")){x0=null;return;}
     x0=e.touches[0].clientX; y0=e.touches[0].clientY;
+    scroller=scrollerHorizontal(e.target);
     dx=0; arrastrando=false; bloqueado=false;
   },{passive:true});
 
@@ -720,7 +727,8 @@ initData();
     if(x0===null) return;
     const mx=e.touches[0].clientX-x0, my=e.touches[0].clientY-y0;
     if(!arrastrando&&!bloqueado){
-      if(Math.abs(my)>10&&Math.abs(my)>Math.abs(mx)){ bloqueado=true; return; }   /* está haciendo scroll */
+      if(Math.abs(my)>10&&Math.abs(my)>Math.abs(mx)){ bloqueado=true; return; }   /* está haciendo scroll vertical */
+      if(cedeAlScroller(scroller,mx)){ bloqueado=true; return; }                  /* la tabla aún se puede mover */
       if(Math.abs(mx)>12){ arrastrando=true; lienzo.classList.add("arrastrando"); }
       else return;
     }
