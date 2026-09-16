@@ -75,7 +75,7 @@ const CAL=[
  {id:"is",  date:"2026-10-02",wk:"S4", label:"vie 2 oct",   what:"Práctica en aula, 17:15",w:"clase",type:"cl"},
  {id:"ed",  date:"2026-10-05",wk:"S5", label:"lun 5 oct",   what:"Sesión extra del 1081, 12:30, aula 4.0.E06 — choca con Economía",w:"conflicto",type:"cf"},
  {id:"eco", date:"2026-10-07",wk:"S5", label:"mié 7 oct",   what:"Evaluación en clase 1, en grupo reducido",w:"12 % final",type:"ex",hora:"10:45–12:15",aula:"Aula 10.1.6",formato:"Escrito en clase, folios en blanco y bolígrafo"},
- {id:"is",  date:"2026-10-09",wk:"S5", label:"5–9 oct",     what:"Examen parcial I de teoría",w:"15 %",type:"ex"},
+ {id:"is",  date:"2026-10-09",wk:"S5", label:"5–9 oct",     what:"Examen parcial I, en una clase de teoría",w:"15 %",type:"ex",hora:"10:45–12:15 · día por confirmar",aula:"4.0.E04 (martes) o 2.3.D01 (jueves)",formato:"Presencial, en horario de teoría"},
  {id:"ed",  date:"2026-10-15",wk:"S6", label:"jue 15 oct",  what:"Primer parcial: bloque 1, ítems 1 a 5. Presencial y escrito, aula 2.3.C01",w:"25 %",type:"ex",hora:"09:00–10:30",aula:"Aula 2.3.C01",formato:"Presencial y escrito"},
  {id:"is",  date:"2026-10-16",wk:"S6", label:"vie 16 oct",  what:"Práctica en aula, 17:15",w:"clase",type:"cl"},
  {id:"ec",  date:"2026-10-23",wk:"S7", label:"19–23 oct",   what:"Laboratorio 2 y entrega de la Práctica 1",w:"entrega",type:"en"},
@@ -91,9 +91,11 @@ const CAL=[
  {id:"eco", date:"2026-11-18",wk:"S11",label:"mié 18 nov",  what:"Evaluación en clase 2",w:"12 % final",type:"ex",hora:"10:45–12:15",aula:"Aula 10.1.6",formato:"Escrito en clase, folios en blanco y bolígrafo"},
  {id:"ec",  date:"2026-11-20",wk:"S11",label:"16–20 nov",   what:"Laboratorio 4",w:"laboratorio",type:"cl"},
  {id:"is",  date:"2026-11-20",wk:"S11",label:"vie 20 nov",  what:"Práctica en aula, 17:15",w:"clase",type:"cl"},
+ {id:"est", date:"2026-10-19",wk:"S7", label:"semana 7",     what:"Primer parcial: temas 1 y 2. En la clase reducida (prácticas del lunes)",w:"17,5 %",type:"ex",hora:"09:00–10:30 · día por confirmar",aula:"Aula 5.1.04",formato:"Presencial, con formulario oficial"},
+ {id:"est", date:"2026-11-23",wk:"S12",label:"semana 12",    what:"Segundo parcial: temas 3 y 4. En la clase reducida (prácticas del lunes)",w:"17,5 %",type:"ex",hora:"09:00–10:30 · día por confirmar",aula:"Aula 5.1.04",formato:"Presencial, con formulario oficial"},
  {id:"talf",date:"2026-11-27",wk:"S12",label:"vie 27 nov",  what:"JFLAP 3 · autómatas a pila, tema 6",w:"obligatorio",type:"en",hora:"Sin cerrar: 10:45 o 19:00–21:00",aula:"INF 7.0.J04",formato:"Práctica en parejas, con entrega"},
  {id:"ed",  date:"2026-11-30",wk:"S13",label:"lun 30 nov",  what:"Sesión extra del 1081, 12:30, aula 2.3.C04 — choca con Economía",w:"conflicto",type:"cf"},
- {id:"is",  date:"2026-12-04",wk:"S13",label:"30 nov – 4 dic",what:"Examen parcial II de teoría",w:"15 %",type:"ex"},
+ {id:"is",  date:"2026-12-04",wk:"S13",label:"30 nov – 4 dic",what:"Examen parcial II, en una clase de teoría",w:"15 %",type:"ex",hora:"10:45–12:15 · día por confirmar",aula:"4.0.E04 (martes) o 2.3.D01 (jueves)",formato:"Presencial, en horario de teoría"},
  {id:"ec",  date:"2026-12-04",wk:"S13",label:"30 nov – 4 dic",what:"Entrega de la Práctica 2",w:"entrega",type:"en"},
  {id:"eco", date:"2026-12-07",wk:"S14",label:"7–12 dic",    what:"Test online 2 en Aula Global",w:"8 % final",type:"ex",hora:"Abre lunes 9:00, cierra sábado 14:00",formato:"10 preguntas, intentos ilimitados de 8 min 30, cuenta el mejor"},
  {id:"dcp", date:"2026-12-09",wk:"S14",label:"mié 9 dic",   what:"Caso práctico final de recapitulación, en clase",w:"2 ptos / 10",type:"ex",hora:"12:30–14:00",aula:"Aula 6.1.02",formato:"Caso práctico con los textos legales delante"},
@@ -179,3 +181,8 @@ const AVISOS={1:{
 13:["Parcial II de Ingeniería del Software y entrega de la práctica 2 de Estructura de Computadores.","Última sesión extra del 1081 el lunes 30, con el mismo choque de siempre."],
 14:["Cinco cosas en cinco días: test online 2 de Economía, entrega del trabajo de Ingeniería del Software, caso final de Derecho Civil, JFLAP 4 y EC2 de TALF.","Si has ido adelantando el trabajo de Ingeniería del Software, esta semana es llevadera. Si no, va a doler.","Las clases acaban el viernes 11. Los exámenes ordinarios van del 16 al 22 de diciembre y del 11 al 25 de enero."]
 }, 2:{}};
+/* ===== Tareas por asignatura. Añade líneas aquí conforme salgan. ===== */
+const TAREAS={
+ ed:[], talf:[], is:[], ec:[], eco:[], dcp:[],
+ est:["Hacer el curso de IA de SPOC"]
+};

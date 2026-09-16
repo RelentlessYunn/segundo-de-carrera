@@ -339,6 +339,13 @@ document.addEventListener("click",ev=>{
     let pF=`<div class="panel"><h4>Fechas propias</h4>`;
     pF+=dates.length?`<ul class="plain">`+dates.map(d=>`<li><span>${esc(d.what)}</span><span class='d'>${esc(d.label)} <span class="pill p-${d.type}">${esc(d.w)}</span></span></li>`).join("")+"</ul>"
       :`<p class='nodata'>Sin fechas evaluables registradas.</p>`;
+    const tareas=(typeof TAREAS!=="undefined"&&TAREAS[k])||[];
+    pF+=`<h4 style="margin-top:18px">Tareas</h4>`;
+    pF+=tareas.length
+      ? `<ul class="tareas">`+tareas.map((t,i)=>
+          `<li><input type="checkbox" id="tk_${sc}_${k}_${i}"${editable?"":" disabled"}>`+
+          `<label for="tk_${sc}_${k}_${i}">${esc(t)}</label></li>`).join("")+`</ul>`
+      : `<p class="nodata">Nada pendiente.</p>`;
     pF+=`</div>`;
 
     /* Dos columnas que se apilan por separado: así ninguna estira a la otra */

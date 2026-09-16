@@ -653,3 +653,12 @@ details.reco[open]>summary{color:var(--ink)}
 .g-input.ro:focus{outline:none}
 .calc-ro{margin-top:10px;padding-top:9px;border-top:1px dashed var(--rule);font-size:.76rem;color:var(--ink-3)}
 .calc-ro a{color:var(--ink-2);font-weight:600}
+
+/* ---------- tareas por asignatura ---------- */
+ul.tareas{list-style:none;margin:0;padding:0;font-size:.85rem}
+ul.tareas li{display:flex;gap:9px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--rule-2)}
+ul.tareas li:last-child{border-bottom:0}
+ul.tareas input{margin-top:2px;width:15px;height:15px;flex:0 0 auto;accent-color:var(--go)}
+ul.tareas input:checked+label{opacity:.45;text-decoration:line-through}
+ul.tareas label{cursor:pointer}
+ul.tareas input:disabled+label{cursor:default}
