@@ -711,15 +711,15 @@ nav.bar a[data-tab] .lbl-movil{display:none}
 
   /* ---- barra inferior ---- */
   nav.bar{
-    position:fixed;top:auto;bottom:0;left:0;right:0;width:100%;z-index:90;
+    position:fixed!important;top:auto!important;bottom:-2px;left:0;right:0;width:100%;z-index:999;
     background:#fff;backdrop-filter:none;
     border-top:1px solid var(--rule);border-bottom:0;
     /* la segunda sombra pinta blanco hacia abajo: tapa cualquier hueco
        que quede entre la barra y el borde real de la pantalla */
-    box-shadow:0 -1px 14px rgba(23,28,36,.10), 0 60px 0 0 #fff;
+    box-shadow:0 -1px 14px rgba(23,28,36,.10), 0 240px 0 0 #fff;
     overflow:visible;
-    padding-top:0;
-    padding-bottom:10px;
+    padding-top:6px;
+    padding-bottom:34px;
   }
   nav.bar .wrap{padding:0;gap:0;max-width:none}
   .navtools{display:none!important}
@@ -735,16 +735,16 @@ nav.bar a[data-tab] .lbl-movil{display:none}
 
   nav.bar a[data-tab]{
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
-    height:56px;padding:0 2px;box-sizing:border-box;
+    height:62px;padding:0 2px;box-sizing:border-box;
     border-radius:0;background:none!important;color:var(--ink-3);
-    font-size:.56rem;font-weight:600;min-width:0;
+    font-size:.6rem;font-weight:600;min-width:0;
   }
   nav.bar a[data-tab] .ic{
     display:flex;align-items:center;justify-content:center;
-    width:36px;height:30px;border-radius:10px;flex:0 0 auto;
+    width:40px;height:34px;border-radius:11px;flex:0 0 auto;
     transition:background .18s ease,color .18s ease;
   }
-  nav.bar a[data-tab] svg{display:block;width:20px;height:20px}
+  nav.bar a[data-tab] svg{display:block;width:22px;height:22px}
   nav.bar a[data-tab] span.lbl{display:none}
   nav.bar a[data-tab] .lbl-movil{
     display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1;
@@ -753,10 +753,10 @@ nav.bar a[data-tab] .lbl-movil{display:none}
   nav.bar a[data-tab].on .ic{background:#E7ECF1}
 
   /* el principal: círculo siempre visible, dentro de su caja */
-  .tabs a[data-tab="horario"] .ic{width:36px;height:36px;border-radius:50%;background:#EDF0F4;color:var(--ink-2)}
+  .tabs a[data-tab="horario"] .ic{width:40px;height:40px;border-radius:50%;background:#EDF0F4;color:var(--ink-2)}
   .tabs a[data-tab="horario"].on .ic{background:var(--ink);color:#fff}
 
-  body{padding-bottom:86px}
+  body{padding-bottom:120px}
   section{padding-top:20px}
   footer{padding-bottom:12px}
 
@@ -808,7 +808,7 @@ nav.bar a[data-tab] .lbl-movil{display:none}
 
 @supports (padding: env(safe-area-inset-bottom)){
   @media (max-width:820px){
-    nav.bar{padding-bottom:calc(env(safe-area-inset-bottom) + 8px)}
-    body{padding-bottom:calc(env(safe-area-inset-bottom) + 80px)}
+    nav.bar{padding-bottom:calc(env(safe-area-inset-bottom) + 26px)}
+    body{padding-bottom:calc(env(safe-area-inset-bottom) + 112px)}
   }
 }
