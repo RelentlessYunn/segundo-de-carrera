@@ -674,7 +674,11 @@ initData();
         hijo.classList.remove("stagger"); void hijo.offsetWidth; hijo.classList.add("stagger");
       });
     });
-    if(scroll) window.scrollTo({top:0,behavior:"instant"});
+    if(scroll){
+      const cont=document.querySelector("body > div.wrap");
+      if(cont && cont.scrollHeight>cont.clientHeight+4) cont.scrollTop=0;
+      else window.scrollTo({top:0,behavior:"instant"});
+    }
     if(history.replaceState) history.replaceState(null,"","#"+tab);
   }
 
@@ -751,7 +755,8 @@ initData();
       poner(fuera,0);
       setTimeout(()=>{
         abrir(orden[destino],false);
-        window.scrollTo({top:0});
+        const cont=document.querySelector("body > div.wrap");
+        if(cont) cont.scrollTop=0; else window.scrollTo({top:0});
         lienzo.classList.remove("soltando");
         poner(dx<0?window.innerWidth*0.28:-window.innerWidth*0.28,0);
         requestAnimationFrame(()=>{ lienzo.classList.add("soltando"); poner(0,1);
