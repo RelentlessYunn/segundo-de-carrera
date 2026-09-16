@@ -679,7 +679,7 @@ initData();
       if(cont && cont.scrollHeight>cont.clientHeight+4) cont.scrollTop=0;
       else window.scrollTo({top:0,behavior:"instant"});
     }
-    if(history.replaceState) history.replaceState(null,"","#"+tab);
+    if(history.replaceState && !location.hash.includes("debug")) history.replaceState(null,"","#"+tab);
   }
 
   links.forEach(l=>l.addEventListener("click",ev=>{
@@ -768,8 +768,11 @@ initData();
     }
   },{passive:true});
 
-  window.addEventListener("hashchange",()=>abrir(location.hash.slice(1),true));
-  abrir(location.hash.slice(1)||"horario",false);
+  window.addEventListener("hashchange",()=>{
+    if(location.hash.includes("debug")) return;   /* no tocar el ancla de diagnóstico */
+    abrir(location.hash.slice(1),true);
+  });
+  abrir(location.hash.includes("debug")?"horario":(location.hash.slice(1)||"horario"),false);
 })();
 
 
@@ -841,7 +844,8 @@ initData();
 (function(){
   const caja=document.getElementById("dbg"); if(!caja) return;
   function medir(){
-    if(!location.hash.includes("debug")){ caja.classList.remove("on"); return; }
+    const pedido=location.hash.includes("debug")||location.search.includes("debug");
+    if(!pedido){ caja.classList.remove("on"); return; }
     caja.classList.add("on");
     const nav=document.querySelector("nav.bar");
     const body=document.body;
@@ -853,7 +857,7 @@ initData();
     document.body.appendChild(probe);
     const safe=probe.getBoundingClientRect().height; probe.remove();
     caja.textContent=
-      "v31\n"+
+      "v32\n"+
       "window.innerHeight   "+window.innerHeight+"\n"+
       "visualViewport       "+(window.visualViewport?Math.round(window.visualViewport.height):"-")+"\n"+
       "screen.height        "+screen.height+"\n"+
@@ -868,6 +872,7 @@ initData();
       "hueco bajo la barra  "+Math.round(window.innerHeight-r.bottom)+"px";
   }
   window.addEventListener("hashchange",medir);
+  document.addEventListener("click",e=>{ if(e.target.closest(".ver")) { caja.classList.toggle("on"); medir(); } });
   window.addEventListener("resize",medir);
   setTimeout(medir,300);
 })();
