@@ -662,3 +662,15 @@ ul.tareas input{margin-top:2px;width:15px;height:15px;flex:0 0 auto;accent-color
 ul.tareas input:checked+label{opacity:.45;text-decoration:line-through}
 ul.tareas label{cursor:pointer}
 ul.tareas input:disabled+label{cursor:default}
+
+/* ---------- fecha con día sin confirmar ---------- */
+.m-chip.pc{border-style:dashed}
+.m-chip.pc i{box-shadow:none;opacity:.75}
+.pc-tag{
+  font-size:.66rem;font-weight:700;padding:1px 6px;border-radius:9px;
+  background:#EEF1F5;color:var(--ink-3);border:1px dashed var(--rule);white-space:nowrap;
+}
+
+/* ---------- fechas sin día cerrado ---------- */
+.m-chip.pend i{background:transparent!important;border:2px dashed var(--sc)}
+.m-chip.pend{opacity:.85}

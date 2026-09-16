@@ -32,7 +32,7 @@ const TIPO_LARGO={ex:"Examen",en:"Entrega",cl:"Laboratorio o clase",cf:"Conflict
 function pintarDetalle(idBox, ev){
   const box=document.getElementById(idBox); if(!box) return;
   const S=SUBJ[ev.id];
-  const filas=[["Cuándo", ev.label+(ev.hora?" · "+ev.hora:"")]];
+  const filas=[["Cuándo", ev.label+(ev.hora?" · "+ev.hora:"")+(ev.sinDia?" · día sin confirmar":"")]];
   if(ev.aula) filas.push(["Dónde", ev.aula]);
   if(ev.formato) filas.push(["Formato", ev.formato]);
   filas.push(["Peso", ev.w]);
@@ -62,8 +62,9 @@ function semanasDe(c){
   const d=new Date(ini); d.setDate(d.getDate()-((d.getDay()+6)%7));
   let n=1;
   while(d<=fin){
-    const a=new Date(d), b=new Date(d); b.setDate(b.getDate()+4);
-    out.push({c:c.n, n, from:isoD(a), to:isoD(b), label:etiquetaRango(a,b)});
+    const a=new Date(d), b=new Date(d); b.setDate(b.getDate()+6);
+    const v=new Date(a); v.setDate(v.getDate()+4);
+    out.push({c:c.n, n, from:isoD(a), to:isoD(b), label:etiquetaRango(a,v)});
     d.setDate(d.getDate()+7); n++;
   }
   return out;
@@ -255,7 +256,8 @@ document.addEventListener("click",ev=>{
         const d=Math.round((new Date(e.date+"T12:00:00")-new Date(isoD(desde)+"T12:00:00"))/86400000);
         const cuando=d===0?"hoy":d===1?"mañana":"en "+d+" días";
         return `<button class="n7-card ${e.type}" data-ev="${CAL.indexOf(e)}" style="--sc:${S.c}">`+
-          `<span class="n7-txt"><b>${TIPO[e.type]} de ${esc(S.n)}</b><em>${esc(e.hora||e.label)}</em></span>`+
+          `<span class="n7-txt"><b>${TIPO[e.type]} de ${esc(S.n)}</b>`+
+          `<em>${esc(e.hora||e.label)}${e.sinDia?" · día sin confirmar":""}</em></span>`+
           `<span class="n7-when">${cuando}</span></button>`;
       }).join("");
   }
@@ -597,7 +599,7 @@ initData();
       if(marca) etiqueta=`<div class="m-tag mark">${esc(marca.t)}</div>`+etiqueta;
 
       const evs=CAL.filter(e=>e.date===key).map(e=>
-        `<button class="m-chip ${e.type}" data-ev="${CAL.indexOf(e)}" style="--sc:${SUBJ[e.id].c}"><i></i><span>${esc(SUBJ[e.id].ab)} · ${TIPO[e.type]}</span></button>`
+        `<button class="m-chip ${e.type}${e.sinDia?" pend":""}" data-ev="${CAL.indexOf(e)}" style="--sc:${SUBJ[e.id].c}"><i></i><span>${esc(SUBJ[e.id].ab)} · ${TIPO[e.type]}</span></button>`
       ).join("");
 
       html+=`<div class="${cls}">${wk}<div class="m-date">${d}</div>${etiqueta}${evs}</div>`;
@@ -726,7 +728,7 @@ initData();
   });
   CAL.forEach(e=>{ if(!SUBJ[e.id]) errores.push(`Fecha ${e.label}: asignatura desconocida (${e.id}).`); });
   /* una prueba presencial tiene que caer en un día con clase de esa asignatura */
-  CAL.filter(e=>!e.online&&e.type!=="cf").forEach(e=>{
+  CAL.filter(e=>!e.online&&!e.sinDia&&e.type!=="cf").forEach(e=>{
     const i=new Date(e.date+"T12:00:00").getDay()-1;
     const hay=CLASSES.some(c=>c.id===e.id&&c.d===i&&(c.dates?c.dates.includes(e.date):(e.date>=c.from&&e.date<=c.to)));
     if(!hay) errores.push(`${SUBJ[e.id].n}: "${e.what.slice(0,40)}" cae el ${e.date}, día sin clase de esa asignatura.`);
