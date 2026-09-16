@@ -681,63 +681,100 @@ ul.tareas input:disabled+label{cursor:default}
 .checkitem input:checked+label .tk-sub{opacity:.5}
 
 /* ==========================================================
-   MÓVIL: barra inferior tipo app + gestos
+   MÓVIL
    ========================================================== */
 nav.bar a[data-tab] svg{display:none}
+nav.bar a[data-tab] .lbl-movil{display:none}
 .hdr-notas{display:none}
 
-@media (max-width:760px){
-  /* la barra baja al pie y se comporta como una tab bar */
-  nav.bar{
-    position:fixed;top:auto;bottom:0;left:0;right:0;z-index:70;
-    background:rgba(255,255,255,.96);backdrop-filter:blur(14px);
-    border-top:1px solid var(--rule);border-bottom:0;
-    box-shadow:0 -2px 18px rgba(23,28,36,.07);
-    padding-bottom:env(safe-area-inset-bottom,0);
+@media (max-width:820px){
+  /* ---- cabecera compacta ---- */
+  header.top{padding:calc(18px + env(safe-area-inset-top,0px)) 0 20px}
+  header.top .wrap{flex-wrap:nowrap;align-items:center;gap:14px}
+  .hero{flex:1 1 auto;min-width:0;max-width:none}
+  .eyebrow{font-size:.64rem;margin-bottom:7px}
+  header.top h1{font-size:clamp(1.45rem,7vw,2rem);line-height:1.02}
+  header.top .sub{margin-top:5px;font-size:.84rem}
+  header.top .who{display:none}
+  .stats{gap:16px;margin-top:12px}
+  .stat b{font-size:1.1rem}
+  .stat span{font-size:.62rem}
+  .ring{flex:0 0 86px;width:86px;height:86px}
+  .ring circle{stroke-width:8}
+  .ring-txt b{font-size:1.1rem}
+  .ring-txt span{font-size:.56rem;padding:0 6px}
+  .hdr-notas{
+    display:flex;position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:14px;z-index:4;
+    width:34px;height:34px;border:1px solid rgba(255,255,255,.18);border-radius:9px;
+    background:rgba(255,255,255,.08);color:#B9C4D4;
   }
-  nav.bar .wrap{padding:0;gap:0}
-  .tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:0;width:100%;flex:none}
-  /* el horario, en el centro */
+
+  /* ---- barra inferior, alta y por encima de la barra de gestos ---- */
+  nav.bar{
+    position:fixed;top:auto;bottom:0;left:0;right:0;z-index:90;
+    background:#fff;backdrop-filter:none;border-top:1px solid var(--rule);border-bottom:0;
+    box-shadow:0 -1px 16px rgba(23,28,36,.10);
+    padding:6px 0 calc(18px + env(safe-area-inset-bottom,0px));
+  }
+  nav.bar .wrap{padding:0;gap:0;max-width:none}
+  .navtools{display:none!important}
+  .tabs{display:grid!important;grid-template-columns:repeat(5,1fr);gap:0;width:100%;flex:none;align-items:end}
   .tabs a:nth-child(1){order:3}
   .tabs a:nth-child(2){order:1}
   .tabs a:nth-child(3){order:2}
   .tabs a:nth-child(4){order:4}
   .tabs a:nth-child(5){order:5}
   nav.bar a[data-tab]{
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-    padding:9px 2px 7px;border-radius:0;font-size:.62rem;font-weight:600;color:var(--ink-3);
-    background:none!important;
+    position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;
+    padding:8px 2px 4px;border-radius:0;font-size:.58rem;font-weight:600;
+    color:var(--ink-3);background:none!important;min-width:0;
   }
-  nav.bar a[data-tab] svg{display:block;width:21px;height:21px;stroke-width:1.8}
-  nav.bar a[data-tab] span{line-height:1.1;text-align:center}
-  nav.bar a[data-tab].on{color:var(--ink);background:none!important}
-  nav.bar a[data-tab].on svg{stroke-width:2.3}
-  nav.bar a[data-tab].on::before{
-    content:"";position:absolute;margin-top:-9px;width:26px;height:3px;border-radius:0 0 3px 3px;background:var(--ink);
+  nav.bar a[data-tab] svg{display:block;width:21px;height:21px}
+  nav.bar a[data-tab] span.lbl{display:none}
+  nav.bar a[data-tab] .lbl-movil{
+    display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.1;
   }
-  nav.bar a[data-tab]{position:relative}
-  .navtools{display:none}
+  nav.bar a[data-tab].on{color:var(--ink)}
+  nav.bar a[data-tab].on svg{stroke-width:2.4}
 
-  /* hueco para que la barra no tape el contenido */
-  body{padding-bottom:calc(62px + env(safe-area-inset-bottom,0px))}
-  html{scroll-padding-top:12px}
-  footer{padding-bottom:26px}
-
-  /* la nota se alcanza desde la cabecera */
-  .hdr-notas{
-    display:flex;position:absolute;top:14px;right:14px;z-index:4;
-    width:36px;height:36px;border:1px solid rgba(255,255,255,.18);border-radius:9px;
-    background:rgba(255,255,255,.07);color:#B9C4D4;
+  /* el principal, botón circular elevado */
+  .tabs a[data-tab="horario"]{gap:7px;padding-top:0}
+  .tabs a[data-tab="horario"] svg{
+    width:26px;height:26px;padding:13px;box-sizing:content-box;border-radius:50%;
+    background:#EDF0F4;color:var(--ink-2);margin-top:-26px;
+    border:4px solid #fff;box-shadow:0 3px 12px rgba(23,28,36,.14);
+    transition:background .18s ease,color .18s ease,transform .18s ease;
   }
-  .hdr-notas:hover{background:rgba(255,255,255,.14);color:#fff}
-  header.top{padding-top:26px}
+  .tabs a[data-tab="horario"].on svg{background:var(--ink);color:#fff;transform:translateY(-2px)}
+
+  body{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+  section{padding-top:20px}
+  footer{padding-bottom:12px}
+
+  /* ---- sin fundidos: en móvil solo manda el deslizamiento ---- */
+  .enter,.stagger,.hero>*,.ring,.peek{animation:none!important}
+
+  /* ---- el contenido se arrastra con el dedo ---- */
+  .wrap.arrastrando{transition:none}
+  .wrap.soltando{transition:transform .26s cubic-bezier(.22,.7,.25,1),opacity .26s ease}
+
+  /* ---- profesorado sin scroll lateral: cada fila, una tarjeta ---- */
+  #profesorado .tbl{border:0;background:none;overflow:visible}
+  #profesorado table,#profesorado tbody,#profesorado tr,#profesorado td{display:block;width:100%}
+  #profesorado thead{display:none}
+  #profesorado tr{
+    background:var(--card);border:1px solid var(--rule);border-radius:var(--r);
+    padding:12px 14px;margin-bottom:10px;
+  }
+  #profesorado td{border:0;padding:2px 0;font-size:.84rem}
+  #profesorado td:first-child{font-size:.72rem;font-weight:700;color:var(--ink-2);margin-bottom:4px}
+  #profesorado td:nth-child(3)::before{content:"Correo · ";color:var(--ink-3);font-size:.76rem}
+  #profesorado td:nth-child(4)::before{content:"Despacho · ";color:var(--ink-3);font-size:.76rem}
 }
 
-/* instalada como app: un respiro extra arriba */
-@media (display-mode:standalone) and (max-width:760px){
-  header.top{padding-top:calc(26px + env(safe-area-inset-top,0px))}
-  .hdr-notas{top:calc(14px + env(safe-area-inset-top,0px))}
+@media (max-width:380px){
+  nav.bar a[data-tab]{font-size:.53rem}
+  nav.bar a[data-tab] svg{width:19px;height:19px}
+  .tabs a[data-tab="horario"] svg{width:24px;height:24px;padding:12px}
+  .ring{flex:0 0 74px;width:74px;height:74px}
 }
-
-/* deslizar entre pestañas */
-.swiping{transition:none}

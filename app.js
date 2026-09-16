@@ -668,6 +668,7 @@ initData();
       el.classList.remove("enter");
       void el.offsetWidth;          /* fuerza el reinicio de la animación */
       el.classList.add("enter");
+      if(window.matchMedia("(max-width:820px)").matches) return;
       [...el.children].forEach((hijo,i)=>{
         hijo.style.setProperty("--d", (i*55)+"ms");
         hijo.classList.remove("stagger"); void hijo.offsetWidth; hijo.classList.add("stagger");
@@ -682,26 +683,65 @@ initData();
     abrir(l.dataset.tab,true);
   }));
 
-  /* deslizar con el dedo para cambiar de pestaña */
+  /* Deslizar con el dedo: el contenido acompaña al dedo y al soltar
+     se completa el cambio o vuelve a su sitio. */
   const orden=Object.keys(TABS);
-  let x0=null,y0=null,t0=0;
-  const zonaLibre=el=>!el.closest(".tbl,.m-grid,textarea,input,.calbox,#notas");
+  const lienzo=document.querySelector("div.wrap:not(nav .wrap):not(header .wrap)")
+            || document.querySelectorAll("div.wrap")[document.querySelectorAll("div.wrap").length-1];
+  const UMBRAL=70;
+  let x0=null,y0=null,dx=0,arrastrando=false,bloqueado=false;
+
+  const zonaLibre=el=>!el.closest("input,textarea,select,.m-grid,.tbl,.calbox");
+  const idx=()=>orden.indexOf((location.hash.slice(1)||"horario"));
+
+  function poner(t,op){ if(lienzo){ lienzo.style.transform=`translate3d(${t}px,0,0)`; lienzo.style.opacity=op; } }
+  function limpiar(){ if(lienzo){ lienzo.style.transform=""; lienzo.style.opacity=""; lienzo.classList.remove("arrastrando","soltando"); } }
+
   document.addEventListener("touchstart",e=>{
-    if(e.touches.length!==1||!zonaLibre(e.target)){x0=null;return;}
-    x0=e.touches[0].clientX; y0=e.touches[0].clientY; t0=Date.now();
+    if(e.touches.length!==1||!zonaLibre(e.target)||!lienzo){x0=null;return;}
+    x0=e.touches[0].clientX; y0=e.touches[0].clientY;
+    dx=0; arrastrando=false; bloqueado=false;
   },{passive:true});
-  document.addEventListener("touchend",e=>{
+
+  document.addEventListener("touchmove",e=>{
     if(x0===null) return;
-    const dx=e.changedTouches[0].clientX-x0, dy=e.changedTouches[0].clientY-y0;
+    const mx=e.touches[0].clientX-x0, my=e.touches[0].clientY-y0;
+    if(!arrastrando&&!bloqueado){
+      if(Math.abs(my)>10&&Math.abs(my)>Math.abs(mx)){ bloqueado=true; return; }   /* está haciendo scroll */
+      if(Math.abs(mx)>12){ arrastrando=true; lienzo.classList.add("arrastrando"); }
+      else return;
+    }
+    if(bloqueado) return;
+    const i=idx();
+    const borde=(mx<0&&i>=orden.length-1)||(mx>0&&i<=0);
+    dx=borde?mx*0.22:mx*0.85;                 /* en los extremos, resistencia */
+    poner(dx, Math.max(.45, 1-Math.abs(dx)/420));
+    if(e.cancelable) e.preventDefault();
+  },{passive:false});
+
+  document.addEventListener("touchend",()=>{
+    if(x0===null||!arrastrando){ x0=null; limpiar(); return; }
     x0=null;
-    if(Date.now()-t0>600) return;                 /* demasiado lento: no es un gesto */
-    if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.8) return;  /* o es scroll vertical */
-    const actual=orden.indexOf(location.hash.slice(1)||"horario");
-    if(actual<0) return;
-    const destino=actual+(dx<0?1:-1);
-    if(destino<0||destino>=orden.length) return;
-    abrir(orden[destino],true);
+    const i=idx(), destino=i+(dx<0?1:-1);
+    lienzo.classList.remove("arrastrando");
+    lienzo.classList.add("soltando");
+    if(Math.abs(dx)>=UMBRAL && destino>=0 && destino<orden.length){
+      const fuera=dx<0?-window.innerWidth*0.35:window.innerWidth*0.35;
+      poner(fuera,0);
+      setTimeout(()=>{
+        abrir(orden[destino],false);
+        window.scrollTo({top:0});
+        lienzo.classList.remove("soltando");
+        poner(dx<0?window.innerWidth*0.28:-window.innerWidth*0.28,0);
+        requestAnimationFrame(()=>{ lienzo.classList.add("soltando"); poner(0,1);
+          setTimeout(limpiar,280); });
+      },170);
+    } else {
+      poner(0,1);
+      setTimeout(limpiar,280);
+    }
   },{passive:true});
+
   window.addEventListener("hashchange",()=>abrir(location.hash.slice(1),true));
   abrir(location.hash.slice(1)||"horario",false);
 })();
