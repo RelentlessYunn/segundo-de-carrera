@@ -341,13 +341,6 @@ document.addEventListener("click",ev=>{
     let pF=`<div class="panel"><h4>Fechas propias</h4>`;
     pF+=dates.length?`<ul class="plain">`+dates.map(d=>`<li><span>${esc(d.what)}</span><span class='d'>${esc(d.label)} <span class="pill p-${d.type}">${esc(d.w)}</span></span></li>`).join("")+"</ul>"
       :`<p class='nodata'>Sin fechas evaluables registradas.</p>`;
-    const tareas=(typeof TAREAS!=="undefined"&&TAREAS[k])||[];
-    pF+=`<h4 style="margin-top:18px">Tareas</h4>`;
-    pF+=tareas.length
-      ? `<ul class="tareas">`+tareas.map((t,i)=>
-          `<li><input type="checkbox" id="tk_${sc}_${k}_${i}"${editable?"":" disabled"}>`+
-          `<label for="tk_${sc}_${k}_${i}">${esc(t)}</label></li>`).join("")+`</ul>`
-      : `<p class="nodata">Nada pendiente.</p>`;
     pF+=`</div>`;
 
     /* Dos columnas que se apilan por separado: así ninguna estira a la otra */
@@ -483,31 +476,42 @@ const BIN_ID=(window.CONFIG||{}).BIN_ID||"";
 const API_KEY=(window.CONFIG||{}).API_KEY||"";
 let saveTimer=null;
 
-function estado(txt){ $("#savestate").textContent=txt; }
+function estado(txt){ const e=$("#notasEstado2"); if(e) e.textContent=txt; }
+
+function pintarTareas(){
+  const zAs=$("#tareasAsig"), zGe=$("#checks");
+  if(zAs) zAs.innerHTML=Object.keys(SUBJ).flatMap(k=>
+    (TAREAS[k]||[]).map((t,i)=>{
+      const S=SUBJ[k];
+      return `<div class="checkitem" style="--sc:${S.c}"><input type="checkbox" id="tk_${k}_${i}">`+
+        `<label for="tk_${k}_${i}"><span class="tk-sub" style="color:${S.c}">${esc(S.n)}</span>`+
+        `<b>${esc(t[0])}</b><span>${esc(t[1]||"")}</span></label></div>`;
+    })).join("") || '<p class="nodata">Ninguna tarea de asignatura.</p>';
+  if(zGe) zGe.innerHTML=GENERALES.map((c,i)=>
+    `<div class="checkitem"><input type="checkbox" id="gk_${i}">`+
+    `<label for="gk_${i}"><b>${esc(c[0])}</b><span>${esc(c[1]||"")}</span></label></div>`).join("")
+    || '<p class="nodata">Nada pendiente.</p>';
+}
 
 async function initData(){
-  $("#checks").innerHTML=CHECKS.map((c,i)=>`<div class="checkitem"><input type="checkbox" id="ck${i}"><label for="ck${i}"><b>${esc(c[0])}</b><span>${esc(c[1])}</span></label></div>`).join("");
-  CHECKS.forEach((_,i)=>document.getElementById(`ck${i}`).addEventListener("change",guardar));
+  pintarTareas();
+  document.querySelectorAll('#tareasAsig input,#checks input').forEach(x=>x.addEventListener("change",guardar));
   document.querySelectorAll(".g-input").forEach(inp=>inp.addEventListener("change",guardar));
 
-  if(!BIN_ID||!API_KEY){ estado("Guardado desactivado: las marcas duran solo esta sesión."); return; }
-  estado("Cargando datos guardados…");
+  if(!BIN_ID||!API_KEY){ estado("Guardado desactivado: falta config.js."); return; }
+  estado("Cargando…");
   try{
     const res=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`,{headers:{"X-Access-Key":API_KEY}});
     if(!res.ok) throw new Error("HTTP "+res.status);
     const data=await res.json();
-    const savedChecks=data.record.checks||[];
-    const savedGrades=data.record.grades||{};
-    savedChecks.forEach(i=>{const cb=document.getElementById(`ck${i}`); if(cb) cb.checked=true;});
-    Object.keys(savedGrades).forEach(id=>{
+    (data.record.hechas||[]).forEach(id=>{const el=document.getElementById(id); if(el) el.checked=true;});
+    const notas=data.record.grades||{};
+    Object.keys(notas).forEach(id=>{
       const inp=document.getElementById(id);
-      if(inp){ inp.value=savedGrades[id]; window.recalcular(inp.dataset.subj, inp.dataset.scope); }
+      if(inp){ inp.value=notas[id]; window.recalcular(inp.dataset.subj, inp.dataset.scope); }
     });
-    estado("Datos sincronizados.");
-  }catch(e){
-    console.error("No se pudo cargar desde JSONBin:",e);
-    estado("Sin conexión con la nube: los cambios de esta sesión no se guardarán.");
-  }
+    estado("Sincronizado.");
+  }catch(e){ estado("Sin conexión con la nube: los cambios no se guardarán."); }
 }
 
 function guardar(){
@@ -515,18 +519,18 @@ function guardar(){
   clearTimeout(saveTimer);
   estado("Guardando…");
   saveTimer=setTimeout(async()=>{
-    const checks=[];
-    CHECKS.forEach((_,i)=>{ if(document.getElementById(`ck${i}`).checked) checks.push(i); });
+    const hechas=[...document.querySelectorAll('#tareasAsig input:checked,#checks input:checked')].map(x=>x.id);
     const grades={};
     document.querySelectorAll('.g-input[data-scope="main"]').forEach(inp=>{ if(inp.value!=="") grades[inp.id]=inp.value; });
     try{
+      const r0=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`,{headers:{"X-Access-Key":API_KEY}});
+      const d0=await r0.json();
+      const rec=Object.assign({},d0.record||{},{hechas,grades});
       const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`,{
-        method:"PUT",
-        headers:{"Content-Type":"application/json","X-Access-Key":API_KEY},
-        body:JSON.stringify({checks,grades})
-      });
-      estado(r.ok?"Guardado.":"No se pudo guardar (HTTP "+r.status+").");
-    }catch(e){ estado("No se pudo guardar: sin conexión."); }
+        method:"PUT",headers:{"Content-Type":"application/json","X-Access-Key":API_KEY},
+        body:JSON.stringify(rec)});
+      estado(r.ok?"Guardado.":"No se pudo guardar.");
+    }catch(e){ estado("No se pudo guardar."); }
   },800);
 }
 initData();
@@ -728,6 +732,15 @@ initData();
   });
   CAL.forEach(e=>{ if(!SUBJ[e.id]) errores.push(`Fecha ${e.label}: asignatura desconocida (${e.id}).`); });
   /* una prueba presencial tiene que caer en un día con clase de esa asignatura */
+  /* nada evaluable puede caer en festivo ni en periodo no lectivo sin marcarlo como pendiente */
+  const prioridad={nolectivo:0,examen:1,clases:2};
+  CAL.filter(e=>!e.sinDia).forEach(e=>{
+    const fest=ACAD.sinClase.find(x=>x.date===e.date);
+    const tramo=ACAD.tramos.filter(t=>e.date>=t.from&&e.date<=t.to)
+      .sort((x,y)=>prioridad[x.tipo]-prioridad[y.tipo])[0];
+    if(fest) errores.push(`${SUBJ[e.id].n}: "${e.what.slice(0,36)}" cae el ${e.date}, que es festivo.`);
+    else if(tramo&&tramo.tipo==="nolectivo") errores.push(`${SUBJ[e.id].n}: "${e.what.slice(0,36)}" cae en ${tramo.t}.`);
+  });
   CAL.filter(e=>!e.online&&!e.sinDia&&e.type!=="cf").forEach(e=>{
     const i=new Date(e.date+"T12:00:00").getDay()-1;
     const hay=CLASSES.some(c=>c.id===e.id&&c.d===i&&(c.dates?c.dates.includes(e.date):(e.date>=c.from&&e.date<=c.to)));

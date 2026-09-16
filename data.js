@@ -3,13 +3,13 @@ const DAYS=["Lunes","Martes","Miércoles","Jueves","Viernes"];
 const T0=540;
 
 const SUBJ={
- ed :{n:"Estructura de Datos",ab:"ED",cuatri:1,       c:"#D01F63",s:"#FCE7EF",ects:6,dept:"Informática",grp:"1081",cam:"LEG"},
- talf:{n:"Tª Autómatas y Leng. Formales",ab:"TALF",cuatri:1,c:"#BE7000",s:"#FBEEDA",ects:6,dept:"Informática",grp:"82",cam:"LEG"},
- is :{n:"Ingeniería del Software",ab:"IS",cuatri:1,   c:"#1E6FC4",s:"#E4EFFA",ects:6,dept:"Informática",grp:"82",cam:"LEG"},
- ec :{n:"Estructura de Computadores",ab:"EC",cuatri:1,c:"#0F7A63",s:"#DFF1EC",ects:6,dept:"Informática",grp:"82",cam:"LEG"},
- eco:{n:"Principios de Economía",ab:"ECO",cuatri:1,    c:"#6B3FC8",s:"#EDE6FA",ects:6,dept:"Economía",grp:"801",cam:"GET"},
- dcp:{n:"Int. Dcho. Civil Patrimonial",ab:"DCP",cuatri:1,c:"#A02E8F",s:"#F8E5F4",ects:6,dept:"Derecho Privado",grp:"801",cam:"GET"},
- est:{n:"Estadística II",ab:"EST",cuatri:1,            c:"#3F51A8",s:"#E6E9F7",ects:6,dept:"Estadística",grp:"801",cam:"GET"}
+ ed :{n:"Estructura de Datos",ab:"ED",cuatri:1,       c:"#D0261C",s:"#FBE7E5",ects:6,dept:"Informática",grp:"1081",cam:"LEG"},
+ talf:{n:"Tª Autómatas y Leng. Formales",ab:"TALF",cuatri:1,c:"#C26A00",s:"#FBEEDA",ects:6,dept:"Informática",grp:"82",cam:"LEG"},
+ is :{n:"Ingeniería del Software",ab:"IS",cuatri:1,   c:"#1D6FD0",s:"#E3EEFB",ects:6,dept:"Informática",grp:"82",cam:"LEG"},
+ ec :{n:"Estructura de Computadores",ab:"EC",cuatri:1,c:"#0E7C5F",s:"#DEF2EC",ects:6,dept:"Informática",grp:"82",cam:"LEG"},
+ eco:{n:"Principios de Economía",ab:"ECO",cuatri:1,    c:"#7238D9",s:"#EDE6FC",ects:6,dept:"Economía",grp:"801",cam:"GET"},
+ dcp:{n:"Int. Dcho. Civil Patrimonial",ab:"DCP",cuatri:1,c:"#AE1391",s:"#FAE4F5",ects:6,dept:"Derecho Privado",grp:"801",cam:"GET"},
+ est:{n:"Estadística II",ab:"EST",cuatri:1,            c:"#0B8CA8",s:"#DFF3F8",ects:6,dept:"Estadística",grp:"801",cam:"GET"}
 };
 
 const CLASSES=[
@@ -97,7 +97,7 @@ const CAL=[
  {id:"ed",  date:"2026-11-30",wk:"S13",label:"lun 30 nov",  what:"Sesión extra del 1081, 12:30, aula 2.3.C04 — choca con Economía",w:"conflicto",type:"cf"},
  {id:"is",  date:"2026-12-05",wk:"S13",label:"semana 13", sinDia:1, what:"Examen parcial II, en clase de teoría",w:"15 %",type:"ex",hora:"10:45–12:15",aula:"4.0.E04 (martes) o 2.3.D01 (jueves)",formato:"Presencial, en horario de teoría"},
  {id:"ec",  date:"2026-12-05",wk:"S13",label:"semana 13", sinDia:1, what:"Entrega de la Práctica 2",w:"entrega",type:"en"},
- {id:"eco", date:"2026-12-07",wk:"S14",label:"7–12 dic",    what:"Test online 2 en Aula Global",w:"8 % final",type:"ex",online:1,hora:"Abre lunes 9:00, cierra sábado 14:00",formato:"10 preguntas, intentos ilimitados de 8 min 30, cuenta el mejor"},
+ {id:"eco", date:"2026-12-12",wk:"S14",label:"semana 14",   sinDia:1, what:"Test online 2 en Aula Global. El lunes 7 es festivo, así que la ventana puede moverse",w:"8 % final",type:"ex",online:1,hora:"Abre lunes 9:00, cierra sábado 14:00",formato:"10 preguntas, intentos ilimitados de 8 min 30, cuenta el mejor"},
  {id:"dcp", date:"2026-12-09",wk:"S14",label:"mié 9 dic",   what:"Caso práctico final de recapitulación, en clase",w:"2 ptos / 10",type:"ex",hora:"12:30–14:00",aula:"Aula 6.1.02",formato:"Caso práctico con los textos legales delante"},
  {id:"talf",date:"2026-12-10",wk:"S14",label:"jue 10 dic",  what:"JFLAP 4 · máquinas de Turing",w:"obligatorio",type:"en",hora:"15:30–17:00",aula:"INF 7.0.J02",formato:"Práctica en parejas, con entrega"},
  {id:"is",  date:"2026-12-12",wk:"S14",label:"semana 14", sinDia:1, what:"Entrega del trabajo individual, parte práctica",w:"20 %",type:"en"},
@@ -110,17 +110,11 @@ const CUATRIS=[
  {n:2, ini:"2027-01-26", fin:"2027-05-07"}
 ];
 
-const CHECKS=[
- ["Hacer el curso de IA de SPOC","Obligatorio para la titulación, no cuenta para ninguna asignatura en concreto."],
- ["Preguntar las fechas de las actividades de Estadística II","El 5 % de actividades en clase no tiene fechas fijas: las decide cada grupo sobre la marcha. Pregunta en las prácticas de los lunes."],
- ["Confirmar el grupo de magistral de Getafe","Tu horario dice 76 en Derecho, 76 en Economía y 78 en Estadística, pero Aula Global los llama 75, 75 y 77. Para las entregas manda el código de Aula Global."],
+/* Tareas que no son de ninguna asignatura */
+const GENERALES=[
  ["Apuntar las fechas de los exámenes finales","El calendario oficial solo da las ventanas: 16–22 de diciembre y 11–25 de enero. El día de cada asignatura lo publica el calendario de exámenes de la titulación."],
- ["Dejar por escrito el cambio de grupo","Correo a Israel González Carrasco confirmando que asistes al 1081 desde el 16 de septiembre. Hasta que Aula Global lo refleje sigues matriculado en el 1082 y las entregas van a ese grupo."],
- ["Preguntar por las cuatro prácticas de los lunes","Si son obligatorias o evaluables, el 1081 no te sirve tal cual. Es la pregunta más urgente."],
- ["Formar pareja para los JFLAP","Las cuatro sesiones son en parejas y la primera cae el 2 de octubre."],
- ["Confirmar el horario de JFLAP 3 y de la EC2","Tu horario dice 10:45 y el calendario de la asignatura dice 19–21 h."],
- ["Esperar el calendario oficial de exámenes","Las diapositivas de TALF llevan fechas del curso pasado sin actualizar."],
- ["Adelantar el trabajo de Ingeniería del Software","Se entrega en la semana 14, la peor del cuatrimestre. Trabájalo en las prácticas de octubre y noviembre."]
+ ["Preguntar por las cuatro prácticas de los lunes","Si son obligatorias o evaluables, el 1081 no te sirve tal cual."],
+ ["Esperar el calendario oficial de exámenes","Las diapositivas de TALF llevan fechas del curso pasado sin actualizar."]
 ];
 
 /* ===== Calendario académico oficial 2026/27 (v9, 3 jun 2026) =====
@@ -184,6 +178,6 @@ const AVISOS={1:{
 }, 2:{}};
 /* ===== Tareas por asignatura. Añade líneas aquí conforme salgan. ===== */
 const TAREAS={
- ed:[], talf:[], is:[], ec:[], eco:[], dcp:[],
- est:[]
+ ed:[], talf:[], is:[["Adelantar el trabajo individual","Se entrega en la semana 14, la peor del cuatrimestre. Trabájalo en las prácticas de octubre y noviembre."]],
+ ec:[], eco:[], dcp:[], est:[]
 };
