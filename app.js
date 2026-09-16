@@ -681,6 +681,27 @@ initData();
     ev.preventDefault();
     abrir(l.dataset.tab,true);
   }));
+
+  /* deslizar con el dedo para cambiar de pestaña */
+  const orden=Object.keys(TABS);
+  let x0=null,y0=null,t0=0;
+  const zonaLibre=el=>!el.closest(".tbl,.m-grid,textarea,input,.calbox,#notas");
+  document.addEventListener("touchstart",e=>{
+    if(e.touches.length!==1||!zonaLibre(e.target)){x0=null;return;}
+    x0=e.touches[0].clientX; y0=e.touches[0].clientY; t0=Date.now();
+  },{passive:true});
+  document.addEventListener("touchend",e=>{
+    if(x0===null) return;
+    const dx=e.changedTouches[0].clientX-x0, dy=e.changedTouches[0].clientY-y0;
+    x0=null;
+    if(Date.now()-t0>600) return;                 /* demasiado lento: no es un gesto */
+    if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.8) return;  /* o es scroll vertical */
+    const actual=orden.indexOf(location.hash.slice(1)||"horario");
+    if(actual<0) return;
+    const destino=actual+(dx<0?1:-1);
+    if(destino<0||destino>=orden.length) return;
+    abrir(orden[destino],true);
+  },{passive:true});
   window.addEventListener("hashchange",()=>abrir(location.hash.slice(1),true));
   abrir(location.hash.slice(1)||"horario",false);
 })();

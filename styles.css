@@ -679,3 +679,65 @@ ul.tareas input:disabled+label{cursor:default}
 #tareasAsig .checkitem{border-left:3px solid var(--sc);padding-left:11px}
 .tk-sub{display:block;font-size:.7rem;font-weight:700;letter-spacing:.01em;margin-bottom:2px}
 .checkitem input:checked+label .tk-sub{opacity:.5}
+
+/* ==========================================================
+   MÓVIL: barra inferior tipo app + gestos
+   ========================================================== */
+nav.bar a[data-tab] svg{display:none}
+.hdr-notas{display:none}
+
+@media (max-width:760px){
+  /* la barra baja al pie y se comporta como una tab bar */
+  nav.bar{
+    position:fixed;top:auto;bottom:0;left:0;right:0;z-index:70;
+    background:rgba(255,255,255,.96);backdrop-filter:blur(14px);
+    border-top:1px solid var(--rule);border-bottom:0;
+    box-shadow:0 -2px 18px rgba(23,28,36,.07);
+    padding-bottom:env(safe-area-inset-bottom,0);
+  }
+  nav.bar .wrap{padding:0;gap:0}
+  .tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:0;width:100%;flex:none}
+  /* el horario, en el centro */
+  .tabs a:nth-child(1){order:3}
+  .tabs a:nth-child(2){order:1}
+  .tabs a:nth-child(3){order:2}
+  .tabs a:nth-child(4){order:4}
+  .tabs a:nth-child(5){order:5}
+  nav.bar a[data-tab]{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    padding:9px 2px 7px;border-radius:0;font-size:.62rem;font-weight:600;color:var(--ink-3);
+    background:none!important;
+  }
+  nav.bar a[data-tab] svg{display:block;width:21px;height:21px;stroke-width:1.8}
+  nav.bar a[data-tab] span{line-height:1.1;text-align:center}
+  nav.bar a[data-tab].on{color:var(--ink);background:none!important}
+  nav.bar a[data-tab].on svg{stroke-width:2.3}
+  nav.bar a[data-tab].on::before{
+    content:"";position:absolute;margin-top:-9px;width:26px;height:3px;border-radius:0 0 3px 3px;background:var(--ink);
+  }
+  nav.bar a[data-tab]{position:relative}
+  .navtools{display:none}
+
+  /* hueco para que la barra no tape el contenido */
+  body{padding-bottom:calc(62px + env(safe-area-inset-bottom,0px))}
+  html{scroll-padding-top:12px}
+  footer{padding-bottom:26px}
+
+  /* la nota se alcanza desde la cabecera */
+  .hdr-notas{
+    display:flex;position:absolute;top:14px;right:14px;z-index:4;
+    width:36px;height:36px;border:1px solid rgba(255,255,255,.18);border-radius:9px;
+    background:rgba(255,255,255,.07);color:#B9C4D4;
+  }
+  .hdr-notas:hover{background:rgba(255,255,255,.14);color:#fff}
+  header.top{padding-top:26px}
+}
+
+/* instalada como app: un respiro extra arriba */
+@media (display-mode:standalone) and (max-width:760px){
+  header.top{padding-top:calc(26px + env(safe-area-inset-top,0px))}
+  .hdr-notas{top:calc(14px + env(safe-area-inset-top,0px))}
+}
+
+/* deslizar entre pestañas */
+.swiping{transition:none}
