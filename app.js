@@ -857,7 +857,7 @@ initData();
     document.body.appendChild(probe);
     const safe=probe.getBoundingClientRect().height; probe.remove();
     caja.textContent=
-      "v32\n"+
+      "v33\n"+
       "window.innerHeight   "+window.innerHeight+"\n"+
       "visualViewport       "+(window.visualViewport?Math.round(window.visualViewport.height):"-")+"\n"+
       "screen.height        "+screen.height+"\n"+
