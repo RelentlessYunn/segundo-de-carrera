@@ -691,7 +691,20 @@ initData();
   const UMBRAL=70;
   let x0=null,y0=null,dx=0,arrastrando=false,bloqueado=false;
 
-  const zonaLibre=el=>!el.closest("input,textarea,select,.m-grid,.tbl,.calbox");
+  /* Solo se bloquea el gesto si el dedo está sobre algo que de verdad
+     puede desplazarse en horizontal, no por el simple hecho de ser tabla. */
+  function zonaLibre(el){
+    if(el.closest("input,textarea,select")) return false;
+    let n=el;
+    while(n && n!==document.body){
+      if(n.scrollWidth-n.clientWidth>4){
+        const est=getComputedStyle(n).overflowX;
+        if(est==="auto"||est==="scroll") return false;
+      }
+      n=n.parentElement;
+    }
+    return true;
+  }
   const idx=()=>orden.indexOf((location.hash.slice(1)||"horario"));
 
   function poner(t,op){ if(lienzo){ lienzo.style.transform=`translate3d(${t}px,0,0)`; lienzo.style.opacity=op; } }
