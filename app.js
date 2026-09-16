@@ -836,3 +836,38 @@ initData();
   CLASSES.forEach(c=>{ if(!c.from&&!c.dates) errores.push(`Clase de ${SUBJ[c.id].ab} el día ${c.d}: sin fechas.`); });
   if(errores.length) console.warn("Revisar datos:\n- "+errores.join("\n- "));
 })();
+
+/* --- diagnóstico: abre la web con #debug al final de la URL --- */
+(function(){
+  const caja=document.getElementById("dbg"); if(!caja) return;
+  function medir(){
+    if(!location.hash.includes("debug")){ caja.classList.remove("on"); return; }
+    caja.classList.add("on");
+    const nav=document.querySelector("nav.bar");
+    const body=document.body;
+    const cont=document.querySelector("body > div.wrap");
+    const r=nav?nav.getBoundingClientRect():{top:0,bottom:0,height:0};
+    const cs=nav?getComputedStyle(nav):{};
+    const probe=document.createElement("div");
+    probe.style.cssText="position:fixed;bottom:0;height:env(safe-area-inset-bottom,0px)";
+    document.body.appendChild(probe);
+    const safe=probe.getBoundingClientRect().height; probe.remove();
+    caja.textContent=
+      "v31\n"+
+      "window.innerHeight   "+window.innerHeight+"\n"+
+      "visualViewport       "+(window.visualViewport?Math.round(window.visualViewport.height):"-")+"\n"+
+      "screen.height        "+screen.height+"\n"+
+      "devicePixelRatio     "+window.devicePixelRatio+"\n"+
+      "body height          "+Math.round(body.getBoundingClientRect().height)+"\n"+
+      "contenedor scroll    "+(cont?Math.round(cont.getBoundingClientRect().height):"-")+"\n"+
+      "nav position         "+(cs.position||"-")+"\n"+
+      "nav top / bottom     "+Math.round(r.top)+" / "+Math.round(r.bottom)+"\n"+
+      "nav height           "+Math.round(r.height)+"\n"+
+      "nav padding-bottom   "+(cs.paddingBottom||"-")+"\n"+
+      "safe-area-inset-bot  "+Math.round(safe)+"px\n"+
+      "hueco bajo la barra  "+Math.round(window.innerHeight-r.bottom)+"px";
+  }
+  window.addEventListener("hashchange",medir);
+  window.addEventListener("resize",medir);
+  setTimeout(medir,300);
+})();
