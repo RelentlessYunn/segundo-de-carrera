@@ -714,7 +714,8 @@ nav.bar a[data-tab] .lbl-movil{display:none}
     position:fixed;top:auto;bottom:0;left:0;right:0;width:100%;z-index:90;
     background:#fff;backdrop-filter:none;border-top:1px solid var(--rule);border-bottom:0;
     box-shadow:0 -1px 16px rgba(23,28,36,.10);overflow:visible;
-    padding:10px 0 calc(20px + env(safe-area-inset-bottom,0px));
+    /* el max() asegura hueco aunque el sistema no informe de la zona de gestos */
+    padding:10px 0 max(26px, calc(env(safe-area-inset-bottom,0px) + 12px));
   }
   nav.bar .wrap{padding:0;gap:0;max-width:none}
   .navtools{display:none!important}
@@ -732,7 +733,7 @@ nav.bar a[data-tab] .lbl-movil{display:none}
   nav.bar a[data-tab] svg{display:block;width:21px;height:21px}
   nav.bar a[data-tab] span.lbl{display:none}
   nav.bar a[data-tab] .lbl-movil{
-    display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.1;
+    display:block;padding-bottom:2px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.1;
   }
   nav.bar a[data-tab].on{color:var(--ink)}
   nav.bar a[data-tab].on svg{stroke-width:2.4}
@@ -746,7 +747,7 @@ nav.bar a[data-tab] .lbl-movil{display:none}
   }
   .tabs a[data-tab="horario"].on svg{background:var(--ink);color:#fff}
 
-  body{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+  body{padding-bottom:calc(112px + max(26px, env(safe-area-inset-bottom,0px)))}
   section{padding-top:20px}
   footer{padding-bottom:12px}
 
