@@ -715,7 +715,11 @@ nav.bar a[data-tab] .lbl-movil{display:none}
     background:#fff;backdrop-filter:none;
     border-top:1px solid var(--rule);border-bottom:0;
     box-shadow:0 -1px 16px rgba(23,28,36,.10);
-    padding:0 0 max(24px, calc(env(safe-area-inset-bottom,0px) + 10px));
+    overflow:visible;
+    /* valor simple: si el navegador no entiende env(), esto se aplica igual */
+    padding-top:0;
+    padding-bottom:30px;
+    min-height:96px;
   }
   nav.bar .wrap{padding:0;gap:0;max-width:none}
   .navtools{display:none!important}
@@ -752,7 +756,7 @@ nav.bar a[data-tab] .lbl-movil{display:none}
   .tabs a[data-tab="horario"] .ic{width:40px;height:40px;border-radius:50%;background:#EDF0F4;color:var(--ink-2)}
   .tabs a[data-tab="horario"].on .ic{background:var(--ink);color:#fff}
 
-  body{padding-bottom:calc(66px + max(24px, env(safe-area-inset-bottom,0px)) + 18px)}
+  body{padding-bottom:124px}
   section{padding-top:20px}
   footer{padding-bottom:12px}
 
@@ -797,4 +801,14 @@ nav.bar a[data-tab] .lbl-movil{display:none}
   #calendario td:nth-child(2){position:absolute;top:12px;right:14px;width:auto;font-size:.72rem;color:var(--ink-3)}
   #calendario td:nth-child(3){font-size:.78rem;color:var(--ink-2);margin:2px 0 4px}
   #calendario td:nth-child(5){margin-top:6px}
+}
+
+/* marcador de versión, para saber qué archivo está cargado */
+.ver{font-size:.72rem;color:var(--rule);letter-spacing:.08em;margin:6px 0 0}
+
+@supports (padding: env(safe-area-inset-bottom)){
+  @media (max-width:820px){
+    nav.bar{padding-bottom:calc(env(safe-area-inset-bottom) + 22px)}
+    body{padding-bottom:calc(env(safe-area-inset-bottom) + 116px)}
+  }
 }
