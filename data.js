@@ -3,19 +3,19 @@ const DAYS=["Lunes","Martes","Miércoles","Jueves","Viernes"];
 const T0=540;
 
 const SUBJ={
- ed :{n:"Estructura de Datos",ab:"ED",cuatri:1,       c:"#D0261C",s:"#FBE7E5",ects:6,dept:"Informática",grp:"1081",cam:"LEG"},
- talf:{n:"Tª Autómatas y Leng. Formales",ab:"TALF",cuatri:1,c:"#C26A00",s:"#FBEEDA",ects:6,dept:"Informática",grp:"82",cam:"LEG"},
- is :{n:"Ingeniería del Software",ab:"IS",cuatri:1,   c:"#1D6FD0",s:"#E3EEFB",ects:6,dept:"Informática",grp:"82",cam:"LEG"},
- ec :{n:"Estructura de Computadores",ab:"EC",cuatri:1,c:"#0E7C5F",s:"#DEF2EC",ects:6,dept:"Informática",grp:"82",cam:"LEG"},
- eco:{n:"Principios de Economía",ab:"ECO",cuatri:1,    c:"#7238D9",s:"#EDE6FC",ects:6,dept:"Economía",grp:"801",cam:"GET"},
- dcp:{n:"Int. Dcho. Civil Patrimonial",ab:"DCP",cuatri:1,c:"#AE1391",s:"#FAE4F5",ects:6,dept:"Derecho Privado",grp:"801",cam:"GET"},
- est:{n:"Estadística II",ab:"EST",cuatri:1,            c:"#0B8CA8",s:"#DFF3F8",ects:6,dept:"Estadística",grp:"801",cam:"GET"}
+ ed :{n:"Estructura de Datos",ab:"ED",cuatri:1,       c:"#FF6B5E",s:"rgba(255,107,94,.15)",ects:6,dept:"Informática",grp:"1081",cam:"LEG"},
+ talf:{n:"Tª Autómatas y Leng. Formales",ab:"TALF",cuatri:1,c:"#FFA640",s:"rgba(255,166,64,.15)",ects:6,dept:"Informática",grp:"82",cam:"LEG"},
+ is :{n:"Ingeniería del Software",ab:"IS",cuatri:1,   c:"#5AA9FF",s:"rgba(90,169,255,.15)",ects:6,dept:"Informática",grp:"82",cam:"LEG"},
+ ec :{n:"Estructura de Computadores",ab:"EC",cuatri:1,c:"#3FD9A4",s:"rgba(63,217,164,.15)",ects:6,dept:"Informática",grp:"82",cam:"LEG"},
+ eco:{n:"Principios de Economía",ab:"ECO",cuatri:1,    c:"#A987FF",s:"rgba(169,135,255,.15)",ects:6,dept:"Economía",grp:"801",cam:"GET"},
+ dcp:{n:"Int. Dcho. Civil Patrimonial",ab:"DCP",cuatri:1,c:"#F06BD4",s:"rgba(240,107,212,.15)",ects:6,dept:"Derecho Privado",grp:"801",cam:"GET"},
+ est:{n:"Estadística II",ab:"EST",cuatri:1,            c:"#3FCCE8",s:"rgba(63,204,232,.15)",ects:6,dept:"Estadística",grp:"801",cam:"GET"}
 };
 
 const CLASSES=[
  {id:"est", d:0,a:540,b:630, t:"prácticas",  au:"Aula 5.1.04",  r:"7 sep – 30 nov",grp:"801",from:"2026-09-07",to:"2026-11-30"},
  {id:"dcp", d:0,a:645,b:735, t:"magistral",  au:"Aula 10.2.1",  r:"7 sep – 30 nov",grp:"76 y 801",from:"2026-09-07",to:"2026-11-30"},
- {id:"eco", d:0,a:750,b:840, t:"magistral",  au:"Aula 10.2.1",  r:"7 sep – 30 nov",grp:"27, 76 y 801",half:0,dash:1,mark:"⚠",from:"2026-09-07",to:"2026-11-30"},
+ {id:"eco", d:0,a:750,b:840, t:"magistral",  au:"Aula 10.2.1",  r:"7 sep – 7 dic",grp:"27, 76 y 801",half:0,dash:1,mark:"⚠",from:"2026-09-07",to:"2026-12-07"},
  {id:"ed",  d:0,a:750,b:840, t:"prácticas",  au:"Aulas varias", r:"5 y 19 oct · 16 y 30 nov",grp:"1081",half:1,dash:1,hatch:1,mark:"⚠",dates:["2026-10-05","2026-10-19","2026-11-16","2026-11-30"]},
  {id:"talf",d:1,a:540,b:630, t:"teoría",     au:"Aula 2.3.B05", r:"8 sep – 1 dic",grp:"82",from:"2026-09-08",to:"2026-12-01"},
  {id:"is",  d:1,a:645,b:735, t:"teoría",     au:"Aula 4.0.E04", r:"8 sep – 1 dic",grp:"82",from:"2026-09-08",to:"2026-12-01"},
@@ -79,6 +79,9 @@ const CAL=[
  {id:"ed",  date:"2026-10-15",wk:"S6", label:"jue 15 oct",  what:"Primer parcial: bloque 1, ítems 1 a 5. Presencial y escrito, aula 2.3.C01",w:"25 %",type:"ex",hora:"09:00–10:30",aula:"Aula 2.3.C01",formato:"Presencial y escrito"},
  {id:"is",  date:"2026-10-16",wk:"S6", label:"vie 16 oct",  what:"Práctica en aula",w:"clase",type:"cl",hora:"12:30–14:00",aula:"Aula 4.1.E06"},
  {id:"ec",  date:"2026-10-22",wk:"S7", label:"jue 22 oct",  what:"Laboratorio 2 y entrega de la Práctica 1",w:"entrega",type:"en",hora:"14:00–15:30",aula:"INF 7.0.J04 y 7.0.J05"},
+ {id:"eco", date:"2026-10-16",wk:"S6",label:"viernes por confirmar", sinDia:1, online:1, what:"Recuperación online de la magistral del lunes 12 de octubre, festivo",w:"clase",type:"cl",hora:"Por confirmar",formato:"Online, en sustitución de la clase perdida"},
+ {id:"eco", date:"2026-11-06",wk:"S9",label:"viernes por confirmar", sinDia:1, online:1, what:"Recuperación online de la magistral del lunes 2 de noviembre, festivo",w:"clase",type:"cl",hora:"Por confirmar",formato:"Online, en sustitución de la clase perdida"},
+ {id:"eco", date:"2026-12-11",wk:"S14",label:"viernes por confirmar", sinDia:1, online:1, what:"Recuperación online de la magistral del lunes 7 de diciembre, festivo",w:"clase",type:"cl",hora:"Por confirmar",formato:"Online, en sustitución de la clase perdida"},
  {id:"eco", date:"2026-10-26",wk:"S8", label:"26–31 oct",   what:"Test online 1 en Aula Global",w:"8 % final",type:"ex",online:1,hora:"Abre lunes 9:00, cierra sábado 14:00",formato:"10 preguntas, intentos ilimitados de 8 min 30, cuenta el mejor"},
  {id:"dcp", date:"2026-11-04",wk:"S9", label:"mié 4 nov",   what:"Cuestionario de autoevaluación tipo test",w:"1 pto / 10",type:"ex",hora:"12:30–14:00",aula:"Aula 6.1.02",formato:"Tipo test"},
  {id:"ec",  date:"2026-10-29",wk:"S8", label:"jue 29 oct",  what:"Laboratorio 3",w:"laboratorio",type:"cl",hora:"14:00–15:30",aula:"INF 7.0.J04 y 7.0.J05"},
@@ -180,5 +183,6 @@ const AVISOS={1:{
 const TAREAS={
  ed:[], talf:[], is:[["Adelantar el trabajo individual","Se entrega en la semana 14, la peor del cuatrimestre. Trabájalo en las prácticas de octubre y noviembre."]],
  ec:[["Instalar WepSIM y CREATOR antes del laboratorio 1","El jueves 24 a las 14:00 en INF 7.0.J04. Llega con el entorno montado."]],
- eco:[], dcp:[], est:[]
+ eco:[["Confirmar los viernes de recuperación","Tres magistrales caen en lunes festivo (12 oct, 2 nov y 7 dic) y se recuperan online un viernes. Pregunta las fechas."]],
+ dcp:[], est:[]
 };

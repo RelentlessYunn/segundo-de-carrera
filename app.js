@@ -24,6 +24,7 @@ function rolChips(p){
 
 const hhmm=m=>String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");
 const CURSO_INI=new Date(2026,8,7), CURSO_FIN=new Date(2026,11,12);
+const ESC=1.2;   /* píxeles por minuto en la rejilla del horario */
 const isoD=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const TIPO={ex:"Examen",en:"Entrega",cl:"Clase",cf:"Choque de horario"};
 const TIPO_LARGO={ex:"Examen",en:"Entrega",cl:"Laboratorio o clase",cf:"Conflicto de horario"};
@@ -121,7 +122,7 @@ document.addEventListener("click",ev=>{
 (function(){
  $("#calhead").innerHTML="<div></div>"+DAYS.map(d=>"<div>"+d+"</div>").join("");
  let g='<div class="gutter">';
- for(let h=9;h<=20;h++) g+='<b style="top:'+(h*60-T0)+'px">'+String(h).padStart(2,"0")+":00</b>";
+ for(let h=9;h<=20;h++) g+='<b style="top:'+((h*60-T0)*ESC)+'px">'+String(h).padStart(2,"0")+":00</b>";
  g+="</div>";
  DAYS.forEach((_,d)=>{
    g+='<div class="daycol">';
@@ -130,7 +131,7 @@ document.addEventListener("click",ev=>{
      let pos="left:5px;right:5px;";
      if(c.half===0)pos="left:5px;width:calc(50% - 7px);";
      if(c.half===1)pos="left:calc(50% + 2px);right:5px;";
-     g+='<div class="ev'+(c.dash?" dash":"")+(c.hatch?" hatch":"")+'" style="'+pos+"top:"+(c.a-T0)+"px;height:"+(c.b-c.a)+"px;background:"+S.s+";border-color:"+S.c+'">'+
+     g+='<div class="ev'+(c.dash?" dash":"")+(c.hatch?" hatch":"")+'" style="'+pos+"top:"+((c.a-T0)*ESC)+"px;height:"+((c.b-c.a)*ESC)+"px;background:"+S.s+";border-color:"+S.c+'">'+
         (c.mark?'<span class="mark" style="color:'+S.c+'">'+c.mark+"</span>":"")+
         '<div class="tags" style="color:'+S.c+'"><span class="tag grp">grp. '+c.grp+'</span><span class="tag cam">'+S.cam+"</span></div>"+
         "<b>"+esc(S.n)+"</b><u>"+hhmm(c.a)+"–"+hhmm(c.b)+" · "+esc(c.t)+"</u><s>"+esc(c.au)+"</s></div>";
@@ -138,6 +139,23 @@ document.addEventListener("click",ev=>{
    g+="</div>";
  });
  $("#calbody").innerHTML=g;
+
+ /* Línea de la hora actual: solo en la columna del día de hoy y dentro del horario visible. */
+ (function ahora(){
+   document.querySelectorAll(".linea-ahora").forEach(x=>x.remove());
+   const n=new Date(), idx=n.getDay()-1;
+   if(idx<0||idx>4) return;
+   const m=n.getHours()*60+n.getMinutes();
+   const col=document.querySelectorAll("#calbody .daycol")[idx];
+   if(col && m>=T0 && m<=T0+660){
+     const l=document.createElement("div");
+     l.className="linea-ahora";
+     l.style.top=((m-T0)*ESC)+"px";
+     l.innerHTML='<span class="punto"></span><span class="hh">'+hhmm(m)+"</span>";
+     col.appendChild(l);
+   }
+   setTimeout(ahora,60000);
+ })();
 
  $("#subjkey").innerHTML=Object.keys(SUBJ).map(k=>'<span><i class="sw" style="background:'+SUBJ[k].c+'"></i>'+esc(SUBJ[k].n)+"</span>").join("");
 
@@ -159,26 +177,29 @@ document.addEventListener("click",ev=>{
   let ver=new Date(hoy);
 
   /* contador de semana en la cabecera */
+  /* reloj en vivo: hora, fecha y semana lectiva */
   (function(){
-    const arc=document.getElementById("ringArc");
-    const L=2*Math.PI*52;
-    let pct=0;
-    if(semActual){
-      const total=SEMANAS.filter(w=>w.c===semActual.c).length;
-      pct=semActual.n/total;
-      $("#wknum").textContent="S"+semActual.n;
-      $("#wklbl").textContent=`de ${total} · ${semActual.c}.º cuatri`;
-    } else {
-      const antes=hoy<new Date(CUATRIS[0].ini+"T12:00:00");
-      $("#wknum").textContent=antes?"—":"Fin";
-      $("#wklbl").textContent=antes?"aún no empieza":"sin clases";
-      pct=antes?0:1;
+    const DIAS=["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+    const MESES=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+    function tic(){
+      const n=new Date();
+      const eH=$("#rHora"), eF=$("#rFecha"), eS=$("#rSemana");
+      if(!eH) return;
+      eH.textContent=String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0");
+      eF.textContent=DIAS[n.getDay()]+", "+n.getDate()+" de "+MESES[n.getMonth()];
+      const w=semanaEn(isoD(n));
+      if(w){
+        const tot=SEMANAS.filter(x=>x.c===w.c).length;
+        eS.innerHTML=`<span class="s-lg">Semana ${w.n} de ${tot} · ${w.c}.º cuatrimestre</span>`+
+                     `<span class="s-sm">Semana ${w.n}/${tot} · ${w.c}.º cuatri</span>`;
+      } else {
+        const t = n<new Date(CUATRIS[0].ini+"T12:00:00") ? "El curso aún no ha empezado" : "Fuera de periodo lectivo";
+        eS.innerHTML=`<span class="s-lg">${t}</span><span class="s-sm">${t}</span>`;
+      }
     }
-    if(arc){
-      arc.style.strokeDasharray=L;
-      arc.style.strokeDashoffset=L;
-      requestAnimationFrame(()=>{ arc.style.strokeDashoffset=L*(1-pct); });
-    }
+    tic();
+    /* se ajusta al cambio de minuto para no ir desfasado */
+    setTimeout(()=>{ tic(); setInterval(tic,60000); }, (60-new Date().getSeconds())*1000);
   })();
 
   /* una clase cuenta ese día si cae en su rango semanal o en su lista de días sueltos */
@@ -647,7 +668,7 @@ initData();
   const links=[...document.querySelectorAll("nav.bar a[data-tab]")];
   const todas=Object.values(TABS).flat();
 
-  function abrir(tab,scroll){
+  function abrir(tab,scroll,inicial){
     if(tab==="notas"){
       todas.forEach(id=>{const el=document.getElementById(id); if(el) el.hidden=true;});
       const nt=document.getElementById("notas"); if(nt) nt.hidden=false;
@@ -674,12 +695,18 @@ initData();
         hijo.classList.remove("stagger"); void hijo.offsetWidth; hijo.classList.add("stagger");
       });
     });
+    /* primero la URL: escribir el hash puede hacer saltar al elemento, así que
+       el scroll se corrige justo después */
+    if(!inicial && history.replaceState && !location.hash.includes("debug")) history.replaceState(null,"","#"+tab);
     if(scroll){
-      const cont=document.querySelector("body > div.wrap");
-      if(cont && cont.scrollHeight>cont.clientHeight+4) cont.scrollTop=0;
-      else window.scrollTo({top:0,behavior:"instant"});
+      const arriba=()=>{
+        const cont=document.querySelector("body > div.wrap");
+        if(cont && cont.scrollHeight>cont.clientHeight+4) cont.scrollTop=0;
+        window.scrollTo(0,0);
+      };
+      arriba();
+      requestAnimationFrame(arriba);
     }
-    if(history.replaceState && !location.hash.includes("debug")) history.replaceState(null,"","#"+tab);
   }
 
   links.forEach(l=>l.addEventListener("click",ev=>{
@@ -772,7 +799,7 @@ initData();
     if(location.hash.includes("debug")) return;   /* no tocar el ancla de diagnóstico */
     abrir(location.hash.slice(1),true);
   });
-  abrir(location.hash.includes("debug")?"horario":(location.hash.slice(1)||"horario"),false);
+  abrir(location.hash.includes("debug")?"horario":(location.hash.slice(1)||"horario"),true,true);
 })();
 
 

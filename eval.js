@@ -51,6 +51,7 @@ eco:{
  rules:[
   "La continua pesa un 40 %: las evaluaciones en clase son el 60 % de esa nota y los tests online el 40 %. En nota final, cada evaluación en clase vale un 12 % y cada test un 8 %.",
   "<strong>Sin calculadora</strong> — los exámenes de esta asignatura se hacen sin ella.",
+  "<strong>Tres magistrales caen en lunes festivo</strong> (12 de octubre, 2 de noviembre y 7 de diciembre) y se recuperan <em>online un viernes</em>. Las fechas están sin confirmar.",
   "<strong>Evaluaciones en clase</strong> (semanas 5 y 11) — un ejercicio del estilo de las listas de problemas más una pregunta de comprensión. Se espera sentado con folios en blanco y bolígrafo. Quien llega tarde no se presenta. Se califica de A a E: 100, 75, 50, 25 y 0.",
   "<strong>Tests online</strong> (semanas 8 y 14) — diez preguntas, intentos ilimitados de 8 min 30, cuenta el mejor. Abren el lunes a las 9:00 y cierran el sábado a las 14:00 en punto.",
   "<strong>Fórmula</strong> — nota = (X − 25) / 60 sobre 100, donde X es el porcentaje de aciertos. El 25 % es un cero y el 85 % ya es un 100. En blanco y mal cuentan igual: responde todo.",
