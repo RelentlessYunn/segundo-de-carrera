@@ -26,11 +26,12 @@ const CLASSES=[
  {id:"ed",  d:3,a:540,b:630, t:"teoría",     au:"Aula 2.3.C01", r:"10 sep – 10 dic",grp:"1081",from:"2026-09-10",to:"2026-12-10"},
  {id:"is",  d:3,a:645,b:735, t:"teoría",     au:"Aula 2.3.D01", r:"10 sep – 10 dic",grp:"82",from:"2026-09-10",to:"2026-12-10"},
  {id:"talf",d:3,a:930,b:1020,t:"prácticas",  au:"1.0.F03 · INF 7.0.J02",r:"24 sep · 5 nov · 10 dic",grp:"82",hatch:1,dates:["2026-09-24","2026-11-05","2026-12-10"]},
+ {id:"ec",  d:3,a:840,b:930, t:"laboratorio",au:"INF 7.0.J04 · INF 7.0.J05",r:"24 sep · 22 y 29 oct · 19 nov",grp:"82",hatch:1,dates:["2026-09-24","2026-10-22","2026-10-29","2026-11-19"]},
  {id:"ec",  d:3,a:1035,b:1125,t:"teoría",    au:"Aula 2.3.D03", r:"10 sep – 10 dic",grp:"82",from:"2026-09-10",to:"2026-12-10"},
  {id:"ed",  d:4,a:540,b:630, t:"teoría",     au:"Aula INF 2.2.C.04 DUAL",r:"11 sep – 11 dic",grp:"1081",from:"2026-09-11",to:"2026-12-11"},
  {id:"talf",d:4,a:645,b:735, t:"teoría",     au:"Aula 2.3.C03", r:"11 sep – 11 dic",grp:"82",from:"2026-09-11",to:"2026-12-11"},
- {id:"talf",d:4,a:750,b:840, t:"prácticas",  au:"Aula 4.0.E04", r:"solo 13 nov",grp:"82",hatch:1,dates:["2026-11-13"]},
- {id:"is",  d:4,a:1035,b:1125,t:"prácticas", au:"Aula 4.1.E06", r:"2, 16 y 30 oct · 20 nov",grp:"82",hatch:1,dates:["2026-10-02","2026-10-16","2026-10-30","2026-11-20"]}
+ {id:"talf",d:4,a:750,b:840, t:"prácticas",  au:"Aula 4.0.E04", r:"solo 13 nov",grp:"82",hatch:1,half:0,dates:["2026-11-13"]},
+ {id:"is",  d:4,a:750,b:840, t:"prácticas", au:"Aula 4.1.E06", r:"2, 16 y 30 oct · 20 nov",grp:"82",hatch:1,half:1,dates:["2026-10-02","2026-10-16","2026-10-30","2026-11-20"]}
 ];
 
 const PROFS=[
@@ -68,32 +69,31 @@ const PROFS=[
 ];
 
 const CAL=[
- {id:"ed",  date:"2026-09-16",wk:"S2", label:"16–17 sep",   what:"Cambio efectivo de grupo 1082 → 1081",w:"gestión",type:"cf",online:1},
- {id:"talf",date:"2026-09-24",wk:"S3", label:"jue 24 sep",  what:"Sesión de ejercicios, aula 1.0.F03, 15:30",w:"clase",type:"cl"},
- {id:"ec",  date:"2026-09-26",wk:"S3", label:"semana 3", sinDia:1, what:"Laboratorio 1",w:"laboratorio",type:"cl"},
+  {id:"talf",date:"2026-09-24",wk:"S3", label:"jue 24 sep",  what:"Sesión de ejercicios, aula 1.0.F03, 15:30",w:"clase",type:"cl"},
+ {id:"ec",  date:"2026-09-24",wk:"S3", label:"jue 24 sep",  what:"Laboratorio 1",w:"laboratorio",type:"cl",hora:"14:00–15:30",aula:"INF 7.0.J04 y 7.0.J05"},
  {id:"talf",date:"2026-10-02",wk:"S4", label:"vie 2 oct",   what:"JFLAP 1 · autómatas finitos, temas 2 y 3",w:"obligatorio",type:"en",hora:"10:45–12:15",aula:"INF 7.0.J04",formato:"Práctica en parejas, con entrega"},
- {id:"is",  date:"2026-10-02",wk:"S4", label:"vie 2 oct",   what:"Práctica en aula, 17:15",w:"clase",type:"cl"},
+ {id:"is",  date:"2026-10-02",wk:"S4", label:"vie 2 oct",   what:"Práctica en aula",w:"clase",type:"cl",hora:"12:30–14:00",aula:"Aula 4.1.E06"},
  {id:"ed",  date:"2026-10-05",wk:"S5", label:"lun 5 oct",   what:"Sesión extra del 1081, 12:30, aula 4.0.E06 — choca con Economía",w:"conflicto",type:"cf"},
  {id:"eco", date:"2026-10-07",wk:"S5", label:"mié 7 oct",   what:"Evaluación en clase 1. La haces con otro grupo, no en tu sesión habitual",w:"12 % final",type:"ex",hora:"09:00–10:30",aula:"Aula 6.1.02",formato:"Escrito en clase, folios en blanco y bolígrafo, sin calculadora"},
  {id:"is",  date:"2026-10-06",wk:"S5", label:"mar 6 oct",     what:"Examen parcial I, en la clase de teoría",w:"15 %",type:"ex",hora:"10:45–12:15",aula:"Aula 4.0.E04 · teoría del martes",formato:"Presencial, en horario de teoría"},
  {id:"ed",  date:"2026-10-15",wk:"S6", label:"jue 15 oct",  what:"Primer parcial: bloque 1, ítems 1 a 5. Presencial y escrito, aula 2.3.C01",w:"25 %",type:"ex",hora:"09:00–10:30",aula:"Aula 2.3.C01",formato:"Presencial y escrito"},
- {id:"is",  date:"2026-10-16",wk:"S6", label:"vie 16 oct",  what:"Práctica en aula, 17:15",w:"clase",type:"cl"},
- {id:"ec",  date:"2026-10-24",wk:"S7", label:"semana 7", sinDia:1, what:"Laboratorio 2 y entrega de la Práctica 1",w:"entrega",type:"en"},
+ {id:"is",  date:"2026-10-16",wk:"S6", label:"vie 16 oct",  what:"Práctica en aula",w:"clase",type:"cl",hora:"12:30–14:00",aula:"Aula 4.1.E06"},
+ {id:"ec",  date:"2026-10-22",wk:"S7", label:"jue 22 oct",  what:"Laboratorio 2 y entrega de la Práctica 1",w:"entrega",type:"en",hora:"14:00–15:30",aula:"INF 7.0.J04 y 7.0.J05"},
  {id:"eco", date:"2026-10-26",wk:"S8", label:"26–31 oct",   what:"Test online 1 en Aula Global",w:"8 % final",type:"ex",online:1,hora:"Abre lunes 9:00, cierra sábado 14:00",formato:"10 preguntas, intentos ilimitados de 8 min 30, cuenta el mejor"},
  {id:"dcp", date:"2026-11-04",wk:"S9", label:"mié 4 nov",   what:"Cuestionario de autoevaluación tipo test",w:"1 pto / 10",type:"ex",hora:"12:30–14:00",aula:"Aula 6.1.02",formato:"Tipo test"},
- {id:"ec",  date:"2026-10-31",wk:"S8", label:"semana 8", sinDia:1, what:"Laboratorio 3",w:"laboratorio",type:"cl"},
- {id:"is",  date:"2026-10-30",wk:"S8", label:"vie 30 oct",  what:"Práctica en aula, 17:15",w:"clase",type:"cl"},
+ {id:"ec",  date:"2026-10-29",wk:"S8", label:"jue 29 oct",  what:"Laboratorio 3",w:"laboratorio",type:"cl",hora:"14:00–15:30",aula:"INF 7.0.J04 y 7.0.J05"},
+ {id:"is",  date:"2026-10-30",wk:"S8", label:"vie 30 oct",  what:"Práctica en aula",w:"clase",type:"cl",hora:"12:30–14:00",aula:"Aula 4.1.E06"},
  {id:"talf",date:"2026-11-05",wk:"S9", label:"jue 5 nov",   what:"JFLAP 2 · gramáticas, tema 4",w:"obligatorio",type:"en",hora:"15:30–17:00",aula:"INF 7.0.J02",formato:"Práctica en parejas, con entrega"},
  {id:"ec",  date:"2026-11-05",wk:"S9", label:"jue 5 nov",   what:"Examen parcial",w:"parte del 30 %",type:"ex",hora:"17:15–18:45",aula:"Aula 2.3.D03",formato:"Presencial, teoría y práctica"},
  {id:"talf",date:"2026-11-06",wk:"S9", label:"vie 6 nov",   what:"EC1: temas 2, 3 y 4 más JFLAP 1",w:"25 % aprox.",type:"ex",hora:"10:45–12:15",aula:"Aula 2.3.C03",formato:"Presencial y escrito"},
  {id:"ed",  date:"2026-11-13",wk:"S10",label:"vie 13 nov",  what:"Segundo parcial: bloque 2, ítem 6. Presencial y escrito, aula 2.2.C04",w:"25 %",type:"ex",hora:"09:00–10:30",aula:"Aula 2.2.C04",formato:"Presencial y escrito"},
  {id:"talf",date:"2026-11-13",wk:"S10",label:"vie 13 nov",  what:"Sesión de ejercicios, aula 4.0.E04, 12:30",w:"clase",type:"cl"},
  {id:"eco", date:"2026-11-18",wk:"S11",label:"mié 18 nov",  what:"Evaluación en clase 2",w:"12 % final",type:"ex",hora:"10:45–12:15",aula:"Aula 10.1.6",formato:"Escrito en clase, folios en blanco y bolígrafo"},
- {id:"ec",  date:"2026-11-21",wk:"S11",label:"semana 11", sinDia:1, what:"Laboratorio 4",w:"laboratorio",type:"cl"},
- {id:"is",  date:"2026-11-20",wk:"S11",label:"vie 20 nov",  what:"Práctica en aula, 17:15",w:"clase",type:"cl"},
+ {id:"ec",  date:"2026-11-19",wk:"S11",label:"jue 19 nov",  what:"Laboratorio 4",w:"laboratorio",type:"cl",hora:"14:00–15:30",aula:"INF 7.0.J04 y 7.0.J05"},
+ {id:"is",  date:"2026-11-20",wk:"S11",label:"vie 20 nov",  what:"Práctica en aula",w:"clase",type:"cl",hora:"12:30–14:00",aula:"Aula 4.1.E06"},
  {id:"est", date:"2026-10-19",wk:"S7", label:"lun 19 oct", what:"Primer parcial: temas 1 y 2. En la clase reducida (prácticas del lunes)",w:"17,5 %",type:"ex",hora:"09:00–10:30",aula:"Aula 5.1.04",formato:"Presencial, con formulario oficial"},
  {id:"est", date:"2026-11-23",wk:"S12",label:"lun 23 nov", what:"Segundo parcial: temas 3 y 4. En la clase reducida (prácticas del lunes)",w:"17,5 %",type:"ex",hora:"09:00–10:30",aula:"Aula 5.1.04",formato:"Presencial, con formulario oficial"},
- {id:"talf",date:"2026-11-27",wk:"S12",label:"vie 27 nov",  what:"JFLAP 3 · autómatas a pila, tema 6",w:"obligatorio",type:"en",hora:"Sin cerrar: 10:45 o 19:00–21:00",aula:"INF 7.0.J04",formato:"Práctica en parejas, con entrega"},
+ {id:"talf",date:"2026-11-27",wk:"S12",label:"vie 27 nov",  what:"JFLAP 3 · autómatas a pila, tema 6",w:"obligatorio",type:"en",hora:"10:45–12:15",aula:"INF 7.0.J04",formato:"Práctica en parejas, con entrega"},
  {id:"ed",  date:"2026-11-30",wk:"S13",label:"lun 30 nov",  what:"Sesión extra del 1081, 12:30, aula 2.3.C04 — choca con Economía",w:"conflicto",type:"cf"},
  {id:"is",  date:"2026-12-05",wk:"S13",label:"semana 13", sinDia:1, what:"Examen parcial II, en clase de teoría",w:"15 %",type:"ex",hora:"10:45–12:15",aula:"4.0.E04 (martes) o 2.3.D01 (jueves)",formato:"Presencial, en horario de teoría"},
  {id:"ec",  date:"2026-12-05",wk:"S13",label:"semana 13", sinDia:1, what:"Entrega de la Práctica 2",w:"entrega",type:"en"},
@@ -163,8 +163,8 @@ const ACAD={
 const AVISOS={1:{
 1:["Semana de arranque. Baja de Aula Global la guía docente de las siete asignaturas y comprueba cuáles te faltan.","Estadística II es la única de la que no tienes nada: ni evaluación, ni porcentajes, ni calendario. Empieza por ahí."],
 2:["Es la semana del cambio de grupo de Estructura de Datos. Manda el correo a Israel González Carrasco y guarda su respuesta.","Hasta que Aula Global refleje el 1081 sigues matriculado en el 1082: si cae alguna entrega, pregunta dónde se sube.","Busca pareja para los JFLAP de TALF. La primera sesión es el 2 de octubre y es obligatoria."],
-3:["El jueves 24 tienes sesión extra de TALF a las 15:30 en el aula 1.0.F03, fuera de tu horario normal.","Primer laboratorio de Estructura de Computadores. Instala WepSIM antes para no perder la sesión montando el entorno."],
-4:["JFLAP 1 el viernes: asistencia obligatoria y entrega en parejas, sobre los temas 2 y 3.","Empieza el proyecto individual de Ingeniería del Software en la práctica del viernes. Se entrega en la semana 14, la peor del cuatrimestre: todo lo que adelantes ahora te lo quitas de diciembre."],
+3:["Jueves 24 cargado: laboratorio 1 de Estructura de Computadores a las 14:00 en INF 7.0.J04 y 7.0.J05, y justo después sesión de TALF a las 15:30 en el aula 1.0.F03.","Instala WepSIM antes del laboratorio para no perder la sesión montando el entorno."],
+4:["JFLAP 1 el viernes: asistencia obligatoria y entrega en parejas, sobre los temas 2 y 3.","Empieza el proyecto individual de Ingeniería del Software en la práctica del viernes, de 12:30 a 14:00 en el aula 4.1.E06. Se entrega en la semana 14, la peor del cuatrimestre: todo lo que adelantes ahora te lo quitas de diciembre."],
 5:["Semana de dos pruebas: parcial I de Ingeniería del Software y evaluación en clase 1 de Economía el miércoles.","En Economía se entra con folios en blanco y bolígrafo, y quien llega tarde no se presenta. Sal con margen desde casa.","El lunes 5 es la primera sesión extra del 1081 y choca con la magistral de Economía. Si aún no has preguntado si es obligatoria, hazlo hoy."],
 6:["Primer parcial de Estructura de Datos el jueves 15 en el aula 2.3.C01: bloque 1, ítems 1 a 5. Vale 2,5 puntos.","Entra modelado orientado a objetos, diseño y análisis de algoritmos, ordenación, búsqueda y recursividad."],
 7:["Entrega de la práctica 1 de Estructura de Computadores junto con el laboratorio 2.","El viernes 23 se resuelve el parcial de Estructura de Datos en clase. Ve con el examen mirado: es la mejor pista de cómo pregunta."],
@@ -172,12 +172,13 @@ const AVISOS={1:{
 9:["La peor semana del cuatrimestre. El jueves encadenas JFLAP 2 a las 15:30 y el parcial de Estructura de Computadores a las 17:15, sin hueco entre medias.","El viernes cae la EC1 de TALF: temas 2, 3 y 4 más JFLAP 1.","Llega con todo preparado desde el miércoles. Esta semana no se improvisa."],
 10:["Segundo parcial de Estructura de Datos el viernes 13 en el aula 2.2.C04: bloque 2, ítem 6, estructuras lineales.","Es el último examen antes de un mes tranquilo. Aprovecha la semana 12 para adelantar el trabajo de Ingeniería del Software."],
 11:["Evaluación en clase 2 de Economía el miércoles y laboratorio 4 de Estructura de Computadores.","El lunes 16 hay sesión extra del 1081, otra vez chocando con Economía."],
-12:["Semana ligera: solo JFLAP 3, y su horario está sin cerrar entre las 10:45 y las 19–21 h. Confirma con Araceli Sanchis cuál manda.","Úsala para el trabajo de Ingeniería del Software y para empezar a repasar árboles y grafos de cara al final."],
+12:["Semana ligera: solo JFLAP 3, el viernes de 10:45 a 12:15 en INF 7.0.J04.","Úsala para el trabajo de Ingeniería del Software y para empezar a repasar árboles y grafos de cara al final."],
 13:["Parcial II de Ingeniería del Software y entrega de la práctica 2 de Estructura de Computadores.","Última sesión extra del 1081 el lunes 30, con el mismo choque de siempre."],
 14:["Cinco cosas en cinco días: test online 2 de Economía, entrega del trabajo de Ingeniería del Software, caso final de Derecho Civil, JFLAP 4 y EC2 de TALF.","Si has ido adelantando el trabajo de Ingeniería del Software, esta semana es llevadera. Si no, va a doler.","Las clases acaban el viernes 11. Los exámenes ordinarios van del 16 al 22 de diciembre y del 11 al 25 de enero."]
 }, 2:{}};
 /* ===== Tareas por asignatura. Añade líneas aquí conforme salgan. ===== */
 const TAREAS={
  ed:[], talf:[], is:[["Adelantar el trabajo individual","Se entrega en la semana 14, la peor del cuatrimestre. Trabájalo en las prácticas de octubre y noviembre."]],
- ec:[], eco:[], dcp:[], est:[]
+ ec:[["Instalar WepSIM y CREATOR antes del laboratorio 1","El jueves 24 a las 14:00 en INF 7.0.J04. Llega con el entorno montado."]],
+ eco:[], dcp:[], est:[]
 };
