@@ -140,23 +140,6 @@ document.addEventListener("click",ev=>{
  });
  $("#calbody").innerHTML=g;
 
- /* Línea de la hora actual: solo en la columna del día de hoy y dentro del horario visible. */
- (function ahora(){
-   document.querySelectorAll(".linea-ahora").forEach(x=>x.remove());
-   const n=new Date(), idx=n.getDay()-1;
-   if(idx<0||idx>4) return;
-   const m=n.getHours()*60+n.getMinutes();
-   const col=document.querySelectorAll("#calbody .daycol")[idx];
-   if(col && m>=T0 && m<=T0+660){
-     const l=document.createElement("div");
-     l.className="linea-ahora";
-     l.style.top=((m-T0)*ESC)+"px";
-     l.innerHTML='<span class="punto"></span><span class="hh">'+hhmm(m)+"</span>";
-     col.appendChild(l);
-   }
-   setTimeout(ahora,60000);
- })();
-
  $("#subjkey").innerHTML=Object.keys(SUBJ).map(k=>'<span><i class="sw" style="background:'+SUBJ[k].c+'"></i>'+esc(SUBJ[k].n)+"</span>").join("");
 
  $("#dayblocks").innerHTML=DAYS.map((dn,d)=>{
@@ -177,28 +160,36 @@ document.addEventListener("click",ev=>{
   let ver=new Date(hoy);
 
   /* contador de semana en la cabecera */
-  /* reloj en vivo: hora, fecha y semana lectiva */
+  /* reloj en vivo: los dígitos se renuevan solo cuando cambian */
   (function(){
     const DIAS=["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
     const MESES=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+    function pintaHora(txt){
+      const cont=$("#rHora"); if(!cont) return;
+      const digs=cont.querySelectorAll(".dig");
+      [txt.slice(0,2), txt.slice(3,5)].forEach((par,i)=>{
+        if(digs[i] && digs[i].textContent!==par){
+          digs[i].textContent=par;
+          digs[i].classList.remove("late"); void digs[i].offsetWidth; digs[i].classList.add("late");
+        }
+      });
+    }
     function tic(){
       const n=new Date();
-      const eH=$("#rHora"), eF=$("#rFecha"), eS=$("#rSemana");
-      if(!eH) return;
-      eH.textContent=String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0");
-      eF.textContent=DIAS[n.getDay()]+", "+n.getDate()+" de "+MESES[n.getMonth()];
+      pintaHora(String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0"));
+      const eF=$("#rFecha"), eS=$("#rSemana");
+      if(eF) eF.textContent=DIAS[n.getDay()]+", "+n.getDate()+" de "+MESES[n.getMonth()];
+      if(!eS) return;
       const w=semanaEn(isoD(n));
       if(w){
         const tot=SEMANAS.filter(x=>x.c===w.c).length;
-        eS.innerHTML=`<span class="s-lg">Semana ${w.n} de ${tot} · ${w.c}.º cuatrimestre</span>`+
-                     `<span class="s-sm">Semana ${w.n}/${tot} · ${w.c}.º cuatri</span>`;
+        eS.innerHTML=`<b>Semana ${w.n}</b><span>de ${tot}</span>`+
+          `<i class="w-bar"><u style="width:${Math.round(w.n/tot*100)}%"></u></i>`;
       } else {
-        const t = n<new Date(CUATRIS[0].ini+"T12:00:00") ? "El curso aún no ha empezado" : "Fuera de periodo lectivo";
-        eS.innerHTML=`<span class="s-lg">${t}</span><span class="s-sm">${t}</span>`;
+        eS.innerHTML=`<b>${n<new Date(CUATRIS[0].ini+"T12:00:00")?"Aún no empieza":"Sin clases"}</b>`;
       }
     }
     tic();
-    /* se ajusta al cambio de minuto para no ir desfasado */
     setTimeout(()=>{ tic(); setInterval(tic,60000); }, (60-new Date().getSeconds())*1000);
   })();
 
@@ -236,19 +227,53 @@ document.addEventListener("click",ev=>{
       $("#todayMeta").textContent=sem?`Semana ${sem.n} · ${sem.c}.º cuatri`:"";
     }else{
       const m=hoy.getHours()*60+hoy.getMinutes();
-      $("#todayList").innerHTML=cs.map(c=>{
-        const S=SUBJ[c.id], on=esHoy&&m>=c.a&&m<=c.b;
-        return `<button class="trow tap${on?" now":""}" data-peek="${c.id}"><span class="sw" style="background:${S.c}"></span>`+
+      $("#todayList").innerHTML=cs.map((c,i)=>{
+        const S=SUBJ[c.id], on=esHoy&&m>=c.a&&m<=c.b, pasada=esHoy&&m>c.b;
+        /* cuánto llevas de la clase en curso */
+        const prog = on ? Math.round((m-c.a)/(c.b-c.a)*100) : (pasada?100:0);
+        return `<button class="trow tap${on?" now":""}${pasada?" ya":""}" data-peek="${c.id}" style="--sc:${S.c};--d:${i*70}ms">`+
+          `<span class="sw" style="background:${S.c}"></span>`+
           `<time>${hhmm(c.a)}–${hhmm(c.b)}</time>`+
           `<div class="m"><b>${esc(S.n)}</b><em>${esc(c.t)} · ${S.cam==="GET"?"Getafe":"Leganés"}</em></div>`+
-          `<span class="aula">${esc(c.au)}</span></button>`;
+          `<span class="aula">${esc(c.au)}</span>`+
+          (on?`<i class="prog-clase"><u style="width:${prog}%"></u></i>`:"")+
+          `</button>`;
       }).join("");
+      barraDia(cs, esHoy);
       const campus=[...new Set(cs.map(c=>SUBJ[c.id].cam==="GET"?"Getafe":"Leganés"))].join(" y ");
       $("#todayMeta").textContent=cs.length+" clases · "+campus+(sem?" · semana "+sem.n:"");
     }
     $("#dHoy").hidden=esHoy;
     proximos(ver);
+    clearInterval(window.__tDia);
+    window.__tDia=setInterval(()=>{ if(isoD(ver)===isoD(new Date())) draw(); }, 60000);
     recomendaciones(sem);
+  }
+
+  /* Barra roja del día: recorre la lista de clases marcando la hora actual. */
+  function barraDia(cs, esHoy){
+    const lista=$("#todayList"); if(!lista) return;
+    lista.querySelectorAll(".barra-dia").forEach(x=>x.remove());
+    if(!esHoy||!cs.length) return;
+    const ini=Math.min(...cs.map(c=>c.a)), fin=Math.max(...cs.map(c=>c.b));
+    const n=new Date(), m=n.getHours()*60+n.getMinutes();
+    if(m<ini||m>fin) return;
+    /* la posición se calcula sobre las filas reales, no sobre el reloj:
+       así la línea cae donde el ojo espera aunque haya huecos entre clases */
+    const filas=[...lista.querySelectorAll(".trow")];
+    let top=null;
+    for(let i=0;i<cs.length;i++){
+      const f=filas[i]; if(!f) continue;
+      const y=f.offsetTop, h=f.offsetHeight;
+      if(m<cs[i].a){ top=y-3; break; }                       /* en el hueco previo */
+      if(m<=cs[i].b){ top=y+h*((m-cs[i].a)/(cs[i].b-cs[i].a)); break; }
+    }
+    if(top===null) return;
+    const l=document.createElement("div");
+    l.className="barra-dia";
+    l.style.top=top+"px";
+    l.innerHTML='<span class="pt"></span><span class="hh">'+hhmm(m)+"</span>";
+    lista.appendChild(l);
   }
 
   /* recomendaciones de la semana, plegadas */
