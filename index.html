@@ -12,15 +12,22 @@
 <meta name="apple-mobile-web-app-title" content="2º Carrera">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=38">
+<!-- la fuente no bloquea el primer pintado: se aplica en cuanto llega -->
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+<link rel="stylesheet" href="styles.css?v=39">
 </head>
 <body>
 <header class="top">
   <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
   <div class="wrap hdr-grid">
     <div class="hdr-top">
-      <div class="marca"><span class="dot"></span>Segundo de carrera · 1.er cuatrimestre</div>
+      <div class="hdr-izq">
+        <a class="icon home-btn" href="#home" aria-label="Inicio" title="Inicio">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M4 10.6 12 4l8 6.6V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.2H9v5.2H5.5A1.5 1.5 0 0 1 4 19z"/></svg>
+        </a>
+        <div class="marca"><span class="dot"></span>UC3M · Segundo de carrera · 1.er cuatrimestre</div>
+      </div>
       <div class="hdr-acc">
         <a class="ag-btn" href="https://aulaglobal.uc3m.es" target="_blank" rel="noopener">
           <svg class="globo" viewBox="0 0 24 24" aria-hidden="true"><circle class="f" cx="12" cy="12" r="8.6"/><ellipse class="meri" cx="12" cy="12" rx="3.9" ry="8.6"/><path d="M3.8 9.2h16.4M3.8 14.8h16.4"/></svg>
@@ -178,12 +185,66 @@
 
 
 
-<footer><div class="wrap"><p>Montado a partir de tu horario personal de la UC3M, el horario del grupo 1081, las guías docentes 2026/27 y los materiales de presentación de cada asignatura. Los datos de profesorado proceden del directorio público de la universidad. Lo que en los documentos originales estaba marcado como provisional sigue estándolo aquí.</p><p><a href="#notas" id="linkNotas">·</a></p><p class="ver">v38</p></div></footer>
+<footer><div class="wrap"><p>Montado a partir de tu horario personal de la UC3M, el horario del grupo 1081, las guías docentes 2026/27 y los materiales de presentación de cada asignatura. Los datos de profesorado proceden del directorio público de la universidad. Lo que en los documentos originales estaba marcado como provisional sigue estándolo aquí.</p><p><a href="#notas" id="linkNotas">·</a></p><p class="ver">v39</p></div></footer>
 </div>
 <div id="dbg"></div>
-<script src="config.js?v=38" onerror="void 0"></script>
-<script src="data.js?v=38"></script>
-<script src="eval.js?v=38"></script>
-<script src="app.js?v=38"></script>
+
+<!-- Inicio: elegir entre UC3M y Nolan -->
+<div id="portal" class="portal" hidden>
+  <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="p-cielo" aria-hidden="true"></div>
+  <div class="p-in">
+    <div class="p-top">
+      <div class="p-hora" id="pHora">--:--</div>
+      <div class="p-saludo" id="pSaludo">Hola, Shengyu</div>
+    </div>
+
+    <div class="p-vista" data-vista="home">
+      <p class="p-pide">¿A dónde vamos?</p>
+      <div class="p-cards">
+        <a class="p-card" id="pIrUc3m" href="#horario" style="--ac:#3FD9A4">
+          <span class="p-ic"><svg class="i-uni" viewBox="0 0 48 48" aria-hidden="true">
+            <path class="f2" d="M5 17 24 6.5 43 17z"/>
+            <circle class="sello" cx="24" cy="12.6" r="2"/>
+            <path d="M5 17h38M9.5 21.5v13M17.8 21.5v13M30.2 21.5v13M38.5 21.5v13M7 34.5h34"/>
+            <path class="f" d="M4.5 38.5h39v4h-39z"/>
+          </svg></span>
+          <span class="p-txt"><b>UC3M</b><span>Segundo de carrera · 1.er cuatrimestre</span></span>
+          <span class="p-info" id="pUc3m"></span>
+          <span class="p-ir">Entrar <em>→</em></span>
+        </a>
+        <a class="p-card obra" href="#nolan" style="--ac:#FFA640">
+          <span class="p-ic"><svg class="i-grua" viewBox="0 0 48 48" aria-hidden="true">
+            <path d="M12 44V10M16 44V12M12 40l4-4-4-4 4-4-4-4 4-4-4-4 4-4-4-4"/>
+            <path d="M4 12h40M12 10 16 5l2 7M16 5 40 12"/>
+            <rect class="f2" x="4.5" y="12.5" width="5" height="4.5" rx="1"/>
+            <path d="M7 44h14"/>
+            <g class="gancho"><path d="M34 12v13"/><rect class="f" x="30" y="25" width="8" height="6.5" rx="1"/></g>
+          </svg></span>
+          <span class="p-txt"><b>Nolan</b><span class="obra-tag">En construcción</span></span>
+          <span class="p-info"><span>Pronto, con lo que me vayas contando.</span></span>
+          <span class="p-ir">Ver <em>→</em></span>
+        </a>
+      </div>
+    </div>
+
+    <div class="p-vista p-nolan" data-vista="nolan" hidden>
+      <span class="p-ic grande" style="--ac:#FFA640"><svg class="i-grua" viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M12 44V10M16 44V12M12 40l4-4-4-4 4-4-4-4 4-4-4-4 4-4-4-4"/>
+        <path d="M4 12h40M12 10 16 5l2 7M16 5 40 12"/>
+        <rect class="f2" x="4.5" y="12.5" width="5" height="4.5" rx="1"/>
+        <path d="M7 44h14"/>
+        <g class="gancho"><path d="M34 12v13"/><rect class="f" x="30" y="25" width="8" height="6.5" rx="1"/></g>
+      </svg></span>
+      <h2>Nolan</h2>
+      <p>En construcción. Aquí irá lo que me indiques.</p>
+      <a class="p-volver" href="#home">← Volver al inicio</a>
+    </div>
+  </div>
+</div>
+<script src="config.js?v=39" onerror="void 0"></script>
+<script src="data.js?v=39"></script>
+<script src="eval.js?v=39"></script>
+<script src="app.js?v=39"></script>
 </body>
 </html>

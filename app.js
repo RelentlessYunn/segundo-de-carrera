@@ -23,7 +23,6 @@ function rolChips(p){
 }
 
 const hhmm=m=>String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");
-const CURSO_INI=new Date(2026,8,7), CURSO_FIN=new Date(2026,11,12);
 const ESC=1.2;   /* píxeles por minuto en la rejilla del horario */
 const isoD=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const TIPO={ex:"Examen",en:"Entrega",cl:"Clase",cf:"Choque de horario"};
@@ -82,6 +81,10 @@ const semanaEn=key=>SEMANAS.find(w=>key>=w.from&&key<=w.to)||null;
 const HOY_KEY=isoD(new Date());
 const semActual=semanaEn(HOY_KEY);
 const semanaActual=semActual&&semActual.c===1?semActual.n:0;
+/* una clase cuenta ese día si cae en su rango semanal o en su lista de días sueltos */
+const clasesDe=(key,idx)=>CLASSES
+  .filter(c=>c.d===idx && (c.dates ? c.dates.includes(key) : (key>=c.from && key<=c.to)))
+  .sort((x,y)=>x.a-y.a);
 /* Para el progreso del temario: si el cuatrimestre ya acabó, cuenta como completo */
 const semanaProgreso=(()=>{
   const hoy=new Date();
@@ -158,8 +161,8 @@ document.addEventListener("click",ev=>{
 (function(){
   const DN=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
   const MN=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-  const hoy=new Date(); const hoyStr=isoD(hoy);
-  let ver=new Date(hoy);
+  let ver=new Date();
+  let siguiendoHoy=true;   /* si miras hoy y pasa la medianoche, avanza solo */
 
   /* contador de semana en la cabecera */
   /* reloj en vivo: los dígitos se renuevan solo cuando cambian */
@@ -191,19 +194,21 @@ document.addEventListener("click",ev=>{
         eS.innerHTML=`<b>${n<new Date(CUATRIS[0].ini+"T12:00:00")?"Aún no empieza":"Sin clases"}</b>`;
       }
     }
-    tic();
-    setTimeout(()=>{ tic(); setInterval(tic,60000); }, (60-new Date().getSeconds())*1000);
+    /* un único reloj para toda la página: avisa con el evento "minuto" justo
+       cuando cambia el minuto, y quien lo necesite (Hoy, el inicio) escucha */
+    (function vuelta(){
+      tic();
+      document.dispatchEvent(new CustomEvent("minuto"));
+      setTimeout(vuelta, 60000-Date.now()%60000+30);
+    })();
   })();
 
-  /* una clase cuenta ese día si cae en su rango semanal o en su lista de días sueltos */
-  const clasesDe=(key,idx)=>CLASSES
-    .filter(c=>c.d===idx && (c.dates ? c.dates.includes(key) : (key>=c.from && key<=c.to)))
-    .sort((x,y)=>x.a-y.a);
 
   /* quieto=true: refresco de cada minuto, sin repetir la animación de entrada */
   function draw(quieto){
     const ahora=new Date(), key=isoD(ver), idx=ver.getDay()-1;
     const esHoy=key===isoD(ahora);
+    siguiendoHoy=esHoy;
     $("#todayName").textContent=(esHoy?"Hoy · ":"")+DN[ver.getDay()]+", "+ver.getDate()+" de "+MN[ver.getMonth()];
 
     /* avisos del día */
@@ -230,7 +235,11 @@ document.addEventListener("click",ev=>{
       $("#todayMeta").textContent=sem?`Semana ${sem.n} · ${sem.c}.º cuatri`:"";
     }else{
       const m=ahora.getHours()*60+ahora.getMinutes();
-      $("#todayList").classList.toggle("quieto",!!quieto);
+      const lista=$("#todayList");
+      lista.classList.toggle("quieto",!!quieto);
+      /* las filas entran una vez; después se quedan quietas aunque la pestaña se oculte y vuelva */
+      clearTimeout(lista.__q);
+      if(!quieto) lista.__q=setTimeout(()=>{ lista.classList.add("quieto"); delete lista.dataset.dir; },900);
       $("#todayList").innerHTML=cs.map((c,i)=>{
         const S=SUBJ[c.id], on=esHoy&&m>=c.a&&m<=c.b, pasada=esHoy&&m>c.b;
         /* cuánto llevas de la clase en curso */
@@ -249,8 +258,6 @@ document.addEventListener("click",ev=>{
     }
     $("#dHoy").hidden=esHoy;
     proximos(ver);
-    clearInterval(window.__tDia);
-    window.__tDia=setInterval(()=>{ if(isoD(ver)===isoD(new Date())) draw(true); }, 60000);
     recomendaciones(sem);
   }
 
@@ -322,6 +329,12 @@ document.addEventListener("click",ev=>{
     if(card) pintarDetalle("hoy-detail", CAL[parseInt(card.dataset.ev)]);
   });
   cerrarDetalleAl("hoy-detail",".n7-card");
+
+  document.addEventListener("minuto",()=>{
+    const hoyK=isoD(new Date());
+    if(siguiendoHoy && isoD(ver)!==hoyK){ ver=new Date(); draw(); }
+    else if(isoD(ver)===hoyK) draw(true);
+  });
 
   /* el día nuevo entra por el lado hacia el que te mueves */
   const irA=(dir,fn)=>{ fn(); $("#todayList").dataset.dir=dir; draw(); };
@@ -531,6 +544,24 @@ $("#profbody").innerHTML=PROFS.map(p=>{
 const BIN_ID=(window.CONFIG||{}).BIN_ID||"";
 const API_KEY=(window.CONFIG||{}).API_KEY||"";
 let saveTimer=null;
+const URL_BIN=`https://api.jsonbin.io/v3/b/${BIN_ID}`;
+/* Lectura de la nube. Al cargar, tareas, notas de examen y notas para Claude
+   comparten una sola petición; al guardar se relee para no pisar otro dispositivo. */
+let lecturaInicial=null;
+function leerNube(fresca){
+  if(!fresca && lecturaInicial) return lecturaInicial;
+  const p=fetch(URL_BIN+"/latest",{headers:{"X-Access-Key":API_KEY}})
+    .then(r=>{ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+    .then(d=>d.record||{});
+  if(!fresca) lecturaInicial=p;
+  return p;
+}
+async function escribirNube(cambios){
+  const rec=Object.assign({},await leerNube(true),cambios);
+  const r=await fetch(URL_BIN,{method:"PUT",
+    headers:{"Content-Type":"application/json","X-Access-Key":API_KEY},body:JSON.stringify(rec)});
+  return r.ok;
+}
 
 function estado(txt){ const e=$("#notasEstado2"); if(e) e.textContent=txt; }
 
@@ -557,11 +588,9 @@ async function initData(){
   if(!BIN_ID||!API_KEY){ estado("Guardado desactivado: falta config.js."); return; }
   estado("Cargando…");
   try{
-    const res=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`,{headers:{"X-Access-Key":API_KEY}});
-    if(!res.ok) throw new Error("HTTP "+res.status);
-    const data=await res.json();
-    (data.record.hechas||[]).forEach(id=>{const el=document.getElementById(id); if(el) el.checked=true;});
-    const notas=data.record.grades||{};
+    const rec=await leerNube();
+    (rec.hechas||[]).forEach(id=>{const el=document.getElementById(id); if(el) el.checked=true;});
+    const notas=rec.grades||{};
     Object.keys(notas).forEach(id=>{
       const inp=document.getElementById(id);
       if(inp){ inp.value=notas[id]; window.recalcular(inp.dataset.subj, inp.dataset.scope); }
@@ -578,15 +607,8 @@ function guardar(){
     const hechas=[...document.querySelectorAll('#tareasAsig input:checked,#checks input:checked')].map(x=>x.id);
     const grades={};
     document.querySelectorAll('.g-input[data-scope="main"]').forEach(inp=>{ if(inp.value!=="") grades[inp.id]=inp.value; });
-    try{
-      const r0=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`,{headers:{"X-Access-Key":API_KEY}});
-      const d0=await r0.json();
-      const rec=Object.assign({},d0.record||{},{hechas,grades});
-      const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`,{
-        method:"PUT",headers:{"Content-Type":"application/json","X-Access-Key":API_KEY},
-        body:JSON.stringify(rec)});
-      estado(r.ok?"Guardado.":"No se pudo guardar.");
-    }catch(e){ estado("No se pudo guardar."); }
+    try{ estado(await escribirNube({hechas,grades})?"Guardado.":"No se pudo guardar."); }
+    catch(e){ estado("No se pudo guardar."); }
   },800);
 }
 initData();
@@ -693,6 +715,49 @@ initData();
   draw(cur);
 })();
 
+/* --- inicio: elegir entre UC3M y Nolan --- */
+(function(){
+  const P=document.getElementById("portal"); if(!P) return;
+  const vistas=[...P.querySelectorAll(".p-vista")];
+  const saludo=h=>h<6?"Buenas noches":h<14?"Buenos días":h<21?"Buenas tardes":"Buenas noches";
+  function pinta(){
+    const n=new Date(), key=isoD(n), idx=n.getDay()-1, m=n.getHours()*60+n.getMinutes();
+    $("#pHora").textContent=hhmm(m);
+    $("#pSaludo").textContent=saludo(n.getHours())+", Shengyu";
+    /* resumen de la tarjeta UC3M: semana, siguiente clase y próxima prueba */
+    const sin=ACAD.sinClase.find(x=>x.date===key);
+    const cs=(idx<0||idx>4||sin)?[]:clasesDe(key,idx);
+    const sig=cs.find(c=>c.b>=m);
+    const clase=sig ? (sig.a<=m?"Ahora: ":"Siguiente: ")+SUBJ[sig.id].n+" · "+hhmm(sig.a)+" · "+sig.au
+               : cs.length ? "Clases de hoy terminadas" : "Hoy no tienes clase";
+    const pr=CAL.filter(e=>e.date>=key&&(e.type==="ex"||e.type==="en")).sort((a,b)=>a.date.localeCompare(b.date))[0];
+    let prueba="";
+    if(pr){
+      const d=Math.round((new Date(pr.date+"T12:00:00")-new Date(key+"T12:00:00"))/864e5);
+      prueba=`${TIPO[pr.type]} de ${SUBJ[pr.id].ab} ${d===0?"hoy":d===1?"mañana":"en "+d+" días"}`;
+    }
+    const w=semanaEn(key);
+    $("#pUc3m").innerHTML=(w?`<i>Semana ${w.n}</i>`:"")+`<span>${esc(clase)}</span>`+(prueba?`<span>${esc(prueba)}</span>`:"");
+    /* UC3M te devuelve a la pestaña donde estabas */
+    $("#pIrUc3m").setAttribute("href","#"+(window.__ultimaPestana||"horario"));
+  }
+  window.portal=function(vista){
+    if(vista){
+      pinta();
+      vistas.forEach(v=>v.hidden=v.dataset.vista!==vista);
+      P.classList.remove("sale");
+      P.hidden=false;
+      P.scrollTop=0;
+      document.body.classList.add("en-portal");
+    } else if(!P.hidden){
+      document.body.classList.remove("en-portal");
+      P.classList.add("sale");
+      setTimeout(()=>{ if(P.classList.contains("sale")){ P.hidden=true; P.classList.remove("sale"); } },280);
+    }
+  };
+  document.addEventListener("minuto",()=>{ if(!P.hidden) pinta(); });
+})();
+
 /* --- pestañas: una sección cada vez --- */
 (function(){
   /* el horario semanal y el calendario del mes comparten pestaña */
@@ -720,6 +785,7 @@ initData();
   /* la primera colocación no se anima: la cápsula aparece ya en su sitio */
   requestAnimationFrame(()=>requestAnimationFrame(()=>barra&&barra.classList.add("lista")));
 
+  const esMovil=()=>window.matchMedia("(max-width:820px)").matches;
   function abrir(tab,scroll,inicial){
     if(tab==="notas"){
       todas.forEach(id=>{const el=document.getElementById(id); if(el) el.hidden=true;});
@@ -736,19 +802,18 @@ initData();
       if(el) el.hidden=!TABS[tab].includes(id);
     });
     links.forEach(l=>l.classList.toggle("on",l.dataset.tab===tab));
+    window.__ultimaPestana=tab;
     indicador();
-    TABS[tab].forEach(id=>{
-      const el=document.getElementById(id);
-      if(!el) return;
-      el.classList.remove("enter");
-      void el.offsetWidth;          /* fuerza el reinicio de la animación */
-      el.classList.add("enter");
-      if(window.matchMedia("(max-width:820px)").matches) return;
-      [...el.children].forEach((hijo,i)=>{
-        hijo.style.setProperty("--d", (i*55)+"ms");
-        hijo.classList.remove("stagger"); void hijo.offsetWidth; hijo.classList.add("stagger");
-      });
-    });
+    /* entrada escalonada solo en escritorio: en el móvil manda el deslizamiento */
+    if(!esMovil()){
+      const secs=TABS[tab].map(id=>document.getElementById(id)).filter(Boolean);
+      const hijos=secs.flatMap(el=>[...el.children]);
+      secs.forEach(el=>el.classList.remove("enter"));
+      hijos.forEach(h=>h.classList.remove("stagger"));
+      void document.body.offsetWidth;          /* un único reinicio para todas */
+      secs.forEach(el=>el.classList.add("enter"));
+      hijos.forEach((h,i)=>{ h.style.setProperty("--d",(Math.min(i,8)*55)+"ms"); h.classList.add("stagger"); });
+    }
     /* primero la URL: escribir el hash puede hacer saltar al elemento, así que
        el scroll se corrige justo después */
     if(!inicial && history.replaceState && !location.hash.includes("debug")) history.replaceState(null,"","#"+tab);
@@ -765,7 +830,10 @@ initData();
 
   links.forEach(l=>l.addEventListener("click",ev=>{
     ev.preventDefault();
+    const antes=Object.keys(TABS).indexOf((location.hash.slice(1)||"horario"));
+    const despues=Object.keys(TABS).indexOf(l.dataset.tab);
     abrir(l.dataset.tab,true);
+    if(esMovil()&&antes>=0&&despues!==antes&&window.__entraPestana) window.__entraPestana(despues>antes?-1:1);
   }));
 
   /* Deslizar con el dedo: el contenido acompaña al dedo y al soltar
@@ -802,7 +870,7 @@ initData();
 
   let scroller=null;
   document.addEventListener("touchstart",e=>{
-    if(e.touches.length!==1||!lienzo||e.target.closest("input,textarea,select")){x0=null;return;}
+    if(e.touches.length!==1||!lienzo||document.body.classList.contains("en-portal")||e.target.closest("input,textarea,select")){x0=null;return;}
     x0=e.touches[0].clientX; y0=e.touches[0].clientY;
     scroller=scrollerHorizontal(e.target);
     dx=0; arrastrando=false; bloqueado=false;
@@ -825,35 +893,52 @@ initData();
     if(e.cancelable) e.preventDefault();
   },{passive:false});
 
+  /* Entrada de la pestaña nueva. sgn=-1: llega desde la derecha (avanzas);
+     sgn=1: llega desde la izquierda (retrocedes). Siempre el mismo sentido que el dedo. */
+  const EASE_IN="cubic-bezier(.4,0,1,1)", EASE_OUT="cubic-bezier(.22,.7,.25,1)";
+  function entra(sgn){
+    if(!lienzo||!lienzo.animate) return;
+    const w=window.innerWidth;
+    lienzo.animate(
+      [{transform:`translate3d(${-sgn*w*0.3}px,0,0)`,opacity:0},{transform:"none",opacity:1}],
+      {duration:280,easing:EASE_OUT});
+  }
+  window.__entraPestana=entra;
+
   document.addEventListener("touchend",()=>{
     if(x0===null||!arrastrando){ x0=null; limpiar(); return; }
     x0=null;
-    const i=idx(), destino=i+(dx<0?1:-1);
-    lienzo.classList.remove("arrastrando");
-    lienzo.classList.add("soltando");
-    if(Math.abs(dx)>=UMBRAL && destino>=0 && destino<orden.length){
-      const fuera=dx<0?-window.innerWidth*0.35:window.innerWidth*0.35;
-      poner(fuera,0);
-      setTimeout(()=>{
+    const i=idx(), sgn=dx<0?-1:1, destino=i-sgn;
+    const desde={transform:`translate3d(${dx}px,0,0)`,opacity:lienzo.style.opacity||1};
+    limpiar();
+    if(Math.abs(dx)>=UMBRAL && destino>=0 && destino<orden.length && lienzo.animate){
+      /* sale hacia donde empujaste… */
+      const lejos=sgn*Math.max(Math.abs(dx)+window.innerWidth*0.2, window.innerWidth*0.6);
+      const sale=lienzo.animate([desde,{transform:`translate3d(${lejos}px,0,0)`,opacity:0}],
+        {duration:150,easing:EASE_IN,fill:"forwards"});
+      sale.onfinish=()=>{
         abrir(orden[destino],false);
         const cont=document.querySelector("body > div.wrap");
         if(cont) cont.scrollTop=0; else window.scrollTo({top:0});
-        lienzo.classList.remove("soltando");
-        poner(dx<0?window.innerWidth*0.28:-window.innerWidth*0.28,0);
-        requestAnimationFrame(()=>{ lienzo.classList.add("soltando"); poner(0,1);
-          setTimeout(limpiar,280); });
-      },170);
-    } else {
-      poner(0,1);
-      setTimeout(limpiar,280);
+        sale.cancel();
+        entra(sgn);          /* …y la nueva entra por el lado contrario */
+      };
+    } else if(lienzo.animate){
+      lienzo.animate([desde,{transform:"none",opacity:1}],{duration:260,easing:EASE_OUT});
     }
   },{passive:true});
 
+  const esPortal=h=>h==="home"||h==="nolan";
   window.addEventListener("hashchange",()=>{
     if(location.hash.includes("debug")) return;   /* no tocar el ancla de diagnóstico */
-    abrir(location.hash.slice(1),true);
+    const h=location.hash.slice(1);
+    if(esPortal(h)){ window.portal&&window.portal(h); return; }
+    window.portal&&window.portal(null);
+    abrir(h,true);
   });
-  abrir(location.hash.includes("debug")?"horario":(location.hash.slice(1)||"horario"),true,true);
+  const h0=location.hash.slice(1);
+  abrir(location.hash.includes("debug")||esPortal(h0)?"horario":(h0||"horario"),true,true);
+  if(esPortal(h0)&&window.portal) window.portal(h0);
   /* al terminar de cargar, el navegador salta al ancla del hash (#horario cae
      en el horario semanal, no en Hoy): se deshace para empezar siempre arriba */
   window.addEventListener("load",()=>setTimeout(()=>{
@@ -871,9 +956,7 @@ initData();
   async function cargar(){
     if(!BIN_ID||!API_KEY){ est.textContent="Sin guardado: falta config.js."; return; }
     try{
-      const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`,{headers:{"X-Access-Key":API_KEY}});
-      const d=await r.json();
-      ta.value=(d.record&&d.record[clave])||"";
+      ta.value=(await leerNube())[clave]||"";
       est.textContent="Guardado al día.";
     }catch(e){ est.textContent="No se pudieron cargar las notas."; }
   }
@@ -881,16 +964,8 @@ initData();
     clearTimeout(t); est.textContent="Escribiendo…";
     t=setTimeout(async()=>{
       if(!BIN_ID||!API_KEY){ est.textContent="Sin guardado: falta config.js."; return; }
-      try{
-        const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`,{headers:{"X-Access-Key":API_KEY}});
-        const d=await r.json();
-        const rec=Object.assign({},d.record||{});
-        rec[clave]=ta.value;
-        const w=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`,{
-          method:"PUT",headers:{"Content-Type":"application/json","X-Access-Key":API_KEY},
-          body:JSON.stringify(rec)});
-        est.textContent=w.ok?"Guardado.":"No se pudo guardar.";
-      }catch(e){ est.textContent="No se pudo guardar."; }
+      try{ est.textContent=await escribirNube({[clave]:ta.value})?"Guardado.":"No se pudo guardar."; }
+      catch(e){ est.textContent="No se pudo guardar."; }
     },1200);
   });
   cargar();
@@ -944,7 +1019,7 @@ initData();
     document.body.appendChild(probe);
     const safe=probe.getBoundingClientRect().height; probe.remove();
     caja.textContent=
-      "v35\n"+
+      (document.querySelector(".ver")||{textContent:"?"}).textContent+"\n"+
       "window.innerHeight   "+window.innerHeight+"\n"+
       "visualViewport       "+(window.visualViewport?Math.round(window.visualViewport.height):"-")+"\n"+
       "screen.height        "+screen.height+"\n"+
@@ -964,13 +1039,13 @@ initData();
   setTimeout(medir,300);
 })();
 
-/* --- magia: ondas al pulsar, foco que sigue al ratón, confeti y cifras que cuentan --- */
+/* --- magia: ondas al pulsar, confeti y cifras que cuentan --- */
 (function(){
   const quieto=matchMedia("(prefers-reduced-motion:reduce)").matches;
   if(quieto) return;
 
   /* onda que nace donde tocas */
-  const ONDA=".trow.tap,.n7-card,nav.bar a[data-tab],.d-nav,.d-hoy,.m-nav,.m-hoy,.ag-btn,.filters button,.mailbtn,.mailcopy";
+  const ONDA=".p-card,.p-volver,.trow.tap,.n7-card,nav.bar a[data-tab],.d-nav,.d-hoy,.m-nav,.m-hoy,.ag-btn,.filters button,.mailbtn,.mailcopy";
   document.addEventListener("pointerdown",e=>{
     const t=e.target.closest(ONDA); if(!t) return;
     const r=t.getBoundingClientRect(), d=Math.max(r.width,r.height)*2.2;
@@ -980,23 +1055,6 @@ initData();
     t.appendChild(o);
     setTimeout(()=>o.remove(),650);
   },{passive:true});
-
-  /* foco de luz que sigue al ratón por encima de las tarjetas (solo con ratón) */
-  if(matchMedia("(hover:hover)").matches){
-    const LUZ=".today,.n7,.calbox,.statusbar,.subject,.month,.note";
-    let pend=null, raf=0;
-    document.addEventListener("pointermove",e=>{
-      const c=e.target.closest(LUZ); if(!c) return;
-      pend=[c,e.clientX,e.clientY];
-      if(raf) return;
-      raf=requestAnimationFrame(()=>{
-        raf=0;
-        const [el,x,y]=pend, r=el.getBoundingClientRect();
-        el.style.setProperty("--mx",(x-r.left)+"px");
-        el.style.setProperty("--my",(y-r.top)+"px");
-      });
-    },{passive:true});
-  }
 
   /* confeti al tachar una tarea, con el color de su asignatura */
   document.addEventListener("change",e=>{
