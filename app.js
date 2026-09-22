@@ -120,18 +120,20 @@ document.addEventListener("click",ev=>{
 
 /* --- rejilla --- */
 (function(){
- $("#calhead").innerHTML="<div></div>"+DAYS.map(d=>"<div>"+d+"</div>").join("");
+ const dHoy=new Date().getDay()-1;   /* la columna de hoy se ilumina */
+ $("#calhead").innerHTML="<div></div>"+DAYS.map((d,i)=>"<div"+(i===dHoy?' class="hoy"':"")+">"+d+"</div>").join("");
  let g='<div class="gutter">';
  for(let h=9;h<=20;h++) g+='<b style="top:'+((h*60-T0)*ESC)+'px">'+String(h).padStart(2,"0")+":00</b>";
  g+="</div>";
+ let n=0;   /* orden de aparición de los bloques, para la entrada escalonada */
  DAYS.forEach((_,d)=>{
-   g+='<div class="daycol">';
+   g+='<div class="daycol'+(d===dHoy?" hoy":"")+'">';
    CLASSES.filter(c=>c.d===d).forEach(c=>{
      const S=SUBJ[c.id];
      let pos="left:5px;right:5px;";
      if(c.half===0)pos="left:5px;width:calc(50% - 7px);";
      if(c.half===1)pos="left:calc(50% + 2px);right:5px;";
-     g+='<div class="ev'+(c.dash?" dash":"")+(c.hatch?" hatch":"")+'" style="'+pos+"top:"+((c.a-T0)*ESC)+"px;height:"+((c.b-c.a)*ESC)+"px;background:"+S.s+";border-color:"+S.c+'">'+
+     g+='<div class="ev'+(c.dash?" dash":"")+(c.hatch?" hatch":"")+'" style="'+pos+"top:"+((c.a-T0)*ESC)+"px;height:"+((c.b-c.a)*ESC)+"px;background-image:linear-gradient("+S.s+","+S.s+");border-color:"+S.c+";--sc:"+S.c+";--i:"+(n++)+'">'+
         (c.mark?'<span class="mark" style="color:'+S.c+'">'+c.mark+"</span>":"")+
         '<div class="tags" style="color:'+S.c+'"><span class="tag grp">grp. '+c.grp+'</span><span class="tag cam">'+S.cam+"</span></div>"+
         "<b>"+esc(S.n)+"</b><u>"+hhmm(c.a)+"–"+hhmm(c.b)+" · "+esc(c.t)+"</u><s>"+esc(c.au)+"</s></div>";
@@ -198,9 +200,10 @@ document.addEventListener("click",ev=>{
     .filter(c=>c.d===idx && (c.dates ? c.dates.includes(key) : (key>=c.from && key<=c.to)))
     .sort((x,y)=>x.a-y.a);
 
-  function draw(){
-    const key=isoD(ver), idx=ver.getDay()-1;
-    const esHoy=key===hoyStr;
+  /* quieto=true: refresco de cada minuto, sin repetir la animación de entrada */
+  function draw(quieto){
+    const ahora=new Date(), key=isoD(ver), idx=ver.getDay()-1;
+    const esHoy=key===isoD(ahora);
     $("#todayName").textContent=(esHoy?"Hoy · ":"")+DN[ver.getDay()]+", "+ver.getDate()+" de "+MN[ver.getMonth()];
 
     /* avisos del día */
@@ -226,7 +229,8 @@ document.addEventListener("click",ev=>{
         (sin?"No hay clase: día festivo.":(idx<0||idx>4)?"Fin de semana.":"No tienes clase este día.")+'</div>';
       $("#todayMeta").textContent=sem?`Semana ${sem.n} · ${sem.c}.º cuatri`:"";
     }else{
-      const m=hoy.getHours()*60+hoy.getMinutes();
+      const m=ahora.getHours()*60+ahora.getMinutes();
+      $("#todayList").classList.toggle("quieto",!!quieto);
       $("#todayList").innerHTML=cs.map((c,i)=>{
         const S=SUBJ[c.id], on=esHoy&&m>=c.a&&m<=c.b, pasada=esHoy&&m>c.b;
         /* cuánto llevas de la clase en curso */
@@ -246,34 +250,38 @@ document.addEventListener("click",ev=>{
     $("#dHoy").hidden=esHoy;
     proximos(ver);
     clearInterval(window.__tDia);
-    window.__tDia=setInterval(()=>{ if(isoD(ver)===isoD(new Date())) draw(); }, 60000);
+    window.__tDia=setInterval(()=>{ if(isoD(ver)===isoD(new Date())) draw(true); }, 60000);
     recomendaciones(sem);
   }
 
-  /* Barra roja del día: recorre la lista de clases marcando la hora actual. */
+  /* Barra roja del día.
+     Antes de la primera clase se queda pegada arriba; después de la última, abajo;
+     en medio recorre las filas reales (no el reloj), así cae donde el ojo espera. */
+  const falta=min=>min<60?min+" min":Math.floor(min/60)+" h"+(min%60?" "+(min%60)+" min":"");
   function barraDia(cs, esHoy){
     const lista=$("#todayList"); if(!lista) return;
     lista.querySelectorAll(".barra-dia").forEach(x=>x.remove());
+    const vivo=$("#todayVivo"); if(vivo) vivo.hidden=true;
     if(!esHoy||!cs.length) return;
-    const ini=Math.min(...cs.map(c=>c.a)), fin=Math.max(...cs.map(c=>c.b));
     const n=new Date(), m=n.getHours()*60+n.getMinutes();
-    if(m<ini||m>fin) return;
-    /* la posición se calcula sobre las filas reales, no sobre el reloj:
-       así la línea cae donde el ojo espera aunque haya huecos entre clases */
     const filas=[...lista.querySelectorAll(".trow")];
-    let top=null;
-    for(let i=0;i<cs.length;i++){
-      const f=filas[i]; if(!f) continue;
-      const y=f.offsetTop, h=f.offsetHeight;
-      if(m<cs[i].a){ top=y-3; break; }                       /* en el hueco previo */
-      if(m<=cs[i].b){ top=y+h*((m-cs[i].a)/(cs[i].b-cs[i].a)); break; }
+    if(filas.length!==cs.length) return;
+    const ult=filas[filas.length-1];
+    let top=0, modo="", txt="";
+    if(m<cs[0].a){ modo="arriba"; txt="empiezas en "+falta(cs[0].a-m); }
+    else if(m>cs[cs.length-1].b){ modo="abajo"; top=ult.offsetTop+ult.offsetHeight-2; txt="día de clase terminado"; }
+    else for(let i=0;i<cs.length;i++){
+      const y=filas[i].offsetTop, h=filas[i].offsetHeight;
+      if(m<cs[i].a){ top=y-1; txt="siguiente en "+falta(cs[i].a-m); break; }
+      if(m<=cs[i].b){ top=y+h*((m-cs[i].a)/(cs[i].b-cs[i].a)); txt="quedan "+falta(cs[i].b-m); break; }
     }
-    if(top===null) return;
     const l=document.createElement("div");
-    l.className="barra-dia";
+    l.className="barra-dia"+(modo?" "+modo:"");
     l.style.top=top+"px";
-    l.innerHTML='<span class="pt"></span><span class="hh">'+hhmm(m)+"</span>";
+    l.innerHTML='<span class="pt"></span>';
     lista.appendChild(l);
+    /* el texto va en la cabecera del día: sobre la línea tapaba la hora o el aula */
+    if(vivo){ vivo.textContent=txt; vivo.className="vivo"+(modo?" "+modo:""); vivo.hidden=false; }
   }
 
   /* recomendaciones de la semana, plegadas */
@@ -301,7 +309,7 @@ document.addEventListener("click",ev=>{
         const S=SUBJ[e.id];
         const d=Math.round((new Date(e.date+"T12:00:00")-new Date(isoD(desde)+"T12:00:00"))/86400000);
         const cuando=d===0?"hoy":d===1?"mañana":"en "+d+" días";
-        return `<button class="n7-card ${e.type}" data-ev="${CAL.indexOf(e)}" style="--sc:${S.c}">`+
+        return `<button class="n7-card ${e.type}${d<=1?" urg":""}" data-ev="${CAL.indexOf(e)}" style="--sc:${S.c}">`+
           `<span class="n7-txt"><b>${TIPO[e.type]} de ${esc(S.n)}</b>`+
           `<em>${esc(e.hora||e.label)}${e.sinDia?" · día sin confirmar":""}</em></span>`+
           `<span class="n7-when">${cuando}</span></button>`;
@@ -315,9 +323,11 @@ document.addEventListener("click",ev=>{
   });
   cerrarDetalleAl("hoy-detail",".n7-card");
 
-  $("#dPrev").addEventListener("click",()=>{ver.setDate(ver.getDate()-1);draw();});
-  $("#dNext").addEventListener("click",()=>{ver.setDate(ver.getDate()+1);draw();});
-  $("#dHoy").addEventListener("click",()=>{ver=new Date(hoy);draw();});
+  /* el día nuevo entra por el lado hacia el que te mueves */
+  const irA=(dir,fn)=>{ fn(); $("#todayList").dataset.dir=dir; draw(); };
+  $("#dPrev").addEventListener("click",()=>irA("prev",()=>ver.setDate(ver.getDate()-1)));
+  $("#dNext").addEventListener("click",()=>irA("next",()=>ver.setDate(ver.getDate()+1)));
+  $("#dHoy").addEventListener("click",()=>irA(ver>new Date()?"prev":"next",()=>{ver=new Date();}));
   draw();
 
 })();
@@ -688,16 +698,34 @@ initData();
   /* el horario semanal y el calendario del mes comparten pestaña */
   const TABS={
     horario:["hoy","horario","planificador"], asignaturas:["asignaturas"],
-    profesorado:["profesorado"], calendario:["calendario"], pendientes:["pendientes"]
+    calendario:["calendario"], pendientes:["pendientes"], profesorado:["profesorado"]
   };
   const links=[...document.querySelectorAll("nav.bar a[data-tab]")];
   const todas=Object.values(TABS).flat();
+
+  /* la cápsula de color que se desliza hasta la pestaña activa */
+  const barra=document.querySelector("nav.bar .tabs");
+  function indicador(){
+    if(!barra) return;
+    const on=barra.querySelector("a[data-tab].on");
+    barra.classList.toggle("sin-ind",!on);
+    if(!on) return;
+    barra.style.setProperty("--x",on.offsetLeft+"px");
+    barra.style.setProperty("--w",on.offsetWidth+"px");
+    barra.style.setProperty("--cx",(on.offsetLeft+on.offsetWidth/2)+"px");
+    barra.style.setProperty("--acon",on.style.getPropertyValue("--ac"));
+  }
+  window.addEventListener("resize",indicador);
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(indicador);
+  /* la primera colocación no se anima: la cápsula aparece ya en su sitio */
+  requestAnimationFrame(()=>requestAnimationFrame(()=>barra&&barra.classList.add("lista")));
 
   function abrir(tab,scroll,inicial){
     if(tab==="notas"){
       todas.forEach(id=>{const el=document.getElementById(id); if(el) el.hidden=true;});
       const nt=document.getElementById("notas"); if(nt) nt.hidden=false;
       links.forEach(l=>l.classList.remove("on"));
+      indicador();
       if(scroll) window.scrollTo({top:0});
       return;
     }
@@ -708,6 +736,7 @@ initData();
       if(el) el.hidden=!TABS[tab].includes(id);
     });
     links.forEach(l=>l.classList.toggle("on",l.dataset.tab===tab));
+    indicador();
     TABS[tab].forEach(id=>{
       const el=document.getElementById(id);
       if(!el) return;
@@ -825,6 +854,12 @@ initData();
     abrir(location.hash.slice(1),true);
   });
   abrir(location.hash.includes("debug")?"horario":(location.hash.slice(1)||"horario"),true,true);
+  /* al terminar de cargar, el navegador salta al ancla del hash (#horario cae
+     en el horario semanal, no en Hoy): se deshace para empezar siempre arriba */
+  window.addEventListener("load",()=>setTimeout(()=>{
+    const cont=document.querySelector("body > div.wrap"); if(cont) cont.scrollTop=0;
+    window.scrollTo(0,0);
+  },0));
 })();
 
 
@@ -927,4 +962,70 @@ initData();
   document.addEventListener("click",e=>{ if(e.target.closest(".ver")) { caja.classList.toggle("on"); medir(); } });
   window.addEventListener("resize",medir);
   setTimeout(medir,300);
+})();
+
+/* --- magia: ondas al pulsar, foco que sigue al ratón, confeti y cifras que cuentan --- */
+(function(){
+  const quieto=matchMedia("(prefers-reduced-motion:reduce)").matches;
+  if(quieto) return;
+
+  /* onda que nace donde tocas */
+  const ONDA=".trow.tap,.n7-card,nav.bar a[data-tab],.d-nav,.d-hoy,.m-nav,.m-hoy,.ag-btn,.filters button,.mailbtn,.mailcopy";
+  document.addEventListener("pointerdown",e=>{
+    const t=e.target.closest(ONDA); if(!t) return;
+    const r=t.getBoundingClientRect(), d=Math.max(r.width,r.height)*2.2;
+    const o=document.createElement("span");
+    o.className="onda";
+    o.style.cssText=`width:${d}px;height:${d}px;left:${e.clientX-r.left-d/2}px;top:${e.clientY-r.top-d/2}px`;
+    t.appendChild(o);
+    setTimeout(()=>o.remove(),650);
+  },{passive:true});
+
+  /* foco de luz que sigue al ratón por encima de las tarjetas (solo con ratón) */
+  if(matchMedia("(hover:hover)").matches){
+    const LUZ=".today,.n7,.calbox,.statusbar,.subject,.month,.note";
+    let pend=null, raf=0;
+    document.addEventListener("pointermove",e=>{
+      const c=e.target.closest(LUZ); if(!c) return;
+      pend=[c,e.clientX,e.clientY];
+      if(raf) return;
+      raf=requestAnimationFrame(()=>{
+        raf=0;
+        const [el,x,y]=pend, r=el.getBoundingClientRect();
+        el.style.setProperty("--mx",(x-r.left)+"px");
+        el.style.setProperty("--my",(y-r.top)+"px");
+      });
+    },{passive:true});
+  }
+
+  /* confeti al tachar una tarea, con el color de su asignatura */
+  document.addEventListener("change",e=>{
+    const inp=e.target;
+    if(!inp.matches(".checkitem input[type=checkbox]")||!inp.checked) return;
+    const r=inp.getBoundingClientRect();
+    const c=(getComputedStyle(inp.closest(".checkitem")).getPropertyValue("--sc")||"").trim()||"#3FD9A4";
+    const cols=[c,"#FFD66B","#FFFFFF",c,"#5AA9FF"];
+    for(let i=0;i<18;i++){
+      const p=document.createElement("i");
+      const ang=Math.random()*Math.PI*2, dist=24+Math.random()*40;
+      p.className="chispa-fx";
+      p.style.cssText=`left:${r.left+r.width/2}px;top:${r.top+r.height/2}px;background:${cols[i%cols.length]};`+
+        `--tx:${(Math.cos(ang)*dist).toFixed(1)}px;--ty:${(Math.sin(ang)*dist-14).toFixed(1)}px;--rot:${Math.round(Math.random()*540)}deg;`+
+        `border-radius:${i%3?"2px":"50%"}`;
+      document.body.appendChild(p);
+      setTimeout(()=>p.remove(),950);
+    }
+  });
+
+  /* las cifras de la cabecera cuentan desde cero */
+  document.querySelectorAll(".stat b").forEach((b,i)=>{
+    const fin=parseInt(b.textContent,10); if(!fin) return;
+    const t0=performance.now()+i*120, dur=900;
+    b.textContent="0";
+    (function paso(t){
+      const k=Math.min(1,Math.max(0,(t-t0)/dur)), e=1-Math.pow(1-k,3);
+      b.textContent=Math.round(fin*e);
+      if(k<1) requestAnimationFrame(paso);
+    })(performance.now());
+  });
 })();

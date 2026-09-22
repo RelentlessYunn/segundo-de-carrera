@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=37">
+<link rel="stylesheet" href="styles.css?v=38">
 </head>
 <body>
 <header class="top">
@@ -23,14 +23,11 @@
       <div class="marca"><span class="dot"></span>Segundo de carrera · 1.er cuatrimestre</div>
       <div class="hdr-acc">
         <a class="ag-btn" href="https://aulaglobal.uc3m.es" target="_blank" rel="noopener">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l9-4 9 4-9 4z"/><path d="M7 10.5V16c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-5.5"/><path d="M21 8v6"/></svg>
+          <svg class="globo" viewBox="0 0 24 24" aria-hidden="true"><circle class="f" cx="12" cy="12" r="8.6"/><ellipse class="meri" cx="12" cy="12" rx="3.9" ry="8.6"/><path d="M3.8 9.2h16.4M3.8 14.8h16.4"/></svg>
           <span>Aula Global</span>
         </a>
-        <a class="icon" href="#profesorado" aria-label="Profesorado" title="Profesorado">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>
-        </a>
         <a class="icon" href="#notas" aria-label="Notas" title="Notas">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h11l5 5v11H4z"/><path d="M15 4v5h5"/><path d="M8 13h8M8 17h5"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M5 3.5h10l4.5 4.5v11A1.5 1.5 0 0 1 18 20.5H5A1.5 1.5 0 0 1 3.5 19V5A1.5 1.5 0 0 1 5 3.5z"/><path d="M15 3.5V8h4.5M7.5 12.5h8M7.5 16h5"/></svg>
         </a>
       </div>
     </div>
@@ -54,21 +51,43 @@
 
 <nav class="bar"><div class="wrap">
   <div class="tabs">
-    <a href="#horario" data-tab="horario">
-      <i class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></i>
-      <span class="lbl">Horario</span><span class="lbl-movil">Horario</span></a>
-    <a href="#asignaturas" data-tab="asignaturas">
-      <i class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M8 7h7M8 11h7"/></svg></i>
-      <span class="lbl">Asignaturas</span><span class="lbl-movil">Asign.</span></a>
-    <a href="#calendario" data-tab="calendario">
-      <i class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v16H5z"/><path d="M9 11l2 2 4-4"/></svg></i>
-      <span class="lbl">Exámenes</span><span class="lbl-movil">Exám.</span></a>
-    <a href="#pendientes" data-tab="pendientes">
-      <i class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></i>
-      <span class="lbl">Pendientes</span><span class="lbl-movil">Pend.</span></a>
-  </div>
-  <div class="navtools">
-    <a href="#profesorado" data-tab="profesorado" class="tab-extra">Profesorado</a>
+    <i class="tab-ind" aria-hidden="true"></i>
+    <a href="#horario" data-tab="horario" style="--ac:#5AA9FF">
+      <i class="ic"><svg class="i-horario" viewBox="0 0 24 24" aria-hidden="true">
+        <path class="f" d="M11.4 18.8H6a3.2 3.2 0 0 1-3.2-3.2V7.4A3.2 3.2 0 0 1 6 4.2h9a3.2 3.2 0 0 1 3.2 3.2v3.1"/>
+        <path d="M2.8 8.9h15.4M7 2.6v3.2M14 2.6v3.2"/>
+        <circle class="f2" cx="17.3" cy="17.3" r="5"/>
+        <path class="aguja" d="M17.3 14.7v2.6l1.9 1.3"/>
+      </svg></i><span class="lbl">Horario</span></a>
+    <a href="#asignaturas" data-tab="asignaturas" style="--ac:#A987FF">
+      <i class="ic"><svg class="i-asig" viewBox="0 0 24 24" aria-hidden="true">
+        <rect class="f" x="3" y="5.6" width="4.8" height="14.6" rx="1.3"/>
+        <rect class="f2" x="8.9" y="3.2" width="4.8" height="17" rx="1.3"/>
+        <path d="M3 9.2h4.8M3 16.4h4.8M8.9 7h4.8M8.9 16.4h4.8"/>
+        <g class="libro"><rect class="f" x="15.3" y="4.4" width="4.6" height="15.8" rx="1.3" transform="rotate(12 17.6 20.2)"/></g>
+      </svg></i><span class="lbl">Asignaturas</span></a>
+    <a href="#calendario" data-tab="calendario" style="--ac:#FF6B5E">
+      <i class="ic"><svg class="i-exam" viewBox="0 0 24 24" aria-hidden="true">
+        <path class="f" d="M5.8 3h8.4l4.3 4.3v12.2A1.5 1.5 0 0 1 17 21H5.8a1.5 1.5 0 0 1-1.5-1.5v-15A1.5 1.5 0 0 1 5.8 3z"/>
+        <path d="M14.2 3v4.3h4.3"/>
+        <path d="M7.4 17.4l2.1-5.6 2.1 5.6M8.1 15.6h2.8M13.5 14.6h3.2M15.1 13v3.2"/>
+        <path class="chispa" d="M20.3 .9l.55 1.45 1.45.55-1.45.55-.55 1.45-.55-1.45-1.45-.55 1.45-.55z"/>
+      </svg></i><span class="lbl">Exámenes</span></a>
+    <a href="#pendientes" data-tab="pendientes" style="--ac:#3FD9A4">
+      <i class="ic"><svg class="i-pend" viewBox="0 0 24 24" aria-hidden="true">
+        <rect class="f2" x="2.8" y="3.4" width="7.4" height="7.4" rx="2.2"/>
+        <path class="tick" d="M4.7 7.2l1.7 1.7 2.8-3.1"/>
+        <path d="M13.2 5.6h8M13.2 8.7h5"/>
+        <rect class="f" x="2.8" y="13.2" width="7.4" height="7.4" rx="2.2"/>
+        <path d="M13.2 15.4h8M13.2 18.5h5"/>
+      </svg></i><span class="lbl">Pendientes</span></a>
+    <a href="#profesorado" data-tab="profesorado" style="--ac:#FFA640">
+      <i class="ic"><svg class="i-prof" viewBox="0 0 24 24" aria-hidden="true">
+        <circle class="f" cx="12" cy="11.4" r="3.4"/>
+        <path d="M5.3 21.2a6.7 6.7 0 0 1 13.4 0"/>
+        <path class="f2" d="M12 2.4l7 3.1-7 3.1-7-3.1z"/>
+        <path class="borla" d="M19 5.5v3.8"/>
+      </svg></i><span class="lbl">Profesorado</span></a>
   </div>
 </div></nav>
 
@@ -82,6 +101,7 @@
         <button class="d-nav" id="dNext" aria-label="Día siguiente">›</button>
       </div>
       <div class="d-when"><b id="todayName">Hoy</b><span id="todayMeta"></span></div>
+      <span class="vivo" id="todayVivo" hidden></span>
       <button class="d-hoy" id="dHoy">Hoy</button>
     </div>
     <div id="dayFlags"></div>
@@ -158,12 +178,12 @@
 
 
 
-<footer><div class="wrap"><p>Montado a partir de tu horario personal de la UC3M, el horario del grupo 1081, las guías docentes 2026/27 y los materiales de presentación de cada asignatura. Los datos de profesorado proceden del directorio público de la universidad. Lo que en los documentos originales estaba marcado como provisional sigue estándolo aquí.</p><p><a href="#notas" id="linkNotas">·</a></p><p class="ver">v37</p></div></footer>
+<footer><div class="wrap"><p>Montado a partir de tu horario personal de la UC3M, el horario del grupo 1081, las guías docentes 2026/27 y los materiales de presentación de cada asignatura. Los datos de profesorado proceden del directorio público de la universidad. Lo que en los documentos originales estaba marcado como provisional sigue estándolo aquí.</p><p><a href="#notas" id="linkNotas">·</a></p><p class="ver">v38</p></div></footer>
 </div>
 <div id="dbg"></div>
-<script src="config.js?v=37" onerror="void 0"></script>
-<script src="data.js?v=37"></script>
-<script src="eval.js?v=37"></script>
-<script src="app.js?v=37"></script>
+<script src="config.js?v=38" onerror="void 0"></script>
+<script src="data.js?v=38"></script>
+<script src="eval.js?v=38"></script>
+<script src="app.js?v=38"></script>
 </body>
 </html>
