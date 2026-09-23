@@ -1,6 +1,6 @@
-/* Copia este archivo como config.js y pon tus credenciales.
-   config.js está en .gitignore: nunca se sube al repositorio. */
+/* Copy this file as config.js and put your JSONBin credentials in it.
+   Without config.js the site works, it just does not save to the cloud. */
 window.CONFIG = {
-  BIN_ID:  "TU_BIN_ID",
-  API_KEY: "TU_CLAVE"
+  BIN_ID:  "YOUR_BIN_ID",
+  API_KEY: "YOUR_KEY"
 };

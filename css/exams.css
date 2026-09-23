@@ -1,0 +1,17 @@
+/* ---------- 8 · exams ---------- */
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;align-items:stretch}
+.filters button{
+  position:relative;overflow:hidden;font:inherit;font-size:.79rem;font-weight:600;padding:6px 12px;
+  border:1px solid var(--rule);background:var(--card);color:var(--ink-2);border-radius:20px;cursor:pointer;
+  transition:background .2s ease,color .2s ease,border-color .2s ease,transform .14s var(--spring);
+}
+@media (hover:hover){.filters button:hover{border-color:var(--ink-3);color:var(--ink)}}
+.filters button:active{transform:scale(.94)}
+.filters .sep{width:1px;background:var(--rule);margin:2px 6px}
+.filters button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+@media (max-width:620px){
+  .filters button{font-size:.74rem;padding:5px 10px}
+}
+
+/* what is already past is dimmed */
+#examRows tr.past td{opacity:.5}

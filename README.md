@@ -1,176 +1,202 @@
 # Segundo de Carrera
 
-Panel del curso 2026/27 — Doble Grado en Ingeniería Informática y ADE, UC3M.
-Web estática (HTML, CSS y JavaScript sin librerías ni compilación) publicada en GitHub Pages:
+Dashboard for the 2026/27 year — Double Degree in Computer Engineering and Business Administration, UC3M.
+A static site (HTML, CSS and JavaScript, no libraries, no build step) published on GitHub Pages:
 <https://relentlessyunn.github.io/segundo-de-carrera/>
 
-> **Para Claude:** antes de tocar nada, lee este archivo entero. Clona el repo
-> (`git clone https://github.com/RelentlessYunn/segundo-de-carrera`) para trabajar
-> sobre la última versión publicada, cambia solo los archivos que hagan falta,
-> sube el número de versión (ver *Publicar una versión*) y pasa las pruebas.
+> **For Claude:** read this whole file before touching anything. Clone the repo
+> (`git clone https://github.com/RelentlessYunn/segundo-de-carrera`) to work on the
+> latest published version, change only the files you need, bump the version
+> (see *Publishing a version*) and run the tests. Answer the owner in Spanish.
 
 ---
 
-## Qué hay en la web
+## What the site has
 
-| Parte | Qué hace |
+| Part | What it does |
 |---|---|
-| **Inicio** (casita, `#home`) | Elegir entre **UC3M** y **Nolan**. La tarjeta UC3M resume la semana, la clase de ahora y la próxima prueba. |
-| **Horario** | *Hoy*: clases del día con su aula, línea roja de la hora y "quedan X min"; próximos 7 días; fechas y consejos de la semana. Debajo, horario semanal y calendario mensual. |
-| **Asignaturas** | Una ficha por asignatura: horario y aulas, profesorado, evaluación con calculadora de nota, fechas y temario con progreso. |
-| **Exámenes** | Todo lo evaluable, con filtros. Lo ya pasado sale atenuado. |
-| **Pendientes** | Tareas por asignatura y generales. Las marcas se guardan en la nube. |
-| **Profesorado** | Tabla con correo y despacho. |
-| **Notas para Claude** (`#notas`) | Texto libre guardado en la nube. **Claude no puede leer JSONBin**: para pasárselas, botón *Copiar notas* y pegar en el chat. |
-| **Nolan** (`#nolan`) | En construcción. |
+| **Home** (house icon, `#home`) | Choose between **UC3M** and **Nolan**. The UC3M card sums up the week, the class now and the next assessment. |
+| **Schedule** (`#schedule`) | *Today*: the day's classes with their room, the red "now" line and "X min left"; the next 7 days; the week's dates and advice. Below: weekly timetable and monthly planner. |
+| **Subjects** (`#subjects`) | One card per subject: timetable and rooms, faculty, grading with a grade calculator, dates, and syllabus with progress. |
+| **Exams** (`#exams`) | Everything graded, with filters. Past items are dimmed. |
+| **Tasks** (`#tasks`) | Tasks per subject and general ones. Ticks are saved to the cloud. |
+| **Faculty** (`#faculty`) | Table with email and office. |
+| **Notes for Claude** (`#notes`) | Free text saved to the cloud. **Claude cannot read JSONBin**: to pass them on, press *Copy notes* and paste into the chat. |
+| **Settings** (gear icon, `#settings`) | Language (Spanish / English), theme (dark / light / system) and animations (all / basic / none). Saved on each device. |
+| **Nolan** (`#nolan`) | Under construction. |
 
-En el móvil las pestañas van abajo y se cambia de una a otra deslizando el dedo.
+On mobile the tabs sit at the bottom and you can swipe between them.
+Old Spanish links (`#horario`, `#asignaturas`, `#notas`…) still work.
 
 ---
 
-## Mapa de archivos
+## Languages
 
-Cada archivo hace una sola cosa. Para cambiar algo, normalmente basta con abrir uno o dos.
-
-### Datos (lo que más se toca)
-
-| Archivo | Contiene |
-|---|---|
-| `data.js` | Asignaturas (`SUBJ`), horario (`CLASSES`), profesorado (`PROFS`), fechas evaluables (`CAL`), cuatrimestres (`CUATRIS`), calendario académico (`ACAD`), consejos por semana (`AVISOS`) y tareas (`TAREAS`, `GENERALES`). |
-| `eval.js` | Evaluación y temario de cada asignatura (`EVAL`). |
-| `config.js` | Clave de JSONBin para guardar en la nube. Sin él, la web funciona pero no guarda. |
-
-### Código (`js/`), en el orden en que se carga
-
-| Archivo | Qué hace |
-|---|---|
-| `base.js` | Herramientas comunes: fechas, semanas, cuatrimestre en vigor, qué clases hay un día (`clasesDe`), textos de las fechas (`etiquetaEv`, `cuandoEv`), panel de detalle, aviso de fallos. |
-| `comprobar.js` | Revisa `data.js` y `eval.js` antes de pintar. Lo que rompería la página se aparta y se avisa arriba. Lo raro se avisa en la consola y en `#debug`. |
-| `derivados.js` | Calcula solo: choques entre clases (se añaden a `CAL`) y colocación en la rejilla. |
-| `nube.js` | Guardado en JSONBin, por cambios, en cola y sin pisar nada (ver *La nube*). |
-| `cabecera.js` | Reloj, fecha, semana y cifras. Es el único reloj: emite los eventos `minuto` y `nuevoDia`. |
-| `horario.js` | Horario semanal (rejilla y lista por días) y barra de estado de choques. |
-| `hoy.js` | El visor de *Hoy*. |
-| `asignaturas.js` | Fichas y calculadora de notas (`fichaHTML`, `recalcular`). |
-| `profesorado.js` · `examenes.js` · `pendientes.js` · `notas.js` · `planificador.js` | Una pestaña o bloque cada uno. |
-| `nolan.js` | **La sección Nolan.** Todo lo nuevo de Nolan va aquí. |
-| `inicio.js` | La ventana de inicio (UC3M / Nolan). |
-| `pestanas.js` | Rutas (`#horario`, `#home`, `#nolan/…`), pestañas, gesto de deslizar y tecla Escape. |
-| `diagnostico.js` | Panel `#debug` con medidas de pantalla y avisos de datos. |
-| `magia.js` | Onda al pulsar, confeti y *reposo* (pausa los adornos tras 45 s sin tocar nada). |
-
-### Diseño (`css/`)
-
-`base` · `cabecera` · `barra` · `hoy` · `horario` · `planificador` · `asignaturas` · `examenes` · `pendientes` · `inicio` · `nolan` · `efectos`.
-Cada uno trae sus propios ajustes para móvil al final.
+- The **code** is in English: names, comments, files.
+- The **interface** comes in Spanish and English (`js/i18n.js`). Every visible text goes through `t("key", {vars})`:
+  - Add a new text to **both** `STRINGS.es` and `STRINGS.en`.
+  - A plural is an object `{one, other}`, chosen by `vars.n` (or use `tn(key, n)`).
+  - Static texts in `index.html` use `data-i18n` (text), `data-i18n-html`, `data-i18n-aria`, `data-i18n-title` and `data-i18n-placeholder`. The Spanish text is also written in the HTML, so the page reads fine before JavaScript runs.
+  - Dates are formatted with `fmtLong`, `fmtShort`, `fmtDayShort`, `fmtDayMonth`, `fmtRange`, `fmtMonthYear`, `dayName` (mid-sentence form) and `termOrdinal`.
+- The **data** (`data.js`, `eval.js`) stays in Spanish: it is copied from UC3M documents. Its keys are English.
+- A missing translation falls back to Spanish and is listed in the `#debug` panel. The tests fail if any key is missing.
 
 ---
 
-## Cómo añadir cosas
+## File map
 
-**Una fecha evaluable** → `data.js`, lista `CAL`:
+Each file does one thing. To change something you usually only need one or two.
+
+### Data (what changes most)
+
+| File | Contains |
+|---|---|
+| `data.js` | Subjects (`SUBJECTS`), timetable (`CLASSES`), faculty (`FACULTY`), graded dates (`EVENTS`), terms (`TERMS`), academic calendar (`CALENDAR`), weekly advice (`ADVICE`) and tasks (`TASKS`, `GENERAL_TASKS`). |
+| `eval.js` | Grading and syllabus of each subject (`GRADING`). |
+| `config.js` | JSONBin key for saving to the cloud. Without it the site works but does not save. |
+
+### Code (`js/`), in load order
+
+| File | What it does |
+|---|---|
+| `prefs.js` | Settings (`SETTINGS`, `saveSetting`), theme, and `lowMotion()` / `fullMotion()`. |
+| `i18n.js` | Spanish and English texts (`t`, `tn`) and date formatting. |
+| `core.js` | Shared helpers: dates, weeks, term in force, classes on a day (`classesOn`), event labels (`eventLabel`, `whenLabel`), detail panel, error banner. |
+| `validate.js` | Checks `data.js` and `eval.js` before rendering. Whatever would break the page is left out and reported at the top; odd things go to the console and `#debug`. |
+| `derived.js` | Computed data: clashes between classes (added to `EVENTS`) and the timetable grid layout. |
+| `cloud.js` | Saving to JSONBin, by changes, queued and without overwriting anything (see *The cloud*). |
+| `header.js` | Clock, date, week and figures. It is the only clock: it emits the `minute` and `newDay` events. |
+| `schedule.js` | Weekly timetable (grid and list by day) and the clash status bar. |
+| `today.js` | The *Today* viewer. |
+| `subjects.js` | Subject cards and grade calculator (`subjectCard`, `recalc`). |
+| `faculty.js` · `exams.js` · `tasks.js` · `notes.js` · `planner.js` · `settings.js` | One tab, page or block each. |
+| `nolan.js` | **The Nolan section.** Everything new for Nolan goes here. |
+| `home.js` | The home window (UC3M / Nolan). |
+| `router.js` | Routes (`#schedule`, `#home`, `#nolan/…`), tabs, the swipe gesture and the Escape key. |
+| `debug.js` | `#debug` panel with screen measurements, data warnings and missing translations. |
+| `effects.js` | Ripple on tap, confetti and *idle* (decorations pause after 45 s without touching anything). |
+
+### Design (`css/`)
+
+`base` · `header` · `tabbar` · `today` · `schedule` · `planner` · `subjects` · `exams` · `tasks` · `home` · `nolan` · `settings` · `effects` · `light`.
+Each one has its own mobile tweaks at the end.
+
+- **Colours** are tokens on `:root` in `base.css` (`--paper`, `--card`, `--ink`, `--ink-2`, `--rule`, `--go`, `--warn`…). Use them instead of fixed colours.
+- **Light theme**: `light.css` changes the tokens under `[data-theme=light]` and fixes the few fixed colours. The header and the home screen stay dark in both themes. If you add a fixed colour somewhere, add its light version there.
+- **Animations setting**: `<html data-motion="full|basic|none">`. `basic` stops the decorations that move on their own; `none` stops everything (`effects.css`, section 13). In JavaScript, check `fullMotion()` for decorations and `lowMotion()` for everything else.
+
+---
+
+## How to add things
+
+**A graded date** → `data.js`, list `EVENTS`:
 
 ```js
-{id:"ed", date:"2026-11-13", what:"Segundo parcial: bloque 2", w:"25 %", type:"ex",
- hora:"09:00–10:30", aula:"Aula 2.2.C04", formato:"Presencial y escrito", temario:"Temas 5 y 6"}
+{subject:"ed", date:"2026-11-13", what:"Segundo parcial: bloque 2", weight:"25 %", type:"ex",
+ time:"09:00–10:30", room:"Aula 2.2.C04", format:"Presencial y escrito", syllabus:"Temas 5 y 6"}
 ```
 
-- `type`: `ex` examen · `en` entrega · `cl` clase o laboratorio · `cf` choque.
-- La semana y el texto de la fecha ("vie 13 nov") se calculan solos.
-- Si **no se sabe el día**: pon el sábado de esa semana y `sinDia:1`. Sale como "semana N".
-- Si **dura varios días** (un test online abierto de lunes a sábado): `hasta:"2026-10-31"`.
-- Si es **online**: `online:1`. Así no se avisa de que ese día no hay clase.
-- En la ficha de la asignatura, en *Hoy*, en el calendario, en *Exámenes* y en la semana aparece sola.
+- `type`: `ex` exam · `en` submission · `cl` class or lab · `cf` clash.
+- The week and the date label ("vie 13 nov") are computed.
+- If **the day is unknown**: use that week's Saturday and `noDay:1`. It shows as "semana N". A custom text can go in `label`.
+- If it **lasts several days** (an online test open Monday to Saturday): `until:"2026-10-31"`.
+- If it is **online**: `online:1`, so there is no warning that there is no class that day.
+- It shows up by itself in the subject card, *Today*, the planner, *Exams* and the week.
 
-**Una clase** → `data.js`, lista `CLASSES`:
+**A class** → `data.js`, list `CLASSES`:
 
 ```js
-{id:"ec", d:3, a:840, b:930, t:"laboratorio", au:"INF 7.0.J04", r:"24 sep · 22 oct", grp:"82",
+{subject:"ec", day:3, start:840, end:930, kind:"laboratorio", room:"INF 7.0.J04", when:"24 sep · 22 oct", group:"82",
  dates:["2026-09-24","2026-10-22"]}
 ```
 
-- `d`: 0 = lunes … 4 = viernes.
-- `a`/`b`: minutos desde medianoche (840 = 14:00).
-- Una clase semanal lleva `from`/`to`; una de fechas sueltas lleva `dates`.
-- La media anchura, el rayado de fechas sueltas y los choques se calculan solos.
+- `day`: 0 = Monday … 4 = Friday.
+- `start`/`end`: minutes since midnight (840 = 14:00).
+- A weekly class has `from`/`to`; a class on loose dates has `dates`.
+- Half width, hatching for loose dates and clashes are computed.
 
-**Una tarea** → `TAREAS.<asignatura>` o `GENERALES`: `["Título","Detalle"]`.
-Cada marca va ligada al título, así que se pueden borrar o reordenar tareas sin que se muevan las demás.
+**A task** → `TASKS.<subject>` or `GENERAL_TASKS`: `["Title","Detail"]`.
+Each tick is tied to the title, so tasks can be removed or reordered without moving the others.
 
-**Consejos de una semana** → `AVISOS[cuatrimestre][semana]`.
-Solo consejos: las fechas de esa semana se añaden solas encima.
+**Advice for a week** → `ADVICE[term][week]`.
+Advice only: that week's dates are added on top automatically.
 
-**El 2.º cuatrimestre**:
+**Term 2**:
 
-1. Nuevas entradas en `SUBJ` con `cuatri:2`.
-2. Sus clases en `CLASSES`, su evaluación en `EVAL` y su profesorado en `PROFS`.
-3. Si quieres, consejos en `AVISOS[2]`.
+1. New entries in `SUBJECTS` with `term:2`.
+2. Their classes in `CLASSES`, grading in `GRADING` and faculty in `FACULTY`.
+3. Optionally, advice in `ADVICE[2]`.
 
-A partir del 26 de enero la web enseña sola esas asignaturas. El progreso del temario, las cifras de arriba y el rótulo cambian también. Mientras no estén metidas, sigue enseñando las del 1.º.
+From 26 January the site shows those subjects by itself; syllabus progress, the header figures and the label change too. Until they are added, term 1 keeps showing.
 
-**Nolan** → `js/nolan.js` (contenido) y `css/nolan.css` (diseño). Admite subpáginas: `#nolan/lo-que-sea` llega a `Nolan.pintar(caja, "lo-que-sea")`.
+**A new setting** → add its values to `SETTINGS_DEFAULTS` and `SETTINGS_OPTIONS` (`prefs.js`), a row in `ROWS` (`settings.js`) and its texts (`s.set.*` in `i18n.js`).
 
----
-
-## Reglas del código
-
-- **Sin librerías ni compilación.** Cada archivo de `js/` es un script normal. Lo que se declara arriba del todo con `const` o `function` en uno se ve desde los siguientes.
-- **Un error en un archivo no tumba los demás.** Además, aparece un aviso rojo arriba con el archivo y el mensaje.
-- **Eventos** (`document.addEventListener`):
-  - `minuto`: cambia el minuto.
-  - `nuevoDia`: cambia el día; lleva la fecha en `detail`.
-  - `pestana`: se abre una pestaña.
-  - `nube`: cambia el estado del guardado; lleva `{tipo, texto}` en `detail`.
-- **Fechas** como texto `"AAAA-MM-DD"`. Para operar con ellas, `deISO` (mediodía, a prueba de cambio de hora) y `sumaDias`.
-- **Estilo del código**: español, comentarios que explican el *porqué*, nada escrito a mano si se puede calcular de los datos.
-
-## La nube
-
-`nube.js` guarda en JSONBin las marcas de tareas (`hechas`), las notas de examen (`grades`) y las notas para Claude (`notas`).
-
-- Hasta que la primera lectura va bien **no se escribe nada**. Se reintenta sola y lo que cambies espera en cola.
-- Se guarda **por cambios** ("esta tarea hecha", "esta nota") sobre una relectura fresca, así nunca se pisa lo que no has tocado.
-- Al esconder o cerrar la app se vacía lo pendiente. Al volver tras un rato, se relee.
-
-## Publicar una versión
-
-1. Sube el número en `index.html`: el pie (`<p class="ver">v40</p>`) y todos los `?v=40`, que se cambian a la vez.
-2. Sube a GitHub los archivos cambiados, respetando las carpetas `js/` y `css/`.
-3. GitHub Pages tarda uno o dos minutos. El número del pie dice qué versión estás viendo.
-
-## Pruebas
-
-```
-node pruebas/pruebas.js
-```
-
-Hacen falta Node y Playwright. Son 32 comprobaciones en un navegador real:
-
-- que la página carga sin errores;
-- las pestañas;
-- la línea roja a distintas horas, el cambio de minuto y la medianoche;
-- las fechas sin día y las de varios días;
-- la nube, con JSONBin simulado: primera lectura fallida o lenta y migración de marcas antiguas;
-- las notas con coma;
-- la ventana de inicio;
-- el gesto de deslizar;
-- el reposo.
-
-Añade una prueba cuando arregles un fallo.
+**Nolan** → `js/nolan.js` (content) and `css/nolan.css` (design). Sub-pages work: `#nolan/anything` reaches `Nolan.render(box, "anything")`.
 
 ---
 
-## Hoja de ruta
+## Code rules
 
-Ordenada por lo que más se va a notar.
+- **No libraries, no build.** Each file in `js/` is a plain script. Anything declared at the top level with `const` or `function` in one file is visible from the next ones.
+- **An error in one file does not take the others down.** A red banner at the top also shows the file and the message.
+- **Events** (`document.addEventListener`):
+  - `minute`: the minute changes.
+  - `newDay`: the day changes; `detail` is the date.
+  - `tab`: a tab opens; `detail` is its name.
+  - `cloud`: the saving status changes; `detail` is `{kind, text}`.
+  - `settings`: a setting changes without reloading (the theme); `detail` is `{key, value}`.
+- **Dates** are `"YYYY-MM-DD"` strings. To work with them use `fromISO` (noon, safe from daylight-saving changes) and `addDays`.
+- **Style**: English, comments that explain *why*, nothing written by hand if it can be computed from the data.
 
-1. **Fechas de exámenes finales.** Las ventanas oficiales son del 16 al 22 de diciembre y del 11 al 25 de enero. Faltan los días; en cuanto salgan, a `CAL`.
-2. **Temario de cada examen** (`temario` en `CAL`). Ya se muestra en el detalle cuando existe.
-3. **2.º cuatrimestre.** La estructura ya está preparada: solo faltan los datos (ver arriba).
-4. **Nolan.** Definir qué es y construirlo en `nolan.js`.
-5. **Exámenes al calendario del móvil.** Un botón "Añadir a mi calendario" que genere un `.ics` con todo `CAL`, para tener avisos del propio teléfono sin depender de la web.
-6. **Funcionar sin conexión.** Un *service worker* para abrir la web sin cobertura y cargar al instante. Pide cuidado con las versiones, para no quedarse con una copia vieja.
-7. **Media del cuatrimestre.** Con las notas de la calculadora y los ECTS, la media ponderada y qué hace falta en cada final.
-8. **Hora de Madrid fija**, aunque el móvil esté en otra zona horaria (viajes).
-9. **Pruebas automáticas en GitHub.** Pasar `pruebas/pruebas.js` con GitHub Actions cada vez que se sube algo.
-10. **Modo claro** opcional, para leer a pleno sol.
+## The cloud
+
+`cloud.js` saves to JSONBin the task ticks (`hechas`), the exam grades (`grades`) and the notes for Claude (`notas`). Those record keys stay in Spanish on purpose: renaming them would lose what is already saved.
+
+- Nothing is written until the first read succeeds. It retries by itself and your changes wait in a queue.
+- It saves **by changes** ("this task done", "this grade") on top of a fresh read, so it never overwrites what you did not touch.
+- When the app is hidden or closed, pending changes are flushed. When you come back after a while, it reads again.
+
+Settings are not in the cloud: they are per device (`localStorage`, key `settings`).
+
+## Publishing a version
+
+1. Bump the number in `index.html`: the footer (`<p class="version">v41</p>`) and every `?v=41`, all at once.
+2. Upload the changed files to GitHub, keeping the `js/` and `css/` folders.
+3. GitHub Pages takes a minute or two. The footer number tells you which version you are seeing.
+
+## Tests
+
+```
+node tests/run.js
+```
+
+Needs Node and Playwright. 42 checks in a real browser:
+
+- the page loads without errors;
+- the tabs, and old Spanish links;
+- the red line at different times, the minute change and midnight;
+- dates without a day and multi-day windows;
+- the cloud, with a simulated JSONBin: a failed or slow first read and migration of old ticks;
+- grades with a comma;
+- the home window;
+- settings: light theme, English after reloading, every text translated in both languages, English dates, and the animation levels;
+- the swipe gesture;
+- idle.
+
+Add a test whenever you fix a bug.
+
+---
+
+## Roadmap
+
+Ordered by how much it will be noticed.
+
+1. **Final exam dates.** The official windows are 16–22 December and 11–25 January. The days are missing; add them to `EVENTS` as soon as they are out.
+2. **Syllabus of each exam** (`syllabus` in `EVENTS`). It already shows in the detail panel when present.
+3. **Term 2.** The structure is ready: only the data is missing (see above).
+4. **Nolan.** Decide what it is and build it in `nolan.js`.
+5. **Exams in the phone's calendar.** An "Add to my calendar" button that generates an `.ics` with all `EVENTS`, so the phone itself gives reminders.
+6. **Offline.** A *service worker* to open the site without signal and load instantly. Needs care with versions so an old copy is not kept.
+7. **Term average.** With the calculator grades and the ECTS, the weighted average and what each final needs.
+8. **Fixed Madrid time**, even when the phone is in another time zone (travel).
+9. **Tests on GitHub.** Run `tests/run.js` with GitHub Actions on every upload.

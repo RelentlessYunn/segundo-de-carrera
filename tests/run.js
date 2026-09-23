@@ -1,0 +1,211 @@
+/* ==========================================================
+   run.js — automatic checks of the site in a real browser.
+   Usage (from the project folder):   node tests/run.js
+   Needs Playwright with Chromium (npm i playwright). It never touches the
+   real cloud: JSONBin calls are simulated.
+   Exits with code 1 if anything fails.
+   ========================================================== */
+const {chromium}=require("playwright");
+const path=require("path");
+const PAGE="file://"+path.resolve(__dirname,"..","index.html");
+let failures=0;
+const ok=(c,text)=>{ console.log((c?"  ✔ ":"  ✘ ")+text); if(!c) failures++; };
+const section=text=>console.log("\n"+text);
+
+/* opens the page at a given time (local time of this computer) */
+async function open(b,{hash="",time="2026-09-21T13:06:00",mobile=false,clock="fixed",routes,before,settings}={}){
+  const ctx=await b.newContext({viewport:mobile?{width:390,height:844}:{width:1280,height:900},hasTouch:mobile,isMobile:mobile});
+  const p=await ctx.newPage();
+  p.errors=[];
+  p.on("pageerror",e=>p.errors.push(e.message));
+  await p.route(/fonts\.(googleapis|gstatic)\.com/,r=>r.abort());
+  if(routes) await routes(p);
+  if(settings) await p.addInitScript(s=>localStorage.setItem("settings",s),JSON.stringify(settings));
+  if(before) await p.addInitScript(before);
+  if(clock==="fixed") await p.clock.setFixedTime(new Date(time)); else await p.clock.install({time:new Date(time)});
+  await p.goto(PAGE+(hash?"#"+hash:""),{waitUntil:"load"});
+  await p.waitForTimeout(clock==="fixed"?900:50);
+  return p;
+}
+/* simulated JSONBin: remembers the last write */
+function fakeCloud(initial,mode,writes){
+  return async p=>{
+    let reads=0;
+    await p.route("https://api.jsonbin.io/**",async r=>{
+      if(r.request().method()==="PUT"){ writes.push(JSON.parse(r.request().postData())); return r.fulfill({status:200,body:"{}",contentType:"application/json"}); }
+      reads++;
+      if(mode==="fails"&&reads===1) return r.fulfill({status:503,body:"down"});
+      if(mode==="slow"&&reads===1) await new Promise(x=>setTimeout(x,2500));
+      const rec=writes.length?writes[writes.length-1]:initial;
+      return r.fulfill({status:200,contentType:"application/json",body:JSON.stringify({record:rec})});
+    });
+  };
+}
+const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"test",API_KEY:"test"},writable:false}); };
+
+(async()=>{
+  /* if this Playwright version has no browser of its own, the system Chromium is used */
+  const b=await chromium.launch().catch(()=>chromium.launch({executablePath:process.env.CHROMIUM||"/opt/pw-browsers/chromium"}));
+
+  section("Loading");
+  for(const mobile of [false,true]){
+    const p=await open(b,{mobile});
+    const r=await p.evaluate(()=>({width:document.documentElement.scrollWidth,errors:CHECK.errors,warnings:CHECK.warnings.length,
+      banner:!document.getElementById("errorBanner").hidden}));
+    ok(!p.errors.length,`${mobile?"mobile":"desktop"}: no JavaScript errors ${p.errors.join(" | ")}`);
+    ok(!r.errors.length&&!r.banner,`${mobile?"mobile":"desktop"}: data without errors ${r.errors.join(" | ")}`);
+    if(mobile) ok(r.width<=390,`mobile: nothing sticks out of the screen (${r.width}px)`);
+    if(r.warnings) console.log(`    (the checker leaves ${r.warnings} warnings in the console)`);
+    await p.context().close();
+  }
+
+  section("Tabs");
+  {
+    const p=await open(b,{hash:"schedule"});
+    for(const tab of ["subjects","exams","tasks","faculty","schedule"]){
+      await p.click(`nav.bar a[data-tab=${tab}]`); await p.waitForTimeout(600);
+      const r=await p.evaluate(()=>{ const on=document.querySelector("a[data-tab].on"), i=document.querySelector(".tab-pill").getBoundingClientRect(), a=on.getBoundingClientRect();
+        return {tab:on.dataset.tab,dx:Math.abs(i.left-a.left),cur:on.getAttribute("aria-current")}; });
+      ok(r.tab===tab&&r.dx<2&&r.cur==="page",`${tab}: active, with the pill on top and aria-current`);
+    }
+    await p.goto(PAGE+"#asignaturas"); await p.waitForTimeout(500);
+    ok(await p.evaluate(()=>location.hash==="#subjects"&&!document.getElementById("subjects").hidden),"old Spanish links (#asignaturas) still work");
+    await p.context().close();
+  }
+
+  section("Today: red line and live status (Monday 21 Sep)");
+  for(const [time,mode,text] of [["08:12","pinned-top","empiezas en 48 min"],["10:36","","siguiente en 9 min"],["13:06","","quedan 54 min"],["16:40","pinned-bottom","día de clase terminado"]]){
+    const p=await open(b,{time:"2026-09-21T"+time+":00"});
+    const r=await p.evaluate(()=>({live:document.getElementById("dayLive").textContent,cls:(document.querySelector(".now-line")||{}).className}));
+    ok(r.live===text&&r.cls==="now-line"+(mode?" "+mode:""),`${time}: "${r.live}" (${r.cls})`);
+    await p.context().close();
+  }
+  {
+    const p=await open(b,{time:"2026-09-21T13:06:00"});
+    ok(await p.evaluate(()=>!document.querySelector("#dayList .trow i, #dayList .trow u")),"the class rows have no progress bar");
+    await p.context().close();
+  }
+  {
+    const p=await open(b,{time:"2026-09-21T12:28:50",clock:"live"});
+    await p.clock.runFor(72000);
+    const r=await p.evaluate(()=>[document.querySelector("#clockTime").textContent.replace(/\s/g,""),document.getElementById("dayLive").textContent,document.querySelectorAll(".trow.now").length]);
+    ok(r[0]==="12:30"&&r[1]==="quedan 1 h 30 min"&&r[2]===1,`when the minute changes everything updates together (${r.join(" · ")})`);
+    await p.clock.setSystemTime(new Date("2026-09-21T23:59:50")); await p.clock.runFor(61000);
+    ok(/Martes, 22/.test(await p.textContent("#dayTitle")),"at midnight Today moves to the next day");
+    await p.context().close();
+  }
+  {
+    const p=await open(b,{time:"2026-12-01T08:00:00"});
+    const r=await p.evaluate(()=>document.getElementById("next7").textContent);
+    ok(/semana 13/.test(r)&&!/en 4 días/.test(r),"dates without a confirmed day show as \"semana N\", without a countdown");
+    await p.context().close();
+    const q=await open(b,{time:"2026-10-27T10:00:00"});
+    ok(/cierra el sábado/.test(await q.textContent("#next7")),"a window of several days stays visible while it is open");
+    await q.context().close();
+  }
+
+  section("Cloud (simulated JSONBin)");
+  const REC={hechas:["gk_0","tk_is_0"],grades:{g_main_ed_0:"7"},notas:"old notes"};
+  for(const mode of ["fails","slow","normal"]){
+    const writes=[];
+    const p=await open(b,{hash:"tasks",routes:fakeCloud(REC,mode,writes),before:FAKE_CONFIG});
+    await p.locator("#generalTasks input").nth(2).check();
+    await p.waitForTimeout(5000);
+    const u=writes[writes.length-1]||{};
+    ok(u.notas==="old notes"&&(u.hechas||[]).length===3&&u.grades&&u.grades["g_main_ed_parcial-1"]==="7",
+      `first read ${mode}: nothing is lost and old ids are translated (${(u.hechas||[]).length} ticks)`);
+    await p.context().close();
+  }
+  {
+    const writes=[];
+    const p=await open(b,{hash:"notes",routes:fakeCloud(REC,"fails",writes),before:FAKE_CONFIG});
+    ok(await p.evaluate(()=>document.getElementById("notesText").readOnly),"notes cannot be typed until the saved ones arrive");
+    await p.waitForTimeout(3000);
+    ok(await p.inputValue("#notesText")==="old notes","after retrying the saved notes appear");
+    await p.goto(PAGE+"#subjects"); await p.waitForTimeout(2500);
+    const inp=p.locator('.g-input[data-scope=main][data-subj=ed]').nth(1);
+    await inp.fill("7,5"); await inp.press("Tab"); await p.waitForTimeout(1500);
+    ok(/Acumulado: 3.63/.test(await p.textContent("#res-main-ed")),"a grade with a comma (7,5) counts as 7.5");
+    await p.context().close();
+  }
+
+  section("Home");
+  {
+    const p=await open(b,{hash:"subjects"});
+    await p.click(".home-btn"); await p.waitForTimeout(400);
+    ok(await p.evaluate(()=>!document.getElementById("portal").hidden&&document.querySelector("nav.bar").inert),"the home button opens the window and blocks what is behind");
+    await p.keyboard.press("Escape"); await p.waitForTimeout(400);
+    ok(await p.evaluate(()=>document.getElementById("portal").hidden&&location.hash==="#subjects"),"Escape closes it and you are back on the same tab");
+    await p.goto(PAGE+"#nolan"); await p.waitForTimeout(600);
+    ok(await p.evaluate(()=>!document.getElementById("nolanView").hidden),"#nolan opens the Nolan section");
+    await p.context().close();
+  }
+
+  section("Settings");
+  {
+    const p=await open(b,{hash:"settings"});
+    ok(await p.evaluate(()=>!document.getElementById("settings").hidden&&document.querySelectorAll("#settingsList .seg").length===3),"#settings shows language, theme and animations");
+    await p.click('.seg[data-key=theme] button[data-value=light]'); await p.waitForTimeout(300);
+    const light=await p.evaluate(()=>({theme:document.documentElement.dataset.theme,paper:getComputedStyle(document.body).backgroundColor,
+      saved:JSON.parse(localStorage.getItem("settings")).theme}));
+    ok(light.theme==="light"&&light.paper==="rgb(243, 245, 249)"&&light.saved==="light","the light theme applies at once and is saved");
+    await p.click('.seg[data-key=lang] button[data-value=en]'); await p.waitForLoadState("load"); await p.waitForTimeout(900);
+    const en=await p.evaluate(()=>({lang:document.documentElement.lang,tab:document.querySelector("a[data-tab=schedule] .tab-label").textContent,
+      theme:document.documentElement.dataset.theme,title:document.querySelector("#settings h2").textContent}));
+    ok(en.lang==="en"&&en.tab==="Schedule"&&en.title==="Settings"&&en.theme==="light","English after reloading, and the theme is kept");
+    await p.context().close();
+  }
+  for(const lang of ["es","en"]){
+    const p=await open(b,{settings:{lang}});
+    for(const h of ["schedule","subjects","exams","tasks","faculty","notes","settings","home","nolan"]){ await p.goto(PAGE+"#"+h); await p.waitForTimeout(250); }
+    const r=await p.evaluate(()=>({missing:[...I18N_MISSING],raw:[...document.querySelectorAll("body *")].filter(el=>el.children.length===0&&/^[a-z]+\.[a-zA-Z.]+$/.test(el.textContent.trim())).map(el=>el.textContent)}));
+    ok(!r.missing.length&&!r.raw.length&&!p.errors.length,`${lang}: every text has a translation ${r.missing.concat(r.raw).join(", ")}`);
+    await p.context().close();
+  }
+  {
+    const p=await open(b,{settings:{lang:"en"},time:"2026-10-27T10:00:00"});
+    const r=await p.evaluate(()=>[document.getElementById("dayTitle").textContent,document.getElementById("next7").textContent]);
+    ok(r[0]==="Today · Tuesday, 27 October"&&/closes Saturday/.test(r[1]),`English dates: "${r[0]}"`);
+    await p.context().close();
+  }
+  {
+    const p=await open(b,{settings:{motion:"none"},hash:"schedule"});
+    ok(await p.evaluate(()=>getComputedStyle(document.querySelector(".aurora i")).animationName==="none"&&document.documentElement.dataset.motion==="none"),"Animations: None stops everything");
+    await p.context().close();
+    const q=await open(b,{settings:{motion:"basic"},hash:"schedule"});
+    ok(await q.evaluate(()=>getComputedStyle(document.querySelector(".aurora i")).animationName==="none"&&getComputedStyle(document.querySelector("#stats b")).animationName!==undefined),"Animations: Basic stops the decorations");
+    await q.context().close();
+  }
+
+  section("Mobile: swiping between tabs");
+  {
+    const p=await open(b,{hash:"subjects",mobile:true});
+    const cdp=await p.context().newCDPSession(p);
+    const swipe=async(x1,x2,end="touchEnd")=>{
+      await cdp.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:[{x:x1,y:450}]});
+      for(let k=1;k<=10;k++) await cdp.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:[{x:x1+(x2-x1)*k/10,y:450}]});
+      await cdp.send("Input.dispatchTouchEvent",{type:end,touchPoints:[]});
+      await p.waitForTimeout(700);
+      return p.evaluate(()=>document.querySelector("a[data-tab].on").dataset.tab);
+    };
+    ok(await swipe(320,80)==="exams","to the left: next tab");
+    ok(await swipe(80,320)==="subjects","to the right: previous tab");
+    await swipe(300,180,"touchCancel");
+    ok(await p.evaluate(()=>{ const w=document.querySelector("body > div.wrap"); return !w.style.transform&&!w.style.opacity; }),"a cancelled gesture leaves everything in place");
+    await p.context().close();
+  }
+
+  section("Idle");
+  {
+    const p=await open(b,{clock:"live"});
+    await p.clock.runFor(46000);
+    ok(await p.evaluate(()=>document.body.classList.contains("idle")),"after 45 s without touching anything the decorations stop");
+    await p.mouse.click(100,400); await p.clock.runFor(100);
+    ok(await p.evaluate(()=>!document.body.classList.contains("idle")),"touching brings them back");
+    await p.context().close();
+  }
+
+  await b.close();
+  console.log(failures?`\n${failures} checks failed.`:"\nAll good.");
+  process.exit(failures?1:0);
+})();

@@ -1,0 +1,46 @@
+/* ---------- 10 · effects ---------- */
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+@keyframes fade-in{from{opacity:0}}
+.stagger{animation:rise .42s var(--ease) backwards;animation-delay:var(--d,0ms)}
+.enter{animation:fade-in .3s ease backwards}
+/* ripple on tap */
+.ripple{
+  position:absolute!important;border-radius:50%;pointer-events:none;z-index:0;
+  background:radial-gradient(circle,rgba(255,255,255,.22) 0%,rgba(255,255,255,.08) 45%,transparent 70%);
+  transform:scale(0);animation:ripple .6s cubic-bezier(.2,.7,.3,1) forwards;
+}
+@keyframes ripple{to{transform:scale(1);opacity:0}}
+.ag-btn .ripple{background:radial-gradient(circle,rgba(255,255,255,.55),transparent 70%)}
+/* confetti when ticking a task */
+.confetti{
+  position:fixed;width:7px;height:7px;pointer-events:none;z-index:999;
+  animation:burst .9s cubic-bezier(.15,.7,.3,1) forwards;
+}
+@keyframes burst{
+  0%{transform:translate(-50%,-50%) scale(1);opacity:1}
+  100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty) + 18px)) rotate(var(--rot)) scale(.35);opacity:0}
+}
+@media (max-width:820px){
+  /* no fades: on mobile only the swipe animates */
+  .enter,.stagger,.peek,.shead h2::after,.m-name,.ev,.hdr-top,.clock,.hdr-meta{animation:none!important}
+}
+/* ---------- 12 · reduced motion ---------- */
+/* idle: after a while without touching anything, self-moving decorations stop (effects.js) */
+body.idle .aurora i,body.idle header.top::before,body.idle .p-sky,body.idle .ag-btn::after,
+body.idle .clock-time .sep,body.idle .week-badge .w-bar u::after,body.idle .brand .dot,body.idle .live::before,
+body.idle .now-line::after,body.idle .prog .track::after,body.idle .i-crane .hook{animation-play-state:paused}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  html{scroll-behavior:auto}
+}
+
+/* ---------- 13 · animations setting (Settings → Animations) ----------
+   basic: the decorations that move on their own stop; transitions stay.
+   none: nothing moves at all (same as the system's "reduce motion"). */
+[data-motion=basic] .aurora i,[data-motion=basic] header.top::before,[data-motion=basic] .p-sky,[data-motion=basic] .ag-btn::after,
+[data-motion=basic] .clock-time .sep,[data-motion=basic] .week-badge .w-bar u::after,[data-motion=basic] .brand .dot,
+[data-motion=basic] .live::before,[data-motion=basic] .now-line::after,[data-motion=basic] .prog .track::after,
+[data-motion=basic] .i-crane .hook{animation:none!important}
+[data-motion=none] *,[data-motion=none] *::before,[data-motion=none] *::after{animation:none!important;transition:none!important}
+html[data-motion=none]{scroll-behavior:auto}

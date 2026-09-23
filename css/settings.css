@@ -1,0 +1,26 @@
+/* ---------- 9b · settings ---------- */
+.settings{background:var(--card);border:1px solid var(--rule);border-radius:var(--r)}
+.set-row{display:flex;align-items:center;gap:14px 28px;padding:18px 20px;border-bottom:1px solid var(--rule-2)}
+.set-txt{flex:1;min-width:0}
+.set-txt b{display:block;font-size:.98rem}
+.set-txt p{margin:4px 0 0;font-size:.84rem;color:var(--ink-3);max-width:62ch}
+.set-note{margin:0;padding:14px 20px;font-size:.8rem;color:var(--ink-3)}
+/* segmented control: one pill slides between the options */
+.seg{flex:0 0 auto;display:inline-flex;gap:2px;padding:3px;border-radius:11px;background:var(--card-2);border:1px solid var(--rule)}
+.seg button{
+  position:relative;overflow:hidden;font:inherit;font-size:.84rem;font-weight:600;
+  padding:8px 16px;border:0;border-radius:8px;background:none;color:var(--ink-2);cursor:pointer;
+  transition:background .2s ease,color .2s ease,box-shadow .2s ease,transform .14s var(--spring);
+}
+@media (hover:hover){.seg button:hover{color:var(--ink)}}
+.seg button:active{transform:scale(.95)}
+.seg button[aria-checked=true]{background:var(--ink);color:var(--on-ink);box-shadow:0 2px 8px rgba(0,0,0,.25)}
+/* the gear turns a little when hovered */
+.gear-btn svg{transition:transform .5s var(--spring)}
+@media (hover:hover){.gear-btn:hover svg{transform:rotate(60deg)}}
+@media (max-width:620px){
+  .set-row{flex-direction:column;align-items:stretch;padding:16px 14px}
+  .seg{display:flex}
+  .seg button{flex:1;padding:9px 6px}
+  .set-note{padding:12px 14px}
+}
