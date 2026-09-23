@@ -74,9 +74,10 @@
   }
 
   /* ---------- the Milky Way: a band across the screen, drawn at screen size ---------- */
-  const milky=sky.querySelector(".sky-milky");
+  const milky=sky.querySelector(".sky-milky");   /* optional: no longer in index.html (universe.js draws the galaxies) */
   let drawnW=0, drawnH=0;
   function drawMilky(){
+    if(!milky) return;
     const W=innerWidth, H=innerHeight+160;             /* a little taller, for the parallax */
     if(Math.abs(W-drawnW)<2&&Math.abs(H-drawnH)<140) return;   /* the phone's address bar is not a resize */
     drawnW=W; drawnH=H; seed=424242;

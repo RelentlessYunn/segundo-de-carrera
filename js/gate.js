@@ -7,8 +7,8 @@
      (a new hash here) makes every device ask again.
    · index.html marks the page as locked in <head> before painting, so
      nothing behind the gate ever flashes.
-   · Right PIN: the keypad drifts away and a five-second flight into a
-     galaxy (a 3D cloud of stars) ends in the page's own sky, at home.
+   · Right PIN: the keypad drifts away and the camera flies from deep space
+     into the Nolan galaxy, which is home (universe.js).
    · Gate.lock() (Log out, in Settings) forgets the device and asks again.
    This keeps people out of the page; it does not hide the code or the data
    files, which are public in the repository (see README, "PIN").
@@ -65,7 +65,8 @@ const Gate=(function(){
     if(lowMotion()){ setTimeout(done,300); return; }
     /* the digits, dots and logo float away one after another (css: .gate.leaving) */
     setTimeout(()=>box.classList.add("leaving"),350);
-    Galaxy.fly({from:"far",duration:5400,arrive:done});   /* galaxy.js */
+    root.classList.add("flying");                       /* the far stars fade in during the flight (css) */
+    Universe.go("home",{duration:5600,arriveAt:.8,onArrive:()=>{ done(); setTimeout(()=>root.classList.remove("flying"),1500); }});
   }
 
   /* ---------- log out: forget this device and show the PIN again ---------- */
@@ -75,6 +76,9 @@ const Gate=(function(){
     box.classList.remove("granted","leaving","wrong","checking");
     box.hidden=false; box.classList.add("closing-in");
     root.setAttribute("data-locked","");
+    /* next time, the flight lands at home (not on the page you logged out from) */
+    history.replaceState(null,"","#home"); Home.open("home");
+    Universe.go("gate",{animate:false});
     setTimeout(()=>box.classList.remove("closing-in"),900);
   }
 

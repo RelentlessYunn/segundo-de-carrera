@@ -32,38 +32,38 @@
 <!-- the font does not block the first paint: it applies as soon as it arrives -->
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
-<link rel="stylesheet" href="css/base.css?v=0.47">
-<link rel="stylesheet" href="css/sky.css?v=0.47">
-<link rel="stylesheet" href="css/header.css?v=0.47">
-<link rel="stylesheet" href="css/tabbar.css?v=0.47">
-<link rel="stylesheet" href="css/today.css?v=0.47">
-<link rel="stylesheet" href="css/schedule.css?v=0.47">
-<link rel="stylesheet" href="css/planner.css?v=0.47">
-<link rel="stylesheet" href="css/subjects.css?v=0.47">
-<link rel="stylesheet" href="css/exams.css?v=0.47">
-<link rel="stylesheet" href="css/tasks.css?v=0.47">
-<link rel="stylesheet" href="css/home.css?v=0.47">
-<link rel="stylesheet" href="css/nolan.css?v=0.47">
-<link rel="stylesheet" href="css/settings.css?v=0.47">
-<link rel="stylesheet" href="css/effects.css?v=0.47">
-<link rel="stylesheet" href="css/astral.css?v=0.47">
-<link rel="stylesheet" href="css/cinema.css?v=0.47">
-<link rel="stylesheet" href="css/light.css?v=0.47">
+<link rel="stylesheet" href="css/base.css?v=0.48">
+<link rel="stylesheet" href="css/sky.css?v=0.48">
+<link rel="stylesheet" href="css/header.css?v=0.48">
+<link rel="stylesheet" href="css/tabbar.css?v=0.48">
+<link rel="stylesheet" href="css/today.css?v=0.48">
+<link rel="stylesheet" href="css/schedule.css?v=0.48">
+<link rel="stylesheet" href="css/planner.css?v=0.48">
+<link rel="stylesheet" href="css/subjects.css?v=0.48">
+<link rel="stylesheet" href="css/exams.css?v=0.48">
+<link rel="stylesheet" href="css/tasks.css?v=0.48">
+<link rel="stylesheet" href="css/home.css?v=0.48">
+<link rel="stylesheet" href="css/nolan.css?v=0.48">
+<link rel="stylesheet" href="css/settings.css?v=0.48">
+<link rel="stylesheet" href="css/effects.css?v=0.48">
+<link rel="stylesheet" href="css/astral.css?v=0.48">
+<link rel="stylesheet" href="css/cinema.css?v=0.48">
+<link rel="stylesheet" href="css/light.css?v=0.48">
 </head>
 <body>
 <!-- the sea of stars behind the page (sky.js draws it) -->
 <div id="sky" aria-hidden="true">
   <div class="sky-nebula"><i></i><i></i><i></i><i></i></div>
-  <div class="sky-par" data-depth=".02"><canvas class="sky-milky"></canvas></div>
   <div class="sky-par" data-depth=".03" data-tile="520"><i class="sky-layer l-dust"></i></div>
   <div class="sky-par" data-depth=".06" data-tile="760"><i class="sky-layer l-a"></i></div>
   <div class="sky-par" data-depth=".08" data-tile="820"><i class="sky-layer l-b"></i></div>
   <div class="sky-par" data-depth=".12" data-tile="1200"><i class="sky-layer l-bright"></i></div>
-  <!-- inside the galaxy (UC3M): its glowing core and haze; hidden while home is open -->
-  <div class="sky-inside"><i></i><i></i><i></i></div>
   <div class="sky-meteors"></div>
   <i class="sky-grain"></i>
 </div>
+
+<!-- the universe: home's galaxy and one galaxy per section, in 3D (js/universe.js) -->
+<canvas id="universe" aria-hidden="true"></canvas>
 
 <!-- the PIN gate (js/gate.js); it is shown only while <html> has data-locked -->
 <div id="gate" class="gate" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
@@ -231,7 +231,7 @@
 
 </main>
 
-<footer><div class="wrap"><p class="version">v0.47</p></div></footer>
+<footer><div class="wrap"><p class="version">v0.48</p></div></footer>
 </div>
 <div id="debug"></div>
 
@@ -239,13 +239,12 @@
 <div id="portal" class="portal" role="dialog" aria-modal="true" aria-label="Inicio" data-i18n-aria="s.home" tabindex="-1" hidden>
   <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
   <div class="p-sky" aria-hidden="true"></div>
-  <canvas class="home-galaxy" id="homeGalaxy" aria-hidden="true"></canvas>
   <div class="p-bar">
     <a class="p-tool" href="#notes" aria-label="Notas" title="Notas" data-i18n-aria="s.notes" data-i18n-title="s.notes">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h9l4 4V19a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19V5A1.5 1.5 0 0 1 6.5 3.5z"/><path d="M15 3.5V8h4M8.5 12.5h7M8.5 16h4.5"/></svg>
     </a>
     <a class="p-tool" href="#settings" aria-label="Configuración" title="Configuración" data-i18n-aria="s.settings" data-i18n-title="s.settings">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2 5.5 5.5"/></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 2.8h3.4l.5 2.4 1.6.9 2.3-.8 1.7 2.9-1.8 1.6v1.9l1.8 1.6-1.7 2.9-2.3-.8-1.6.9-.5 2.4h-3.4l-.5-2.4-1.6-.9-2.3.8-1.7-2.9 1.8-1.6v-1.9L4.2 8.2l1.7-2.9 2.3.8 1.6-.9z"/><circle cx="12" cy="12" r="3"/></svg>
     </a>
   </div>
   <div class="p-in">
@@ -264,7 +263,7 @@
     <div class="p-view" data-view="home">
       <p class="p-ask" data-i18n="s.whereTo">¿A dónde vamos?</p>
       <div class="p-cards">
-        <a class="p-card" id="homeUc3m" href="#schedule" style="--ac:#3FD9A4">
+        <a class="p-card" id="homeUc3m" href="#schedule" data-galaxy="uc3m" style="--ac:#3FD9A4">
           <span class="p-ic"><svg class="i-uni" viewBox="0 0 48 48" aria-hidden="true">
             <path class="f2" d="M5 17 24 6.5 43 17z"/>
             <circle class="seal" cx="24" cy="12.6" r="2"/>
@@ -275,7 +274,7 @@
           <span class="p-info" id="homeUc3mInfo"></span>
           <span class="p-go"><span data-i18n="s.enter">Entrar</span> <em>→</em></span>
         </a>
-        <a class="p-card wip" href="#nolan" style="--ac:#FFA640">
+        <a class="p-card wip" href="#nolan" data-galaxy="forge" style="--ac:#FFA640">
           <span class="p-ic"><svg class="i-crane" viewBox="0 0 48 48" aria-hidden="true">
             <path d="M12 44V10M16 44V12M12 40l4-4-4-4 4-4-4-4 4-4-4-4 4-4-4-4"/>
             <path d="M4 12h40M12 10 16 5l2 7M16 5 40 12"/>
@@ -287,10 +286,23 @@
           <span class="p-info"><span data-i18n="s.nolanSoon">Pronto, con lo que me vayas contando.</span></span>
           <span class="p-go"><span data-i18n="s.view">Ver</span> <em>→</em></span>
         </a>
+        <a class="p-card soon" href="#soon/andromeda" data-galaxy="andromeda" style="--ac:#9FB3FF">
+          <span class="p-ic"><svg class="i-galaxy" viewBox="0 0 48 48" aria-hidden="true"><ellipse cx="24" cy="24" rx="19" ry="8" transform="rotate(-24 24 24)"/><ellipse class="f" cx="24" cy="24" rx="11" ry="4.5" transform="rotate(-24 24 24)"/><circle class="core" cx="24" cy="24" r="3"/><circle class="dot" cx="9" cy="14" r="1"/><circle class="dot" cx="39" cy="35" r="1"/><circle class="dot" cx="37" cy="12" r=".8"/></svg></span>
+          <span class="p-txt"><b>Andrómeda</b><span class="soon-tag" data-i18n="s.soonTag">Por explorar</span></span>
+          <span class="p-info"><span data-i18n="s.soonInfo">Una galaxia reservada para lo que venga.</span></span>
+          <span class="p-go"><span data-i18n="s.view">Ver</span> <em>→</em></span>
+        </a>
+        <a class="p-card soon" href="#soon/sombrero" data-galaxy="sombrero" style="--ac:#9FB3FF">
+          <span class="p-ic"><svg class="i-galaxy" viewBox="0 0 48 48" aria-hidden="true"><ellipse cx="24" cy="24" rx="19" ry="8" transform="rotate(-24 24 24)"/><ellipse class="f" cx="24" cy="24" rx="11" ry="4.5" transform="rotate(-24 24 24)"/><circle class="core" cx="24" cy="24" r="3"/><circle class="dot" cx="9" cy="14" r="1"/><circle class="dot" cx="39" cy="35" r="1"/><circle class="dot" cx="37" cy="12" r=".8"/></svg></span>
+          <span class="p-txt"><b>Sombrero</b><span class="soon-tag" data-i18n="s.soonTag">Por explorar</span></span>
+          <span class="p-info"><span data-i18n="s.soonInfo">Una galaxia reservada para lo que venga.</span></span>
+          <span class="p-go"><span data-i18n="s.view">Ver</span> <em>→</em></span>
+        </a>
       </div>
     </div>
 
     <div class="p-view p-nolan" data-view="nolan" id="nolanView" hidden></div>
+    <div class="p-view p-nolan p-soon" data-view="soon" id="soonView" hidden></div>
     <div class="p-view p-page" data-view="notes" id="notes" hidden>
       <a class="p-back p-back-top" href="#home" data-i18n="s.backHome">← Inicio</a>
       <div class="shead"><h2 data-i18n="s.notes.title">Notas para Claude</h2><p data-i18n-html="s.notes.lead">Texto plano que se guarda solo. Claude no puede abrir la nube por su cuenta: cuando quieras que aplique algo, pulsa <b>Copiar notas</b> y pégaselas en el chat.</p></div>
@@ -305,34 +317,34 @@
     </div>
   </div>
 </div>
-<script src="config.js?v=0.47" onerror="void 0"></script>
-<script src="data.js?v=0.47"></script>
-<script src="eval.js?v=0.47"></script>
-<script src="js/prefs.js?v=0.47"></script>
-<script src="js/i18n.js?v=0.47"></script>
-<script src="js/core.js?v=0.47"></script>
-<script src="js/gate.js?v=0.47"></script>
-<script src="js/galaxy.js?v=0.47"></script>
-<script src="js/sky.js?v=0.47"></script>
-<script src="js/validate.js?v=0.47"></script>
-<script src="js/derived.js?v=0.47"></script>
-<script src="js/cloud.js?v=0.47"></script>
-<script src="js/header.js?v=0.47"></script>
-<script src="js/astro.js?v=0.47"></script>
-<script src="js/weather.js?v=0.47"></script>
-<script src="js/schedule.js?v=0.47"></script>
-<script src="js/today.js?v=0.47"></script>
-<script src="js/subjects.js?v=0.47"></script>
-<script src="js/faculty.js?v=0.47"></script>
-<script src="js/exams.js?v=0.47"></script>
-<script src="js/tasks.js?v=0.47"></script>
-<script src="js/notes.js?v=0.47"></script>
-<script src="js/planner.js?v=0.47"></script>
-<script src="js/settings.js?v=0.47"></script>
-<script src="js/nolan.js?v=0.47"></script>
-<script src="js/home.js?v=0.47"></script>
-<script src="js/router.js?v=0.47"></script>
-<script src="js/debug.js?v=0.47"></script>
-<script src="js/effects.js?v=0.47"></script>
+<script src="config.js?v=0.48" onerror="void 0"></script>
+<script src="data.js?v=0.48"></script>
+<script src="eval.js?v=0.48"></script>
+<script src="js/prefs.js?v=0.48"></script>
+<script src="js/i18n.js?v=0.48"></script>
+<script src="js/core.js?v=0.48"></script>
+<script src="js/gate.js?v=0.48"></script>
+<script src="js/sky.js?v=0.48"></script>
+<script src="js/universe.js?v=0.48"></script>
+<script src="js/validate.js?v=0.48"></script>
+<script src="js/derived.js?v=0.48"></script>
+<script src="js/cloud.js?v=0.48"></script>
+<script src="js/header.js?v=0.48"></script>
+<script src="js/astro.js?v=0.48"></script>
+<script src="js/weather.js?v=0.48"></script>
+<script src="js/schedule.js?v=0.48"></script>
+<script src="js/today.js?v=0.48"></script>
+<script src="js/subjects.js?v=0.48"></script>
+<script src="js/faculty.js?v=0.48"></script>
+<script src="js/exams.js?v=0.48"></script>
+<script src="js/tasks.js?v=0.48"></script>
+<script src="js/notes.js?v=0.48"></script>
+<script src="js/planner.js?v=0.48"></script>
+<script src="js/settings.js?v=0.48"></script>
+<script src="js/nolan.js?v=0.48"></script>
+<script src="js/home.js?v=0.48"></script>
+<script src="js/router.js?v=0.48"></script>
+<script src="js/debug.js?v=0.48"></script>
+<script src="js/effects.js?v=0.48"></script>
 </body>
 </html>

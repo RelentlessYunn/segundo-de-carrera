@@ -70,7 +70,7 @@ const Router=(function(){
   }
 
   /* ---------- routes ---------- */
-  const isHome=r=>r==="home"||r==="notes"||r==="settings"||r==="nolan"||r.startsWith("nolan/");
+  const isHome=r=>r==="home"||r==="notes"||r==="settings"||r==="nolan"||r.startsWith("nolan/")||r.startsWith("soon/");
   function handle(){
     let r=decodeURIComponent(location.hash.slice(1));
     if(r.includes("debug")) return;                    /* handled by debug.js */

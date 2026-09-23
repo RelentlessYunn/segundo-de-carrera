@@ -1,8 +1,11 @@
 /* ==========================================================
-   home.js — the home screen: choose between UC3M and Nolan.
+   home.js — the home screen: one card per section (UC3M, Nolan, and the
+   galaxies kept for what comes next), plus Notes and Settings.
    It behaves like a window on top of everything: the page behind cannot be
    clicked or tabbed into, and Escape closes it.
-   Routes (#home, #nolan…) are decided in router.js; here it only opens and closes.
+   Every section is a galaxy of the universe (universe.js): opening a
+   section flies the camera into its galaxy, coming home flies back out.
+   Routes (#home, #nolan, #soon/…) are decided in router.js.
    ========================================================== */
 const Home=(function(){
   const P=$("#portal"), views=$$("#portal .p-view");
@@ -23,8 +26,20 @@ const Home=(function(){
     const w=weekOf(k);
     $("#homeUc3mInfo").innerHTML=(w?`<i>${esc(t("header.week",{n:w.n}))}</i>`:"")+`<span>${esc(cls)}</span>`+(exam?`<span>${esc(exam)}</span>`:"");
   }
+  /* which galaxy each view of home lives in */
+  const sceneOf=(view,sub)=>view==="nolan"?"forge":view==="soon"?(Universe.GALAXIES[sub]?sub:"home"):"home";
+  const SOON_NAMES={andromeda:"Andrómeda",sombrero:"Sombrero"};
+  function renderSoon(id){
+    $("#soonView").innerHTML=`<span class="p-ic big" style="--ac:#9FB3FF">${$(`.p-card[data-galaxy="${id}"] .p-ic`)?$(`.p-card[data-galaxy="${id}"] .p-ic`).innerHTML:""}</span>`+
+      `<h2>${esc(SOON_NAMES[id]||id)}</h2><p>${esc(t("soon.text"))}</p><a class="p-back" href="#home">${esc(t("nolan.back"))}</a>`;
+  }
+  let opened=false;
   function open(view,subroute,backTo){
     draw();
+    /* the camera goes to this view's galaxy; the first time, no flight (it is already there) */
+    /* (behind the PIN the camera stays in deep space, ready for the flight) */
+    if(!Gate.locked()){ Universe.go(sceneOf(view,subroute),{animate:opened,duration:2400}); opened=true; }
+    if(view==="soon") renderSoon(subroute);
     /* the UC3M card points at the tab you were on */
     if(backTo) $("#homeUc3m").setAttribute("href","#"+backTo);
     if(view==="nolan") Nolan.render($("#nolanView"),subroute||"");
@@ -37,10 +52,10 @@ const Home=(function(){
     behind.forEach(el=>el.inert=true);
     /* focus goes into the window (Tab continues through the cards), without marking any */
     P.focus({preventScroll:true});
-    drawGalaxy();
   }
   function close(){
     if(P.hidden) return;
+    Universe.go("uc3m");                                /* the app lives inside the UC3M galaxy */
     document.body.classList.remove("portal-open");
     behind.forEach(el=>el.inert=false);
     if(lowMotion()) P.hidden=true;
@@ -59,40 +74,32 @@ const Home=(function(){
   }
   Gate.onUnlock(intro);
 
-  /* ---------- home's galaxy, far away in the background ----------
-     Drawn once (and again if the window changes size) by galaxy.js. */
-  const gal=$("#homeGalaxy");
-  let galDrawn="";
-  function drawGalaxy(){
-    if(!gal||P.hidden||!highQuality()) return;
-    const key=innerWidth+"x"+innerHeight; if(key===galDrawn) return;
-    galDrawn=key; Galaxy.still(gal); gal.classList.add("ready");
-  }
-  let rzg=0; window.addEventListener("resize",()=>{ clearTimeout(rzg); rzg=setTimeout(drawGalaxy,250); });
-
-  /* ---------- entering UC3M: into the galaxy ----------
-     Home fades away, the camera flies into home's galaxy, and UC3M appears
-     inside it, with its own sky (css: .sky-inside). */
+  /* ---------- opening a section: into its galaxy ----------
+     Home's content fades, the camera flies into the section's galaxy, and
+     the section appears inside it. go() is called on arrival. */
   let entering=false;
   function enter(card,go){
     if(entering) return;
-    if(!fancy()||!gal){ go(); return; }
+    const id=card.dataset.galaxy||"uc3m";
+    if(!fancy()){ Universe.go(id,{animate:false}); go(); return; }
     entering=true;
     const inner=$("#portal .p-in"), bar=$("#portal .p-bar");
     const fade=[{opacity:1,transform:"none"},{opacity:0,transform:"translateY(-10px)"}];
     inner.animate(fade,{duration:500,easing:"ease-in",fill:"forwards"});
     if(bar) bar.animate(fade,{duration:400,easing:"ease-in",fill:"forwards"});
-    Galaxy.fly({from:"home",duration:2800,black:false,arrive:()=>{
+    const reset=()=>{ inner.getAnimations().forEach(a=>a.cancel()); if(bar) bar.getAnimations().forEach(a=>a.cancel()); };
+    Universe.go(id,{duration:2800,arriveAt:.82,onArrive:()=>{
       go();
-      document.body.classList.add("arriving");
-      setTimeout(()=>{
-        document.body.classList.remove("arriving"); entering=false;
-        inner.getAnimations().forEach(a=>a.cancel()); if(bar) bar.getAnimations().forEach(a=>a.cancel());
-        gal.style.opacity="";
-      },1200);
+      if(id==="uc3m"){ document.body.classList.add("arriving"); setTimeout(reset,400); } else reset();
+      setTimeout(()=>{ document.body.classList.remove("arriving"); entering=false; },1200);
     }});
-    gal.style.opacity="0";                          /* the flying galaxy takes its place */
   }
+  /* the other galaxies (Nolan and the ones to explore) open inside home */
+  $$("#portal .p-card[data-galaxy]").forEach(card=>{
+    if(card.id==="homeUc3m") return;                      /* router.js handles UC3M */
+    card.addEventListener("click",ev=>{ ev.preventDefault(); const h=card.getAttribute("href").slice(1);
+      enter(card,()=>{ history.replaceState(null,"","#"+h); const [v,...rest]=h.split("/"); open(v,rest.join("/")); }); });
+  });
 
   return {open, close, enter, intro, isOpen:()=>!P.hidden&&!P.classList.contains("leaving")};
 })();

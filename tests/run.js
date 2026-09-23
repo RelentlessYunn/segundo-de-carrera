@@ -72,10 +72,10 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     ok(await p.evaluate(()=>document.documentElement.hasAttribute("data-locked")&&/incorrecto/.test(document.getElementById("gateMsg").textContent)),"a wrong PIN keeps it locked");
     for(const k of "220226") await p.click(`#gate [data-k="${k}"]`);
     await p.waitForTimeout(2500);
-    ok(await p.evaluate(()=>!!document.querySelector(".journey")&&document.getElementById("gate").classList.contains("leaving")),"the keypad drifts away and the flight into the galaxy begins");
+    ok(await p.evaluate(()=>Universe.busy()&&Universe.scene()==="home"&&document.getElementById("gate").classList.contains("leaving")),"the keypad drifts away and the camera flies into the home galaxy");
     await p.waitForTimeout(4500);
     const r=await p.evaluate(()=>({locked:document.documentElement.hasAttribute("data-locked"),saved:localStorage.getItem("nolan-device"),
-      home:!document.getElementById("portal").hidden,canvas:!!document.querySelector(".journey")}));
+      home:!document.getElementById("portal").hidden,canvas:Universe.busy()}));
     ok(!r.locked&&r.saved&&r.home&&!r.canvas,"the right PIN opens it, lands on home and the device remembers it");
     await p.evaluate(()=>sessionStorage.setItem("keep","1"));
     await p.reload(); await p.waitForTimeout(600);
@@ -85,16 +85,25 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.click("#logout"); await p.waitForTimeout(400);
     ok(await p.evaluate(()=>document.documentElement.hasAttribute("data-locked")&&!document.getElementById("gate").hidden&&!localStorage.getItem("nolan-device")),
       "Log out (in Settings) forgets the device and asks for the PIN again");
+    for(const k of "220226") await p.click(`#gate [data-k="${k}"]`);
+    await p.waitForTimeout(7000);
+    ok(await p.evaluate(()=>!document.documentElement.hasAttribute("data-locked")&&location.hash==="#home"&&!document.querySelector('#portal .p-view[data-view="home"]').hidden),
+      "after logging out from Settings, the PIN lands on home again");
     await p.context().close();
   }
   {
     const p=await open(b);
     ok(await p.evaluate(()=>!document.getElementById("portal").hidden),"the app starts at home");
     await p.waitForTimeout(3500); await p.click("#homeUc3m"); await p.waitForTimeout(1200);
-    ok(await p.evaluate(()=>!!document.querySelector(".journey")),"UC3M flies into home's galaxy");
+    ok(await p.evaluate(()=>Universe.busy()&&Universe.scene()==="uc3m"),"UC3M: the camera flies to the UC3M galaxy");
     await p.waitForTimeout(3200);
-    ok(await p.evaluate(()=>document.getElementById("portal").hidden&&location.hash==="#schedule"&&!document.querySelector(".journey")
-      &&getComputedStyle(document.querySelector("#sky .sky-inside")).opacity==="1"),"…and lands on the timetable, inside the galaxy's sky");
+    ok(await p.evaluate(()=>document.getElementById("portal").hidden&&location.hash==="#schedule"&&!Universe.busy()&&Universe.scene()==="uc3m"),
+      "…and lands on the timetable, inside that galaxy");
+    await p.goto(PAGE+"#home"); await p.waitForTimeout(200);
+    ok(await p.evaluate(()=>Universe.scene()==="home"),"going home flies back to the home galaxy");
+    await p.waitForTimeout(2800);
+    await p.click('.p-card[data-galaxy="andromeda"]'); await p.waitForTimeout(3600);
+    ok(await p.evaluate(()=>Universe.scene()==="andromeda"&&!document.getElementById("soonView").hidden&&location.hash==="#soon/andromeda"),"a galaxy to explore opens inside its own galaxy");
     await p.goto(PAGE+"#notes"); await p.waitForTimeout(500);
     ok(await p.evaluate(()=>!document.getElementById("portal").hidden&&!document.getElementById("notes").hidden&&!!document.querySelector("#portal #notesText")),"Notes open inside home");
     await p.goto(PAGE+"#ajustes"); await p.waitForTimeout(500);
