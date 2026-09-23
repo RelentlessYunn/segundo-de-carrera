@@ -32,7 +32,7 @@ is:{
   "<strong>Semana 13</strong> — parcial II de teoría.",
   "<strong>Semana 14</strong> — entrega del trabajo individual, parte práctica.",
   "<strong>Final</strong> — preguntas teóricas y ejercicios de aplicación de todo el curso.",
-  "Las cuatro prácticas de los viernes a las 17:15 son donde se trabaja ese proyecto. Aprovéchalas: es lo único que puedes sacar de la semana 14."],
+  "Las cuatro prácticas de los viernes de 12:30 a 14:00 son donde se trabaja ese proyecto. Aprovéchalas: es lo único que puedes sacar de la semana 14."],
  weeks:[["Bloque I","Ingeniería de requisitos. 1. Introducción. 2. Obtención, descripción y gestión. 3. Propiedades, atributos y organización. 4. Tipos de requisitos"],["Bloque II","Modelado conceptual con UML. 5. Introducción. 6. Clases y objetos. 7. Asociaciones. 8. Jerarquías"],["Bloque III","Modelado arquitectónico con UML. 9. Introducción. 10. Componentes. 11. Interfaces. 12. Diseño por contratos"]]},
 ec:{
  calc:{escala:"10",min:{i:2,n:5,txt:"un 5 sobre 10 en el examen final"},min2:{i:1,n:4,txt:"un 4 de media en prácticas"}},

@@ -15,7 +15,18 @@
 <!-- la fuente no bloquea el primer pintado: se aplica en cuanto llega -->
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
-<link rel="stylesheet" href="styles.css?v=39">
+<link rel="stylesheet" href="css/base.css?v=40">
+<link rel="stylesheet" href="css/cabecera.css?v=40">
+<link rel="stylesheet" href="css/barra.css?v=40">
+<link rel="stylesheet" href="css/hoy.css?v=40">
+<link rel="stylesheet" href="css/horario.css?v=40">
+<link rel="stylesheet" href="css/planificador.css?v=40">
+<link rel="stylesheet" href="css/asignaturas.css?v=40">
+<link rel="stylesheet" href="css/examenes.css?v=40">
+<link rel="stylesheet" href="css/pendientes.css?v=40">
+<link rel="stylesheet" href="css/inicio.css?v=40">
+<link rel="stylesheet" href="css/nolan.css?v=40">
+<link rel="stylesheet" href="css/efectos.css?v=40">
 </head>
 <body>
 <header class="top">
@@ -26,10 +37,10 @@
         <a class="icon home-btn" href="#home" aria-label="Inicio" title="Inicio">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M4 10.6 12 4l8 6.6V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.2H9v5.2H5.5A1.5 1.5 0 0 1 4 19z"/></svg>
         </a>
-        <div class="marca"><span class="dot"></span>UC3M · Segundo de carrera · 1.er cuatrimestre</div>
+        <div class="marca"><span class="dot"></span>UC3M · Segundo de carrera · <span data-cuatri>1.er cuatrimestre</span></div>
       </div>
       <div class="hdr-acc">
-        <a class="ag-btn" href="https://aulaglobal.uc3m.es" target="_blank" rel="noopener">
+        <a class="ag-btn" href="https://aulaglobal.uc3m.es" target="_blank" rel="noopener" aria-label="Aula Global (se abre en otra pestaña)">
           <svg class="globo" viewBox="0 0 24 24" aria-hidden="true"><circle class="f" cx="12" cy="12" r="8.6"/><ellipse class="meri" cx="12" cy="12" rx="3.9" ry="8.6"/><path d="M3.8 9.2h16.4M3.8 14.8h16.4"/></svg>
           <span>Aula Global</span>
         </a>
@@ -46,17 +57,13 @@
       </div>
       <div class="hdr-meta">
         <div class="r-sem" id="rSemana">—</div>
-        <div class="stats">
-          <div class="stat"><b>7</b><span>asignaturas</span></div>
-          <div class="stat"><b>42</b><span>ECTS</span></div>
-          <div class="stat"><b>2</b><span>campus</span></div>
-        </div>
+        <div class="stats" id="stats"></div>
       </div>
     </div>
   </div>
 </header>
 
-<nav class="bar"><div class="wrap">
+<nav class="bar" aria-label="Secciones"><div class="wrap">
   <div class="tabs">
     <i class="tab-ind" aria-hidden="true"></i>
     <a href="#horario" data-tab="horario" style="--ac:#5AA9FF">
@@ -99,8 +106,10 @@
 </div></nav>
 
 <div class="wrap">
+<div class="aviso-fallo" id="avisoFallo" role="alert" hidden><span></span><button type="button" aria-label="Cerrar aviso" onclick="this.parentNode.hidden=true">×</button></div>
+<main id="contenido">
 
-<section id="hoy" style="padding-top:28px">
+<section id="hoy">
   <div class="today">
     <div class="hd">
       <div class="d-arrows">
@@ -122,22 +131,13 @@
 
 <section id="horario">
   <div class="shead"><h2>Horario semanal</h2><p>Cada asignatura tiene su color y lo mantiene en toda la página.</p></div>
-  <div class="statusbar">
-    <span class="s ok">✓ Sin choques fijos</span>
-    <span class="s wr">⚠ 1 choque en fechas concretas</span>
-    <span class="s">Getafe y Leganés el mismo día: lunes y miércoles</span>
-    <span class="sep"></span>
-    <span class="key">
-      <span><i class="kbox"></i>choque posible</span>
-      <span><i class="kbox hatch"></i>fechas sueltas</span>
-    </span>
-  </div>
+  <div class="statusbar" id="estadoHorario"></div>
   <div class="calbox">
     <div class="calhead" id="calhead"></div>
     <div class="calbody" id="calbody"></div>
   </div>
   <div class="dayblocks" id="dayblocks"></div>
-  <div class="key" id="subjkey" style="margin-top:14px;font-size:.82rem"></div>
+  <div class="key" id="subjkey"></div>
 </section>
 
 <section id="planificador">
@@ -149,7 +149,7 @@
 </section>
 
 <section id="asignaturas">
-  <div class="shead"><h2>Asignaturas</h2><p>Las siete con la misma ficha: horario y aulas, profesorado, evaluación y fechas propias.</p></div>
+  <div class="shead"><h2>Asignaturas</h2><p id="asigIntro">Las asignaturas con la misma ficha: horario y aulas, profesorado, evaluación y fechas propias.</p></div>
   <div id="subjzone"></div>
 </section>
 
@@ -178,19 +178,22 @@
 </section>
 
 <section id="notas" hidden>
-  <div class="shead"><h2>Notas para Claude</h2><p>Texto plano. Escribe aquí los cambios que quieras que aplique y se guardan solos.</p></div>
+  <div class="shead"><h2>Notas para Claude</h2><p>Texto plano que se guarda solo. Claude no puede abrir la nube por su cuenta: cuando quieras que aplique algo, pulsa <b>Copiar notas</b> y pégaselas en el chat.</p></div>
+  <label class="sr-only" for="notasTxt">Notas para Claude</label>
   <textarea id="notasTxt" spellcheck="false" placeholder="Ejemplo:&#10;- El parcial de IS es el 8 de octubre a las 12:30 en el aula 4.0.E04&#10;- Cambiar el aula del viernes de ED a 2.2.C05"></textarea>
-  <div class="notas-estado" id="notasEstado"></div>
+  <div class="notas-pie"><span class="notas-estado" id="notasEstado"></span><button type="button" class="mailcopy" id="copiarNotas">Copiar notas</button></div>
 </section>
 
 
 
-<footer><div class="wrap"><p>Montado a partir de tu horario personal de la UC3M, el horario del grupo 1081, las guías docentes 2026/27 y los materiales de presentación de cada asignatura. Los datos de profesorado proceden del directorio público de la universidad. Lo que en los documentos originales estaba marcado como provisional sigue estándolo aquí.</p><p><a href="#notas" id="linkNotas">·</a></p><p class="ver">v39</p></div></footer>
+</main>
+
+<footer><div class="wrap"><p>Montado a partir de tu horario personal de la UC3M, el horario del grupo 1081, las guías docentes 2026/27 y los materiales de presentación de cada asignatura. Los datos de profesorado proceden del directorio público de la universidad. Lo que en los documentos originales estaba marcado como provisional sigue estándolo aquí.</p><p><a href="#notas" id="linkNotas">·</a></p><p class="ver">v40</p></div></footer>
 </div>
 <div id="dbg"></div>
 
 <!-- Inicio: elegir entre UC3M y Nolan -->
-<div id="portal" class="portal" hidden>
+<div id="portal" class="portal" role="dialog" aria-modal="true" aria-label="Inicio" tabindex="-1" hidden>
   <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
   <div class="p-cielo" aria-hidden="true"></div>
   <div class="p-in">
@@ -209,7 +212,7 @@
             <path d="M5 17h38M9.5 21.5v13M17.8 21.5v13M30.2 21.5v13M38.5 21.5v13M7 34.5h34"/>
             <path class="f" d="M4.5 38.5h39v4h-39z"/>
           </svg></span>
-          <span class="p-txt"><b>UC3M</b><span>Segundo de carrera · 1.er cuatrimestre</span></span>
+          <span class="p-txt"><b>UC3M</b><span>Segundo de carrera · <span data-cuatri>1.er cuatrimestre</span></span></span>
           <span class="p-info" id="pUc3m"></span>
           <span class="p-ir">Entrar <em>→</em></span>
         </a>
@@ -228,23 +231,29 @@
       </div>
     </div>
 
-    <div class="p-vista p-nolan" data-vista="nolan" hidden>
-      <span class="p-ic grande" style="--ac:#FFA640"><svg class="i-grua" viewBox="0 0 48 48" aria-hidden="true">
-        <path d="M12 44V10M16 44V12M12 40l4-4-4-4 4-4-4-4 4-4-4-4 4-4-4-4"/>
-        <path d="M4 12h40M12 10 16 5l2 7M16 5 40 12"/>
-        <rect class="f2" x="4.5" y="12.5" width="5" height="4.5" rx="1"/>
-        <path d="M7 44h14"/>
-        <g class="gancho"><path d="M34 12v13"/><rect class="f" x="30" y="25" width="8" height="6.5" rx="1"/></g>
-      </svg></span>
-      <h2>Nolan</h2>
-      <p>En construcción. Aquí irá lo que me indiques.</p>
-      <a class="p-volver" href="#home">← Volver al inicio</a>
-    </div>
+    <div class="p-vista p-nolan" data-vista="nolan" id="vistaNolan" hidden></div>
   </div>
 </div>
-<script src="config.js?v=39" onerror="void 0"></script>
-<script src="data.js?v=39"></script>
-<script src="eval.js?v=39"></script>
-<script src="app.js?v=39"></script>
+<script src="config.js?v=40" onerror="void 0"></script>
+<script src="data.js?v=40"></script>
+<script src="eval.js?v=40"></script>
+<script src="js/base.js?v=40"></script>
+<script src="js/comprobar.js?v=40"></script>
+<script src="js/derivados.js?v=40"></script>
+<script src="js/nube.js?v=40"></script>
+<script src="js/cabecera.js?v=40"></script>
+<script src="js/horario.js?v=40"></script>
+<script src="js/hoy.js?v=40"></script>
+<script src="js/asignaturas.js?v=40"></script>
+<script src="js/profesorado.js?v=40"></script>
+<script src="js/examenes.js?v=40"></script>
+<script src="js/pendientes.js?v=40"></script>
+<script src="js/notas.js?v=40"></script>
+<script src="js/planificador.js?v=40"></script>
+<script src="js/nolan.js?v=40"></script>
+<script src="js/inicio.js?v=40"></script>
+<script src="js/pestanas.js?v=40"></script>
+<script src="js/diagnostico.js?v=40"></script>
+<script src="js/magia.js?v=40"></script>
 </body>
 </html>
