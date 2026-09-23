@@ -57,7 +57,8 @@ header.top::before,.p-sky{
   font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
   color:#8493A8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.brand .dot{width:7px;height:7px;flex:0 0 auto;border-radius:50%;background:var(--go);box-shadow:0 0 8px rgba(63,217,164,.6);animation:breathe 5s ease-in-out infinite}
+/* the Nolan logo, small, in front of the name */
+.brand .brand-mark{width:15px;height:15px;flex:0 0 auto;filter:drop-shadow(0 0 6px rgba(63,217,164,.45))}
 @keyframes breathe{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.8)}}
 .hdr-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
 .hdr-actions svg,.tab-icon svg{

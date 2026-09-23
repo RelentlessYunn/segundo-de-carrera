@@ -1,7 +1,7 @@
 {
-  "name": "Segundo de Carrera",
-  "short_name": "2º Carrera",
-  "description": "Horario, calendario y asignaturas del curso 2026/27 — UC3M",
+  "name": "Nolan",
+  "short_name": "Nolan",
+  "description": "Mi organizador: horario, calendario, asignaturas y pendientes",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

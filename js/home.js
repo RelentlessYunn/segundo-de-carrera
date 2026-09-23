@@ -14,7 +14,7 @@ const Home=(function(){
   function draw(){
     const n=new Date(), k=isoDate(n), m=minutesOf(n);
     $("#homeTime").textContent=hhmm(m);
-    $("#homeGreeting").textContent=t("home.greeting",{hello:greeting(n.getHours()),name:"Shengyu"});
+    $("#homeGreeting").textContent=t("home.greeting",{hello:greeting(n.getHours()),name:"Nolan"});
     const cs=classesOn(k), next=cs.find(c=>classState(c,m)!=="over");
     const cls=next?t(classState(next,m)==="now"?"home.now":"home.next",{subject:SUBJECTS[next.subject].name,time:hhmm(next.start),room:next.room})
       :cs.length?t("home.doneToday"):(noClassReason(k)||{text:t("home.noClassToday")}).text.replace(/\.$/,"");

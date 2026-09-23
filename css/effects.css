@@ -27,7 +27,7 @@
 /* ---------- 12 · reduced motion ---------- */
 /* idle: after a while without touching anything, self-moving decorations stop (effects.js) */
 body.idle .aurora i,body.idle header.top::before,body.idle .p-sky,body.idle .ag-btn::after,
-body.idle .clock-time .sep,body.idle .week-badge .w-bar u::after,body.idle .brand .dot,body.idle .live::before,
+body.idle .clock-time .sep,body.idle .week-badge .w-bar u::after,body.idle .live::before,
 body.idle .now-line::after,body.idle .prog .track::after,body.idle .i-crane .hook{animation-play-state:paused}
 
 @media (prefers-reduced-motion:reduce){
@@ -39,7 +39,7 @@ body.idle .now-line::after,body.idle .prog .track::after,body.idle .i-crane .hoo
    basic: the decorations that move on their own stop; transitions stay.
    none: nothing moves at all (same as the system's "reduce motion"). */
 [data-motion=basic] .aurora i,[data-motion=basic] header.top::before,[data-motion=basic] .p-sky,[data-motion=basic] .ag-btn::after,
-[data-motion=basic] .clock-time .sep,[data-motion=basic] .week-badge .w-bar u::after,[data-motion=basic] .brand .dot,
+[data-motion=basic] .clock-time .sep,[data-motion=basic] .week-badge .w-bar u::after,
 [data-motion=basic] .live::before,[data-motion=basic] .now-line::after,[data-motion=basic] .prog .track::after,
 [data-motion=basic] .i-crane .hook{animation:none!important}
 [data-motion=none] *,[data-motion=none] *::before,[data-motion=none] *::after{animation:none!important;transition:none!important}

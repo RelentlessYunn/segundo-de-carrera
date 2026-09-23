@@ -1,15 +1,19 @@
-# Segundo de Carrera
+# Nolan
 
-Dashboard for the 2026/27 year — Double Degree in Computer Engineering and Business Administration, UC3M.
+Nolan's personal organizer. Today it covers the 2026/27 year at UC3M (Double Degree in Computer Engineering and Business Administration).
 A static site (HTML, CSS and JavaScript, no libraries, no build step) published on GitHub Pages:
-<https://relentlessyunn.github.io/segundo-de-carrera/>
+<https://relentlessyunn.github.io/with-nolan/>
 
 > **For Claude:** read this whole file before touching anything. Clone the repo
-> (`git clone https://github.com/RelentlessYunn/segundo-de-carrera`) to work on the
+> (`git clone https://github.com/RelentlessYunn/with-nolan`) to work on the
 > latest published version, change only the files you need, bump the version
 > (see *Publishing a version*) and run the tests. Answer the owner in Spanish.
 
 ---
+
+## Name and logo
+
+The site is called **Nolan**. The logo is an astral N: four identical four-point stars joined by straight lines, symmetric (green → blue gradient): `favicon.svg` is the source; `favicon.ico`, `apple-touch-icon.png`, `icon-192.png` and `icon-512.png` are rendered from it. The same mark sits small in the header (`.brand-mark` in `index.html`).
 
 ## What the site has
 
@@ -160,7 +164,7 @@ Settings are not in the cloud: they are per device (`localStorage`, key `setting
 
 ## Publishing a version
 
-1. Bump the number in `index.html`: the footer (`<p class="version">v42</p>`) and every `?v=42`, all at once.
+1. Bump the number in `index.html`: the footer (`<p class="version">v43</p>`) and every `?v=43`, all at once.
 2. Upload the changed files to GitHub, keeping the `js/` and `css/` folders.
 3. GitHub Pages takes a minute or two. The footer number tells you which version you are seeing.
 

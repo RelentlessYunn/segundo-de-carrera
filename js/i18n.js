@@ -89,7 +89,7 @@ es:{
   "cloud.waiting":"Sin conexión: se guardará al conectar.",
 
   /* ---- static texts of index.html ---- */
-  "s.home":"Inicio", "s.brand":"UC3M · Segundo de carrera · ", "s.aulaGlobalAria":"Aula Global (se abre en otra pestaña)",
+  "s.home":"Inicio", "s.brand":"Nolan · UC3M · ", "s.aulaGlobalAria":"Aula Global (se abre en otra pestaña)",
   "s.notes":"Notas", "s.settings":"Configuración", "s.sections":"Secciones",
   "s.tab.schedule":"Horario", "s.tab.subjects":"Asignaturas", "s.tab.exams":"Exámenes", "s.tab.tasks":"Pendientes", "s.tab.faculty":"Profesorado",
   "s.closeWarning":"Cerrar aviso", "s.prevDay":"Día anterior", "s.nextDay":"Día siguiente",
@@ -107,7 +107,7 @@ es:{
   "s.notes.lead":"Texto plano que se guarda solo. Claude no puede abrir la nube por su cuenta: cuando quieras que aplique algo, pulsa <b>Copiar notas</b> y pégaselas en el chat.",
   "s.notes.placeholder":"Ejemplo:\n- El parcial de IS es el 8 de octubre a las 12:30 en el aula 4.0.E04\n- Cambiar el aula del viernes de ED a 2.2.C05",
   "s.footer":"Montado a partir de tu horario personal de la UC3M, el horario del grupo 1081, las guías docentes 2026/27 y los materiales de presentación de cada asignatura. Los datos de profesorado proceden del directorio público de la universidad. Lo que en los documentos originales estaba marcado como provisional sigue estándolo aquí.",
-  "s.hello":"Hola, Shengyu", "s.whereTo":"¿A dónde vamos?", "s.secondYear":"Segundo de carrera · ", "s.enter":"Entrar",
+  "s.hello":"Hola, Nolan", "s.whereTo":"¿A dónde vamos?", "s.secondYear":"Segundo de carrera · ", "s.enter":"Entrar",
   "s.wip":"En construcción", "s.nolanSoon":"Pronto, con lo que me vayas contando.", "s.view":"Ver",
   /* settings */
   "s.settings.lead":"Se guarda en este dispositivo.",
@@ -178,7 +178,7 @@ en:{
   "cloud.saving":"Saving…", "cloud.saved":"Saved.", "cloud.saveFailed":"Could not save. It will retry.",
   "cloud.waiting":"Offline: it will save once connected.",
 
-  "s.home":"Home", "s.brand":"UC3M · Second year · ", "s.aulaGlobalAria":"Aula Global (opens in a new tab)",
+  "s.home":"Home", "s.brand":"Nolan · UC3M · ", "s.aulaGlobalAria":"Aula Global (opens in a new tab)",
   "s.notes":"Notes", "s.settings":"Settings", "s.sections":"Sections",
   "s.tab.schedule":"Schedule", "s.tab.subjects":"Subjects", "s.tab.exams":"Exams", "s.tab.tasks":"Tasks", "s.tab.faculty":"Faculty",
   "s.closeWarning":"Close warning", "s.prevDay":"Previous day", "s.nextDay":"Next day",
@@ -196,7 +196,7 @@ en:{
   "s.notes.lead":"Plain text that saves itself. Claude cannot open the cloud on its own: when you want something applied, press <b>Copy notes</b> and paste them into the chat.",
   "s.notes.placeholder":"Example:\n- The SE midterm is on 8 October at 12:30 in room 4.0.E04\n- Change Friday's DS room to 2.2.C05",
   "s.footer":"Built from your personal UC3M timetable, the group 1081 timetable, the 2026/27 course guides and each subject's introduction materials. Faculty data comes from the university's public directory. Whatever was marked as provisional in the original documents is still provisional here.",
-  "s.hello":"Hi, Shengyu", "s.whereTo":"Where to?", "s.secondYear":"Second year · ", "s.enter":"Enter",
+  "s.hello":"Hi, Nolan", "s.whereTo":"Where to?", "s.secondYear":"Second year · ", "s.enter":"Enter",
   "s.wip":"Under construction", "s.nolanSoon":"Coming soon, with whatever you tell me.", "s.view":"View",
   "s.settings.lead":"Saved on this device.",
   "s.set.lang":"Language", "s.set.langHelp":"The whole interface. Subject texts (grading, advice, syllabus) stay in Spanish.",
