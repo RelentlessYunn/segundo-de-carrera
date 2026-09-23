@@ -16,6 +16,40 @@
       digits[i].classList.remove("tick-in"); void digits[i].offsetWidth; digits[i].classList.add("tick-in");
     });
   }
+  /* the small clocks of the compact header (scrolled down) */
+  function drawMini(n){
+    const hm=String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0");
+    $$(".mini-time").forEach(el=>{ if(el.textContent!==hm) el.textContent=hm; });
+  }
+  /* ---------- compact header ----------
+     Scrolled down, the big header is out of sight, so the essentials stay at hand:
+     on a computer they slide into the tab bar (logo = home, time, Aula Global,
+     notes, settings); on a phone the header shrinks to one row. */
+  function setCompact(on){
+    if(document.body.classList.contains("compact")===on) return;
+    document.body.classList.toggle("compact",on);
+    $$("nav.bar .mini").forEach(m=>{ m.inert=!on; });
+    /* the tabs may lose their labels on narrower screens: the pill has to follow */
+    requestAnimationFrame(()=>window.dispatchEvent(new Event("resize")));
+  }
+  const phone=matchMedia("(max-width:820px)");
+  const scroller=$("body > div.wrap");
+  function onScroll(){
+    if(document.body.classList.contains("portal-open")) return;
+    if(phone.matches){
+      const y=scroller?scroller.scrollTop:0;
+      /* a gap between on and off, so it does not flicker at the edge */
+      if(y>56) setCompact(true); else if(y<8) setCompact(false);
+    } else {
+      const h=$("header.top"); if(!h) return;
+      setCompact(h.getBoundingClientRect().bottom<=0);
+    }
+  }
+  window.addEventListener("scroll",onScroll,{passive:true});
+  if(scroller) scroller.addEventListener("scroll",onScroll,{passive:true});
+  phone.addEventListener("change",()=>{ setCompact(false); onScroll(); });
+  window.addEventListener("hashchange",()=>setTimeout(onScroll,60));
+
   /* the week badge is only rebuilt when it changes (otherwise its bar would regrow every minute) */
   function drawWeek(k){
     const w=weekOf(k), p=periodOn(k);
@@ -50,7 +84,7 @@
 
   function tick(){
     const n=new Date(), k=isoDate(n);
-    drawTime(n);
+    drawTime(n); drawMini(n);
     $("#clockDate").textContent=fmtLong(n);
     drawWeek(k);
     if(k!==day){

@@ -2,7 +2,7 @@
    Everything that makes the page part of the night sky: see-through
    header and home, smoked-glass cards and bar, light that glows softly.
    Stars in the interface are round points of light with a halo, never
-   geometric shapes. The light theme (light.css) undoes what needs a dark sky. */
+   geometric shapes. */
 
 /* header and home float on the sky (their own small skies are not needed) */
 header.top{background:transparent}

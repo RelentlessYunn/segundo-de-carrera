@@ -58,8 +58,3 @@ html{background:var(--space,#050810)}
 body{background:transparent}
 /* while home is open, the page behind it steps away and only the sky remains */
 body.portal-open > header.top,body.portal-open > nav.bar,body.portal-open > div.wrap{visibility:hidden}
-
-/* the light theme is daylight: no sea of stars */
-[data-theme=light] #sky{display:none}
-[data-theme=light] body{background:var(--paper)}
-[data-theme=light] body.portal-open > header.top,[data-theme=light] body.portal-open > nav.bar,[data-theme=light] body.portal-open > div.wrap{visibility:visible}

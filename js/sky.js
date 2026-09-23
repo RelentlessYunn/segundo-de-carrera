@@ -8,17 +8,11 @@
    · With Animations = All: slow drift, twinkling, scroll parallax and a
      shooting star now and then. Basic and None leave the sky still, and
      Quality = Low leaves only a plain dark gradient.
-   · Hidden with the light theme (the header keeps its own small sky).
    ========================================================== */
 (function(){
   const sky=$("#sky"); if(!sky) return;
   if(!highQuality()) return;               /* low quality: a plain gradient, nothing to draw */
-  /* with the light theme there is no sky: it is drawn the first time the dark one is shown */
-  const isLight=()=>document.documentElement.dataset.theme==="light";
-  if(isLight()){
-    const later=()=>{ if(!isLight()){ document.removeEventListener("settings",later); start(); } };
-    document.addEventListener("settings",later);
-  } else start();
+  start();
   function start(){
   const DPR=Math.min(window.devicePixelRatio||1,2);
   /* the same sky on every visit: a small seeded random generator */
@@ -76,7 +70,9 @@
   /* ---------- the nebula: painted once, small, and stretched (gas is soft anyway) ---------- */
   const neb=sky.querySelector(".sky-nebula");
   if(neb&&typeof Cosmos!=="undefined"){
-    const wide=innerWidth>=innerHeight, w=wide?560:340, h=wide?340:560;
+    /* about half the screen's real pixels: gas is soft, so that is already sharp */
+    const long=Math.min(1280,Math.round(Math.max(innerWidth,innerHeight)*1.12*DPR*.55)), short=Math.round(long*.62);
+    const wide=innerWidth>=innerHeight, w=wide?long:short, h=wide?short:long;
     Cosmos.nebula({w,h,seed:7,c1:"70,40,95",c2:"120,45,60",c3:"160,140,120"}).then(c=>{
       neb.appendChild(c); requestAnimationFrame(()=>c.classList.add("ready"));
     });
@@ -150,14 +146,23 @@
   /* ---------- shooting stars ---------- */
   const meteors=sky.querySelector(".sky-meteors");
   function meteor(){
-    if(!document.hidden&&fancy()&&document.documentElement.dataset.theme!=="light"&&!document.body.classList.contains("idle")){
+    if(!document.hidden&&fancy()&&!document.body.classList.contains("idle")){
       const m=document.createElement("i");
       m.className="meteor";
-      m.style.left=(20+Math.random()*75)+"%";
-      m.style.top=(Math.random()*45)+"%";
-      m.style.setProperty("--a",(140+Math.random()*25)+"deg");
-      m.style.setProperty("--d",(260+Math.random()*320)+"px");
-      m.style.setProperty("--t",(.9+Math.random()*.7)+"s");
+      /* anywhere on the screen, heading anywhere: it starts at a random point and
+         flies towards another one, so each one crosses the sky differently */
+      const W=innerWidth, H=innerHeight;
+      const x0=W*(.05+Math.random()*.9), y0=H*(.05+Math.random()*.8);
+      let x1=W*(.1+Math.random()*.8), y1=H*(.1+Math.random()*.8);
+      if(Math.hypot(x1-x0,y1-y0)<Math.min(W,H)*.3){ x1=W-x0; y1=H-y0; }        /* not too short a trip */
+      const ang=Math.atan2(y1-y0,x1-x0)*180/Math.PI;
+      const dist=Math.min(Math.hypot(x1-x0,y1-y0),220+Math.random()*420);
+      /* its head is its right end: place that end at the start point */
+      const len=90+Math.random()*110;
+      m.style.width=len+"px"; m.style.left=(x0-len)+"px"; m.style.top=y0+"px";
+      m.style.setProperty("--a",ang.toFixed(1)+"deg");
+      m.style.setProperty("--d",dist.toFixed(0)+"px");
+      m.style.setProperty("--t",(.8+dist/700+Math.random()*.3).toFixed(2)+"s");
       m.addEventListener("animationend",()=>m.remove());
       meteors.appendChild(m);
     }

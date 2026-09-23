@@ -1,11 +1,12 @@
 /* ==========================================================
-   prefs.js — user settings (language, theme, animations), saved on this
+   prefs.js — user settings (language, animations, quality), saved on this
    device. index.html reads them in <head> before painting (so there is
-   no flash of the wrong theme) and leaves them in window.SETTINGS.
+   no flash of the wrong look) and leaves them in window.SETTINGS.
+   There is only the dark, starry look: the light theme was removed in v0.52.
    ========================================================== */
 const SETTINGS_KEY="settings";
-const SETTINGS_DEFAULTS={lang:"es",theme:"dark",motion:"full",quality:"high"};
-const SETTINGS_OPTIONS={lang:["es","en"],theme:["dark","light","system"],motion:["full","basic","none"],quality:["high","low"]};
+const SETTINGS_DEFAULTS={lang:"es",motion:"full",quality:"high"};
+const SETTINGS_OPTIONS={lang:["es","en"],motion:["full","basic","none"],quality:["high","low"]};
 const SETTINGS=Object.assign({},SETTINGS_DEFAULTS,window.SETTINGS||{});
 Object.keys(SETTINGS_OPTIONS).forEach(k=>{ if(!SETTINGS_OPTIONS[k].includes(SETTINGS[k])) SETTINGS[k]=SETTINGS_DEFAULTS[k]; });
 
@@ -19,13 +20,6 @@ const highQuality=()=>SETTINGS.quality==="high";
 /* the showy extras (stardust, warp, shooting stars) need both */
 const fancy=()=>fullMotion()&&highQuality();
 
-/* the header stays dark in both themes, so the browser's bar colour (theme-color) does not change */
-function applyTheme(){
-  const dark=matchMedia("(prefers-color-scheme: dark)").matches;
-  document.documentElement.dataset.theme=SETTINGS.theme==="system"?(dark?"dark":"light"):SETTINGS.theme;
-}
-matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{ if(SETTINGS.theme==="system") applyTheme(); });
-
 /* saves one setting. Language re-renders everything, so the page reloads. */
 function saveSetting(key,value){
   if(!SETTINGS_OPTIONS[key]||!SETTINGS_OPTIONS[key].includes(value)) return;
@@ -33,8 +27,7 @@ function saveSetting(key,value){
   SETTINGS[key]=value;
   try{ localStorage.setItem(SETTINGS_KEY,JSON.stringify(SETTINGS)); }catch(e){}
   if(!changed) return;
-  if(key==="lang"||key==="motion"||key==="quality"){ location.reload(); return; }
-  if(key==="theme") applyTheme();
+  /* these change the whole page: it reloads, through the passage of shift.js */
+  if(key==="lang"||key==="motion"||key==="quality"){ if(typeof Shift!=="undefined") Shift.leave(key); else location.reload(); return; }
   emit("settings",{key,value});
 }
-applyTheme();

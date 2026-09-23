@@ -1,6 +1,6 @@
 /* ==========================================================
    settings.js — the Settings page (#settings, gear icon in the header):
-   language, theme, animations and quality, and Log out. Each choice is a segmented control;
+   language, animations and quality, and Log out. Each choice is a segmented control;
    saving and applying are done by saveSetting() in prefs.js.
    ========================================================== */
 (function(){
@@ -8,8 +8,6 @@
   const ROWS=[
     {key:"lang",  label:"s.set.lang",   help:"s.set.langHelp",
      options:[["es","Español"],["en","English"]]},          /* each language in its own name */
-    {key:"theme", label:"s.set.theme",  help:"s.set.themeHelp",
-     options:SETTINGS_OPTIONS.theme.map(v=>[v,t("s.set.theme."+v)])},
     {key:"motion",label:"s.set.motion", help:"s.set.motionHelp",
      options:SETTINGS_OPTIONS.motion.map(v=>[v,t("s.set.motion."+v)])},
     {key:"quality",label:"s.set.quality",help:"s.set.qualityHelp",

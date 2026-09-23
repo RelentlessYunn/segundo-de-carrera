@@ -27,7 +27,8 @@ The whole app is one universe, drawn in 3D on a canvas behind everything (`js/un
 - **Home is the Nolan galaxy.** After the PIN the camera flies from deep space into it (five seconds, the far stars fading in around you) and stays there: home's background *is* that galaxy, low on the left.
 - **Each section is a galaxy you can see from home**: UC3M, Nolan (under construction), and two kept for future sections, Andrómeda and Sombrero (cards "Por explorar" on home, route `#soon/<id>`).
 - **Opening a section** flies the camera into its galaxy (`Home.enter` → `Universe.go(id)`), and the section appears inside it: UC3M's timetable has UC3M's galaxy glowing over the header. **Going home** flies back out.
-- **Galaxies look like photographs** (`js/cosmos.js`). Each one is painted pixel by pixel the way Hubble and JWST pictures look: a small, very bright core that falls off steeply (a Sérsic profile), an exponential disk whose arms break into clumps and spurs, blue arms with pink star-forming knots, dark dust lanes on the inner edge of the arms, fine grain made of countless faint stars, and a camera-like tone curve. The picture is see-through where it is dark, so it sits over the starry sky with no box or glow cloud around it. Painting runs in a background worker (a second or two) and each picture fades in; until then a galaxy is drawn from its own stars.
+- **Galaxies look like photographs** (`js/cosmos.js`). Each one is painted pixel by pixel the way Hubble and JWST pictures look: a small, very bright core that falls off steeply (a Sérsic profile), an exponential disk whose arms break into clumps and spurs, blue arms with pink star-forming knots, dark dust lanes on the inner edge of the arms, fine grain made of countless faint stars, and a camera-like tone curve. The picture is see-through where it is dark, so it sits over the starry sky with no box or glow cloud around it. Each picture is painted at the size the screen needs to stay sharp (up to 2048 px), by several background workers: a quick small version first, then the full one, fading in; until then a galaxy is drawn from its own stars. Finished pictures are saved on the device (IndexedDB, a few MB), so from the second visit they appear at once; pictures not used for two weeks are removed. When a galaxy is small on screen a reduced copy is drawn, which is sharper than shrinking the big one.
+- **The universe is alive** (Animations = All and Quality = High): spiral disks turn slowly around their core (a turn every 9–15 minutes; the bulge is a separate layer, so only the disk turns), the camera floats gently so near galaxies drift against far ones, and some stars breathe slowly. It draws at about 30 frames a second, fewer on a slow device, and pauses when the tab is hidden or after 45 s without touching anything. `Universe.seek(seconds)` jumps that time forward (tests).
 - Every galaxy has its own personality, set in its `tex` parameters in `GALAXIES`: Nolan (home) a calm golden spiral with soft arms; UC3M a lively blue spiral full of pink knots; Nolan-in-construction an amber elliptical; Andrómeda a violet spiral seen steeply; Sombrero edge-on, a bright bulge cut by a dark band of dust.
 - A few thousand real stars sit on top of each picture (seeded: always the same): when you fly into a galaxy the picture fades and you pass between its stars.
 - **Deep field**: dozens of tiny galaxies far behind everything, like the Hubble Deep Field.
@@ -37,13 +38,13 @@ The whole app is one universe, drawn in 3D on a canvas behind everything (`js/un
 - **The logo is the home button** (top left in UC3M).
 - The opening of home (the N drawing itself, NOLAN appearing) plays after the PIN and when the app starts.
 - **Log out** (Settings, red button): `Gate.lock()` forgets the device, puts the camera back in deep space and returns to home, so the next PIN lands at home.
-- With Animations = None or Quality = Low there are no flights: the camera jumps. Quality = Low and the light theme hide the universe.
+- With Animations = None or Quality = Low there are no flights: the camera jumps. Quality = Low hides the universe.
 
 ## The astral theme
 
 The whole site lives in the night sky:
 
-- **Sea of stars** (`js/sky.js`, `css/sky.css`): a fixed `#sky` behind the page, almost black, with a faint torn nebula of gas and dust (painted once by `cosmos.js`, drifting very slowly), four layers of stars in real star colours (drawn once on canvas and used as tiles), film grain and a vignette; slow drift, twinkling, scroll parallax and a rare shooting star. Only transforms and opacity move, so it is cheap.
+- **Sea of stars** (`js/sky.js`, `css/sky.css`): a fixed `#sky` behind the page, almost black, with a faint torn nebula of gas and dust (painted once by `cosmos.js`, drifting very slowly), four layers of stars in real star colours (drawn once on canvas and used as tiles), film grain and a vignette; slow drift, twinkling, scroll parallax and a rare shooting star, which starts anywhere and crosses the sky in any direction. Only transforms and opacity move, so it is cheap.
 - **Glass** (`css/astral.css`): cards, tab bar and buttons are dark translucent glass with starlight borders and glows; section titles end in a four-point star.
 - **Effects** (`js/effects.js`): soft points of light where you tap, sparks and a ring of light when a task is ticked. Stars in the interface are round points of light, never geometric shapes.
 - **The sky outside** (`js/weather.js`, on home): weather now, today's high and low, chance of rain and the next sunrise or sunset. The place is where the device is (the browser asks once); if not allowed, Getafe. Weather from Open-Meteo, place names from BigDataCloud, both free and without keys, saved for 20 minutes. Without connection the sun is still computed offline (`js/astro.js`).
@@ -58,7 +59,7 @@ How much of it runs depends on Settings:
 | **Animations Basic** | the sky stands still; no stardust, warp or shooting stars | plain and still |
 | **Animations None** | nothing moves | everything off |
 
-In code: `fullMotion()` for decorations that move, `lowMotion()` for any motion, `highQuality()` for heavy visuals, `fancy()` (both) for the showy extras. The light theme is daylight: no sea of stars, but the header, home and the constellation keep a night sky.
+In code: `fullMotion()` for decorations that move, `lowMotion()` for any motion, `highQuality()` for heavy visuals, `fancy()` (both) for the showy extras.
 
 ## Name and logo
 
@@ -75,7 +76,7 @@ The site is called **Nolan**. The logo is an astral N: four identical four-point
 | **Tasks** (`#tasks`) | Tasks per subject and general ones. Ticks are saved to the cloud. |
 | **Faculty** (`#faculty`) | Table with email and office. |
 | **Notes for Claude** (`#notes`, inside home) | Free text saved to the cloud. **Claude cannot read JSONBin**: to pass them on, press *Copy notes* and paste into the chat. |
-| **Settings** (`#settings`, inside home) | Language (Spanish / English), theme (dark / light / system), animations (all / basic / none) and quality (high / low). Saved on each device. Animations = None plus Quality = Low turns every effect off. |
+| **Settings** (`#settings`, inside home) | Language (Spanish / English), animations (all / basic / none) and quality (high / low). Saved on each device. Animations = None plus Quality = Low turns every effect off. There is only the dark look (the light theme was removed in v0.52). Changing any of them reloads the page through a passage: the screen dives into a tunnel of stars, the page reloads behind it and the new look fades in (`js/shift.js`; with Animations = None, only a soft fade). |
 | **Nolan** (`#nolan`) | Under construction. |
 
 On mobile the tabs sit at the bottom and you can swipe between them.
@@ -112,17 +113,18 @@ Each file does one thing. To change something you usually only need one or two.
 
 | File | What it does |
 |---|---|
-| `prefs.js` | Settings (`SETTINGS`, `saveSetting`), theme, and `lowMotion()` / `fullMotion()` / `highQuality()` / `fancy()`. |
+| `prefs.js` | Settings (`SETTINGS`, `saveSetting`) and `lowMotion()` / `fullMotion()` / `highQuality()` / `fancy()`. |
 | `i18n.js` | Spanish and English texts (`t`, `tn`) and date formatting. |
 | `core.js` | Shared helpers: dates, weeks, term in force, classes on a day (`classesOn`), event labels (`eventLabel`, `whenLabel`), detail panel, error banner. |
+| `shift.js` | The passage (a tunnel of stars) when a setting reloads the page. |
 | `gate.js` | The PIN screen and Log out. |
-| `cosmos.js` | Paints photographic galaxies and the nebula, pixel by pixel, in a background worker. |
+| `cosmos.js` | Paints photographic galaxies and the nebula, pixel by pixel, in background workers, and keeps them on the device. |
 | `sky.js` | The sea of stars behind the page. |
-| `universe.js` | The universe: home's galaxy and one galaxy per section, the deep field, and the camera flights between them. |
+| `universe.js` | The universe: home's galaxy and one galaxy per section, the deep field, the camera flights between them, and its slow life. |
 | `validate.js` | Checks `data.js` and `eval.js` before rendering. Whatever would break the page is left out and reported at the top; odd things go to the console and `#debug`. |
 | `derived.js` | Computed data: clashes between classes (added to `EVENTS`) and the timetable grid layout. |
 | `cloud.js` | Saving to JSONBin, by changes, queued and without overwriting anything (see *The cloud*). |
-| `header.js` | Clock, date, week and figures. It is the only clock: it emits the `minute` and `newDay` events. |
+| `header.js` | Clock, date, week and figures, and the compact header: scrolled down, the tab bar (computer) keeps the logo = home, the time, Aula Global, Notes and Settings; on a phone the header shrinks to one row with the time. It is the only clock: it emits the `minute` and `newDay` events. |
 | `astro.js` | Sunrise and sunset for any place, offline. |
 | `weather.js` | Weather and sun on home. |
 | `schedule.js` | Weekly timetable (grid and list by day) and the clash status bar. |
@@ -137,11 +139,10 @@ Each file does one thing. To change something you usually only need one or two.
 
 ### Design (`css/`)
 
-`base` · `sky` · `header` · `tabbar` · `today` · `schedule` · `planner` · `subjects` · `exams` · `tasks` · `home` · `nolan` · `settings` · `effects` · `astral` · `cinema` · `light`.
+`base` · `sky` · `header` · `tabbar` · `today` · `schedule` · `planner` · `subjects` · `exams` · `tasks` · `home` · `nolan` · `settings` · `effects` · `astral` · `cinema`.
 Each one has its own mobile tweaks at the end.
 
 - **Colours** are tokens on `:root` in `base.css` (`--space`, `--paper`, `--card`, `--card-solid`, `--ink`, `--ink-2`, `--rule`, `--go`, `--warn`…). Use them instead of fixed colours. `--card` is see-through glass; use `--card-solid` where nothing may show through.
-- **Light theme**: `light.css` changes the tokens under `[data-theme=light]` and fixes the few fixed colours. The header and the home screen stay dark in both themes. If you add a fixed colour somewhere, add its light version there.
 - **Animations setting**: `<html data-motion="full|basic|none">`. `basic` stops the decorations that move on their own; `none` stops everything (`effects.css`, section 13). In JavaScript, check `fullMotion()` for decorations and `lowMotion()` for everything else.
 
 ---
@@ -203,7 +204,6 @@ From 26 January the site shows those subjects by itself; syllabus progress, the 
   - `newDay`: the day changes; `detail` is the date.
   - `tab`: a tab opens; `detail` is its name.
   - `cloud`: the saving status changes; `detail` is `{kind, text}`.
-  - `settings`: a setting changes without reloading (the theme); `detail` is `{key, value}`.
 - **Dates** are `"YYYY-MM-DD"` strings. To work with them use `fromISO` (noon, safe from daylight-saving changes) and `addDays`.
 - **Style**: English, comments that explain *why*, nothing written by hand if it can be computed from the data.
 
@@ -239,7 +239,7 @@ Needs Node and Playwright. 63 checks in a real browser:
 - the cloud, with a simulated JSONBin: a failed or slow first read and migration of old ticks;
 - grades with a comma;
 - the home window;
-- settings: light theme, English after reloading, every text translated in both languages, English dates, and the animation levels;
+- settings: no light theme, the passage when a setting reloads the page, English after reloading, every text translated in both languages, English dates, and the animation levels;
 - the astral layer: weather and sun on home, the sea of stars, Quality = Low and the tasks constellation;
 - the swipe gesture;
 - idle.

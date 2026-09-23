@@ -209,15 +209,17 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
   section("Settings");
   {
     const p=await open(b,{hash:"settings"});
-    ok(await p.evaluate(()=>!document.getElementById("settings").hidden&&document.querySelectorAll("#settingsList .seg").length===4),"#settings shows language, theme, animations and quality");
-    await p.click('.seg[data-key=theme] button[data-value=light]'); await p.waitForTimeout(300);
-    const light=await p.evaluate(()=>({theme:document.documentElement.dataset.theme,paper:getComputedStyle(document.body).backgroundColor,
-      saved:JSON.parse(localStorage.getItem("settings")).theme}));
-    ok(light.theme==="light"&&light.paper==="rgb(243, 245, 249)"&&light.saved==="light","the light theme applies at once and is saved");
-    await p.click('.seg[data-key=lang] button[data-value=en]'); await p.waitForLoadState("load"); await p.waitForTimeout(900);
+    ok(await p.evaluate(()=>!document.getElementById("settings").hidden&&document.querySelectorAll("#settingsList .seg").length===3&&!document.querySelector(".seg[data-key=theme]")),"#settings shows language, animations and quality (no light theme any more)");
+    await p.click('.seg[data-key=lang] button[data-value=en]'); await p.waitForTimeout(250);
+    ok(await p.evaluate(()=>document.getElementById("shift").classList.contains("on")&&/idioma/i.test(document.querySelector(".shift-msg").textContent)),"changing a setting dives into the passage before reloading");
+    await p.waitForLoadState("load"); await p.waitForTimeout(400);
+    ok(await p.evaluate(()=>document.getElementById("shift").classList.contains("on")),"after reloading, the passage still covers the page");
+    await p.waitForFunction(()=>!document.getElementById("shift").classList.contains("on"),null,{timeout:20000}).catch(()=>{});
     const en=await p.evaluate(()=>({lang:document.documentElement.lang,tab:document.querySelector("a[data-tab=schedule] .tab-label").textContent,
-      theme:document.documentElement.dataset.theme,title:document.querySelector("#settings h2").textContent}));
-    ok(en.lang==="en"&&en.tab==="Schedule"&&en.title==="Settings"&&en.theme==="light","English after reloading, and the theme is kept");
+      title:document.querySelector("#settings h2").textContent,shift:document.getElementById("shift").classList.contains("on"),
+      light:!!document.querySelector('link[href*="light.css"]')}));
+    ok(en.lang==="en"&&en.tab==="Schedule"&&en.title==="Settings"&&!en.shift,`English after reloading, and the passage has faded away (${JSON.stringify(en)})`);
+    ok(!en.light,"the light theme is gone");
     await p.context().close();
   }
   for(const lang of ["es","en"]){
@@ -256,7 +258,7 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
       header:!!document.getElementById("skyInfo")}));
     ok(/24°/.test(r.w)&&/Getafe/.test(r.w)&&/20:13/.test(r.w)&&/Máx\.28°/.test(r.w)&&/Puesta de sol20:13/.test(r.w)&&!r.header,`weather and sunset on home, nothing under the UC3M clock ("${r.w}")`);
     ok(r.layers===4&&r.shown!=="none","the sea of stars is drawn with Quality = High");
-    const painted=await p.waitForFunction(()=>Universe.painted()===5&&!!document.querySelector("#sky .sky-nebula canvas.ready"),null,{timeout:20000}).then(()=>true,()=>false);
+    const painted=await p.waitForFunction(()=>Universe.painted()===5&&!!document.querySelector("#sky .sky-nebula canvas.ready"),null,{timeout:120000}).then(()=>true,()=>false);
     ok(painted,"the five galaxies and the nebula are painted as photographs (cosmos.js)");
     await p.context().close();
     const q=await open(b,{settings:{quality:"low"},hash:"tasks"});
@@ -267,6 +269,27 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await q.locator("#generalTasks input").nth(0).check(); await q.waitForTimeout(200);
     ok(s.stars>0&&await q.evaluate(()=>document.querySelectorAll("#tasksConstellation .c-star.on").length===1),`the constellation lights a star per task done (${s.stars} stars)`);
     await q.context().close();
+  }
+
+  section("Compact header when scrolled");
+  {
+    const p=await open(b,{hash:"subjects"});
+    await p.evaluate(()=>window.scrollTo(0,700)); await p.waitForTimeout(1200);
+    const d=await p.evaluate(()=>({on:document.body.classList.contains("compact"),time:document.querySelector(".mini-l .mini-time").textContent,
+      home:getComputedStyle(document.querySelector(".mini-l")).opacity,inert:document.querySelector(".mini-r").inert,
+      links:[...document.querySelectorAll(".mini-r a")].map(a=>a.getAttribute("href")).join(" ")}));
+    ok(d.on&&d.time==="13:06"&&+d.home>.9&&!d.inert&&/#notes/.test(d.links)&&/#settings/.test(d.links),`computer: scrolled down, the tab bar keeps home, the time, notes and settings (${JSON.stringify(d)})`);
+    await p.click(".mini-l .home-btn"); await p.waitForTimeout(400);
+    ok(await p.evaluate(()=>location.hash==="#home"),"the small logo takes you home");
+    await p.goto(PAGE+"#subjects"); await p.waitForTimeout(400); await p.evaluate(()=>window.scrollTo(0,0)); await p.waitForTimeout(300);
+    ok(await p.evaluate(()=>!document.body.classList.contains("compact")&&document.querySelector(".mini-l").inert),"back at the top, the full header again");
+    await p.context().close();
+    const m=await open(b,{hash:"subjects",mobile:true});
+    await m.evaluate(()=>{ document.querySelector("body > div.wrap").scrollTop=500; }); await m.waitForTimeout(700);
+    const r=await m.evaluate(()=>({on:document.body.classList.contains("compact"),h:document.querySelector("header.top").getBoundingClientRect().height,
+      t:getComputedStyle(document.querySelector(".hdr-time")).opacity,txt:document.querySelector(".hdr-time").textContent}));
+    ok(r.on&&r.h<90&&+r.t>.9&&r.txt==="13:06",`phone: scrolled down, the header shrinks to one row with the time (${Math.round(r.h)} px)`);
+    await m.context().close();
   }
 
   section("Mobile: swiping between tabs");

@@ -108,8 +108,6 @@ body.arriving>div.wrap{animation-delay:.2s}
 /* the week bar in silver, like the rest */
 .week-badge .w-bar u{background:linear-gradient(90deg,#8E93A3,#FFFFFF);box-shadow:0 0 12px rgba(255,255,255,.35)}
 
-/* light theme: the gate and the cinema stay dark on purpose */
-[data-theme=light] .p-word{color:#F2F3F7}
 
 /* Animations off: every scene is skipped (the JS goes straight to the end) */
 [data-motion=none] .gate *{animation:none!important}
@@ -165,7 +163,7 @@ body.arriving>div.wrap{animation-delay:.2s}
 
 /* ---------- the universe (universe.js) ---------- */
 #universe{position:fixed;inset:0;width:100vw;height:100vh;z-index:-1;pointer-events:none}
-[data-quality=low] #universe,[data-theme=light] #universe{display:none}
+[data-quality=low] #universe{display:none}
 /* during the flight after the PIN, the far stars fade in around you */
 html.flying #sky{opacity:1;transition:opacity 4.5s ease}
 .p-in,.p-bar{z-index:2}
@@ -199,3 +197,12 @@ html.flying #sky{opacity:1;transition:opacity 4.5s ease}
 /* ---------- no visible scroll bars (scrolling still works: wheel, touch, keys) ---------- */
 html,body,.portal,body>div.wrap,.m-day,.tbl{scrollbar-width:none;-ms-overflow-style:none}
 html::-webkit-scrollbar,body::-webkit-scrollbar,.portal::-webkit-scrollbar,body>div.wrap::-webkit-scrollbar,.tbl::-webkit-scrollbar{display:none;width:0;height:0}
+
+/* ---------- the passage between two looks (shift.js) ---------- */
+#shift{position:fixed;inset:0;z-index:10000;display:none;background:#000;pointer-events:none}
+#shift.on,html.shifting #shift{display:block;pointer-events:auto}
+html.shifting #shift{opacity:1}
+#shift canvas{position:absolute;inset:0;width:100%;height:100%}
+.shift-msg{position:absolute;left:0;right:0;bottom:calc(14vh + env(safe-area-inset-bottom,0px));margin:0;text-align:center;
+  font-size:.72rem;font-weight:700;letter-spacing:.32em;text-transform:uppercase;color:rgba(214,222,240,.7)}
+.shift-msg::after{content:"";display:block;width:34px;height:1px;margin:12px auto 0;background:linear-gradient(90deg,transparent,rgba(160,185,255,.8),transparent)}

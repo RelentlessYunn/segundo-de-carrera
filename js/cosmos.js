@@ -10,10 +10,14 @@
      (or right across the middle, seen edge-on);
    · a camera-like tone curve, so bright parts saturate softly;
    · see-through wherever it is dark, so it can sit over the starry sky.
-   The work runs in a background worker, so the page never freezes; if
-   workers are not available it runs a little at a time on the page.
-   Cosmos.galaxy(params) and Cosmos.nebula(params) return promises of a
-   canvas. universe.js and sky.js use them.
+   The work runs in background workers, so the page never freezes; if
+   workers are not available it runs one picture at a time on the page.
+   · Several workers share the work; a quick small version of each galaxy
+     comes first, then the full one, sized for the screen.
+   · Finished pictures are kept on the device (IndexedDB), so after the first
+     visit they appear at once.
+   Cosmos.galaxy(params, {preview, onPreview, priority}) and
+   Cosmos.nebula(params) return promises. universe.js and sky.js use them.
    ========================================================== */
 const Cosmos=(function(){
   /* everything the worker needs, as one plain function (it is also run
@@ -42,7 +46,12 @@ const Cosmos=(function(){
     const rgb=h=>h.split(",").map(Number).map(c=>c/255);
     function hash(x,y,s){ let h=(x*374761393+y*668265263+s*982451653)|0; h=Math.imul(h^(h>>>13),1274126177); h^=h>>>16; return (h>>>0)/4294967296; }
 
-    /* ---------- a galaxy ---------- */
+    /* ---------- a galaxy ----------
+       With p.split the picture comes in two layers, so the disk can turn while
+       the bulge stays put (universe.js): "bulge" is the bulge alone, "disk" is
+       everything else (the whole picture minus the bulge layer, after the tone
+       curve, so both added together give exactly the full picture). The bulge
+       layer is cropped to the square it needs ("crop": its side / the picture's). */
     function galaxy(p){
       const S=p.size, out=new Uint8ClampedArray(S*S*4);
       const fbm=makeNoise(p.seed), fbm2=makeNoise(p.seed*7+3);
@@ -50,67 +59,95 @@ const Cosmos=(function(){
       const core=rgb(p.core), arm=rgb(p.arm), disk=rgb(p.disk), knot=rgb(p.knot);
       const tanP=Math.tan(p.pitch||.35), m=p.arms||2;
       const exposure=p.exposure||2.2;
+      const sn=p.sersic||2, bn=2*sn-.327;
+      const I0=p.Ie?p.Ie*Math.exp(bn):p.bulge;                    /* centre brightness of the bulge */
+      /* how far the bulge reaches before it is too faint to see: the size of its layer */
+      let C=0, bulgeOut=null, off=0;
+      if(p.split){
+        const rbMax=Math.pow(Math.max(0,Math.log(Math.max(1.0001,I0*exposure/.002))/bn),sn);
+        C=Math.min(S,Math.ceil(rbMax*p.bulgeR*1.05*S/2)*2+2); off=(S-C)>>1;
+        bulgeOut=new Uint8ClampedArray(C*C*4);
+      }
+      const put=(buf,o,r8,g8,b8)=>{
+        /* see-through where it is dark: the light is kept as colour × opacity, so
+           empty space shows whatever is behind (the sky) instead of black */
+        const al=Math.max(r8,g8,b8);
+        if(al>.5){ const f=255/al; buf[o]=r8*f; buf[o+1]=g8*f; buf[o+2]=b8*f; buf[o+3]=al; }
+      };
+      const tone=v=>255*(1-Math.exp(-v*exposure));                /* like a camera: bright parts saturate softly */
+      const diskFaint=p.disk0>0?.0015/(p.disk0*exposure):0;       /* below this exp(-r/h), the disk is invisible */
       for(let j=0;j<S;j++){
         for(let i=0;i<S;i++){
           /* picture coordinates → the galaxy's own plane */
           const u=(i+.5)/S*2-1, w=(j+.5)/S*2-1;
+          const d2=u*u+w*w; if(d2>=1) continue;
           const a=u*cr-w*sr, b=u*sr+w*cr;            /* undo the roll */
           const X=a, Y=b/ci;                          /* undo the tilt */
           const r=Math.sqrt(X*X+Y*Y)+1e-6;
-          const edge=Math.max(0,1-Math.pow(Math.sqrt(u*u+w*w),6));   /* fades to nothing at the border */
-          let R=0,G=0,B=0;
+          const edge=1-d2*d2*d2;                      /* fades to nothing at the border */
           /* the bulge: a Sérsic profile (n=4 for ellipticals, ~2 for spiral bulges), slightly flattened */
-          const rb=Math.sqrt(a*a+(b/p.bulgeQ)*(b/p.bulgeQ))/p.bulgeR, sn=p.sersic||2, bn=2*sn-.327;
-          /* Ie: brightness at the half-light radius (ellipticals); otherwise the centre brightness */
-          const Ib=p.Ie?p.Ie*Math.exp(-bn*(Math.pow(rb+1e-4,1/sn)-1)):p.bulge*Math.exp(-bn*Math.pow(rb+1e-4,1/sn));
-          /* the disk: exponential, with arms and clumps */
+          const rb=Math.sqrt(a*a+(b/p.bulgeQ)*(b/p.bulgeQ))/p.bulgeR;
+          const Ib=I0*Math.exp(-bn*Math.pow(rb+1e-4,1/sn));
+          /* the disk: exponential, with arms and clumps (skipped where it is too faint to matter) */
           let Id=0, armW=0, tau=0, Ik=0, Is=0;
-          if(p.disk0>0){
-            /* the arms start outside the bulge, so the centre is not a tight whorl */
-            const th=Math.atan2(Y,X), lr=Math.log(Math.max(r,p.h*.45)/p.h);
-            const n=fbm(X*2.6+5,Y*2.6+5,5);
-            const phase=m*(th-lr/tanP)+(n-.5)*3.4;
-            const inner=Math.min(1,Math.max(0,(r-p.h*.3)/(p.h*.6)));
-            armW=p.armAmp>0?Math.pow(.5+.5*Math.cos(phase),2.2)*inner*inner*(3-2*inner):0;
-            /* arms break up into clumps and spurs, like real ones (flocculent) */
-            const fl=fbm(X*5.5+3,Y*5.5-7,4);
-            armW*=Math.min(1.4,Math.max(.15,(fl-.28)*2.6));
-            const clump=.45+1.1*Math.pow(fbm(X*9,Y*9,4),1.3);
-            Id=p.disk0*Math.exp(-r/p.h)*((1-p.armAmp)+p.armAmp*armW*1.6)*clump;
-            /* thickness seen edge-on: light hugs the mid-plane */
-            if(p.thick) Id*=Math.exp(-Math.abs(b)/p.thick);
-            /* star-forming knots: bright small spots on the arms */
-            const k=fbm2(X*26,Y*26,3);
-            if(p.knots>0&&armW>.45&&k>.6) Ik=p.knots*1.2*Math.pow((k-.6)/.4,1.6)*Math.exp(-r/(p.h*1.6));
-            /* dust: on the inner edge of the arms, patchy */
-            if(p.dust>0){
-              const lane=Math.pow(.5+.5*Math.cos(phase+.9),6);
-              tau=p.dust*lane*Math.exp(-r/(p.h*1.8))*(.4+1.2*fbm2(X*6+11,Y*6-4,4))*inner;   /* no lanes inside the bulge */
+          const ex=p.disk0>0?Math.exp(-r/p.h):0;
+          if(ex>diskFaint||p.band){
+            if(p.disk0>0){
+              /* the arms start outside the bulge, so the centre is not a tight whorl */
+              const th=Math.atan2(Y,X), lr=Math.log(Math.max(r,p.h*.45)/p.h);
+              const n=fbm(X*2.6+5,Y*2.6+5,5);
+              const phase=m*(th-lr/tanP)+(n-.5)*3.4;
+              const inner=Math.min(1,Math.max(0,(r-p.h*.3)/(p.h*.6)));
+              if(p.armAmp>0){
+                armW=Math.pow(.5+.5*Math.cos(phase),2.2)*inner*inner*(3-2*inner);
+                /* arms break up into clumps and spurs, like real ones (flocculent) */
+                const fl=fbm(X*5.5+3,Y*5.5-7,4);
+                armW*=Math.min(1.4,Math.max(.15,(fl-.28)*2.6));
+              }
+              const clump=.45+1.1*Math.pow(fbm(X*9,Y*9,4),1.3);
+              Id=p.disk0*ex*((1-p.armAmp)+p.armAmp*armW*1.6)*clump;
+              /* thickness seen edge-on: light hugs the mid-plane */
+              if(p.thick) Id*=Math.exp(-Math.abs(b)/p.thick);
+              /* star-forming knots: bright small spots on the arms */
+              if(p.knots>0&&armW>.45){
+                const k=fbm2(X*26,Y*26,3);
+                if(k>.6) Ik=p.knots*1.2*Math.pow((k-.6)/.4,1.6)*Math.exp(-r/(p.h*1.6));
+              }
+              /* dust: on the inner edge of the arms, patchy */
+              if(p.dust>0){
+                const lane=Math.pow(.5+.5*Math.cos(phase+.9),6);
+                tau=p.dust*lane*Math.exp(-r/(p.h*1.8))*(.4+1.2*fbm2(X*6+11,Y*6-4,4))*inner;   /* no lanes inside the bulge */
+              }
             }
+            /* Sombrero: a dark band straight across, seen edge-on */
+            if(p.band) tau+=p.band*Math.exp(-Math.pow(b/p.bandW,2))*Math.min(1,Math.abs(a)/.12)*Math.exp(-Math.abs(a)/.95)*(.7+.6*fbm2(a*14,b*40,3));
           }
-          /* Sombrero: a dark band straight across, seen edge-on */
-          if(p.band) tau+=p.band*Math.exp(-Math.pow(b/p.bandW,2))*Math.min(1,Math.abs(a)/.12)*Math.exp(-Math.abs(a)/.95)*(.7+.6*fbm2(a*14,b*40,3));
           const T=Math.exp(-tau);
           /* photographic grain: the disk is made of countless faint stars, not a smooth wash */
-          const hs=hash(i,j,p.seed);
           if(Id>0){
             const sp=p.speck==null?.44:p.speck; Id*=1-sp/2+sp*hash(i+911,j+37,p.seed);
-            if(hs>1-(p.grain||.01)*Math.min(1,Id*Id*4)) Is=.25+.8*hash(j,i,p.seed+5);
+            if(hash(i,j,p.seed)>1-(p.grain||.01)*Math.min(1,Id*Id*4)) Is=.25+.8*hash(j,i,p.seed+5);
           }
           /* colours: warm core, arms bluer, diffuse disk in between, pink knots */
-          R=Ib*core[0]*(p.band?T*.85+.15:1)+Id*(disk[0]*(1-armW)+arm[0]*armW)*T+Ik*knot[0]*T+Is*(arm[0]*.6+.4)*(.35+.65*T);
-          G=Ib*core[1]*(p.band?T*.85+.15:1)+Id*(disk[1]*(1-armW)+arm[1]*armW)*T+Ik*knot[1]*T+Is*(arm[1]*.6+.4)*(.35+.65*T);
-          B=Ib*core[2]*(p.band?T*.85+.15:1)+Id*(disk[2]*(1-armW)+arm[2]*armW)*T+Ik*knot[2]*T+Is*(arm[2]*.6+.4)*(.35+.65*T);
-          /* like a camera: bright parts saturate softly */
-          const o=(j*S+i)*4;
-          const r8=255*(1-Math.exp(-R*exposure))*edge, g8=255*(1-Math.exp(-G*exposure))*edge, b8=255*(1-Math.exp(-B*exposure))*edge;
-          /* see-through where it is dark: the light is kept as colour × opacity, so
-             empty space shows whatever is behind (the sky) instead of black */
-          const al=Math.max(r8,g8,b8);
-          if(al>0){ const f=255/al; out[o]=r8*f; out[o+1]=g8*f; out[o+2]=b8*f; out[o+3]=al; }
+          const bt=p.band?T*.85+.15:1;
+          const bR=Ib*core[0]*bt, bG=Ib*core[1]*bt, bB=Ib*core[2]*bt;
+          const R=bR+Id*(disk[0]*(1-armW)+arm[0]*armW)*T+Ik*knot[0]*T+Is*(arm[0]*.6+.4)*(.35+.65*T);
+          const G=bG+Id*(disk[1]*(1-armW)+arm[1]*armW)*T+Ik*knot[1]*T+Is*(arm[1]*.6+.4)*(.35+.65*T);
+          const B=bB+Id*(disk[2]*(1-armW)+arm[2]*armW)*T+Ik*knot[2]*T+Is*(arm[2]*.6+.4)*(.35+.65*T);
+          const r8=tone(R)*edge, g8=tone(G)*edge, b8=tone(B)*edge;
+          if(bulgeOut){
+            const bi=i-off, bj=j-off;
+            if(bi>=0&&bj>=0&&bi<C&&bj<C){
+              const q8=tone(bR)*edge, h8=tone(bG)*edge, z8=tone(bB)*edge;
+              put(bulgeOut,(bj*C+bi)*4,q8,h8,z8);
+              put(out,(j*S+i)*4,Math.max(0,r8-q8),Math.max(0,g8-h8),Math.max(0,b8-z8));
+              continue;
+            }
+          }
+          put(out,(j*S+i)*4,r8,g8,b8);
         }
       }
-      return out;
+      return bulgeOut?{px:out,bpx:bulgeOut,C}:{px:out};
     }
 
     /* ---------- a nebula: faint glowing gas with darker dust in filaments ---------- */
@@ -133,39 +170,104 @@ const Cosmos=(function(){
         out[o]=255*(1-Math.exp(-R*1.6)); out[o+1]=255*(1-Math.exp(-G*1.6)); out[o+2]=255*(1-Math.exp(-B*1.6));
         out[o+3]=Math.min(255,255*Math.max(out[o],out[o+1],out[o+2])/255*1.4);
       }
-      return out;
+      return {px:out};
     }
     return {galaxy,nebula};
   }
 
-  /* ---------- running it: a worker if possible ---------- */
-  let worker=null, jobs=0;
-  const waiting=new Map();
+  /* ---------- running it: a few workers, the most urgent jobs first ---------- */
+  const VERSION="c52";                  /* change it when the pictures change: the saved ones are thrown away */
+  const pool=[], queue=[];
+  let jobs=0, local=null, localBusy=false;
   try{
-    const src=`const E=(${engine.toString()})();
-      onmessage=e=>{ const {id,type,p}=e.data; const px=E[type](p); postMessage({id,px},[px.buffer]); };`;
-    worker=new Worker(URL.createObjectURL(new Blob([src],{type:"text/javascript"})));
-    worker.onmessage=e=>{ const cb=waiting.get(e.data.id); waiting.delete(e.data.id); if(cb) cb(e.data.px); };
-    worker.onerror=()=>{ worker=null; };
-  }catch(e){ worker=null; }
-  let local=null;
-  function run(type,p,w,h,bitmap){
-    return new Promise(res=>{
-      const done=px=>{
-        const c=document.createElement("canvas"); c.width=w; c.height=h;
-        c.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(px),w,h),0,0);
-        /* galaxies go to the graphics card as one picture (an ImageBitmap): a
-           plain canvas drawn much bigger than itself can be cut into strips by
-           the browser, and the joins showed as thin bright lines */
-        if(bitmap&&window.createImageBitmap) createImageBitmap(c).then(res,()=>res(c));
-        else res(c);
-      };
-      if(worker){ const id=++jobs; waiting.set(id,done); worker.postMessage({id,type,p}); }
-      else setTimeout(()=>{ local=local||engine(); done(local[type](p)); },30);
-    });
+    const src=URL.createObjectURL(new Blob([`const E=(${engine.toString()})();
+      onmessage=e=>{ const out=E[e.data.type](e.data.p); const tr=[out.px.buffer]; if(out.bpx) tr.push(out.bpx.buffer); postMessage(out,tr); };`],{type:"text/javascript"}));
+    const n=Math.max(1,Math.min(4,(navigator.hardwareConcurrency||2)-1));
+    for(let i=0;i<n;i++){
+      const w=new Worker(src); w.job=null;
+      w.onmessage=e=>{ const j=w.job; w.job=null; j.done(e.data); pump(); };
+      w.onerror=()=>{ pool.splice(pool.indexOf(w),1); if(w.job){ queue.push(w.job); w.job=null; } pump(); };
+      pool.push(w);
+    }
+  }catch(e){}
+  function pump(){
+    queue.sort((a,b)=>a.pri-b.pri||a.n-b.n);
+    for(const w of pool){ if(w.job||!queue.length) continue; w.job=queue.shift(); w.postMessage({type:w.job.type,p:w.job.p}); }
+    /* no workers at all: on the page, one job at a time, between frames */
+    if(!pool.length&&queue.length&&!localBusy){
+      localBusy=true;
+      setTimeout(()=>{ const j=queue.shift(); local=local||engine(); const out=local[j.type](j.p); localBusy=false; j.done(out); pump(); },30);
+    }
   }
-  return {
-    galaxy:p=>run("galaxy",p,p.size,p.size,true),
-    nebula:p=>run("nebula",p,p.w,p.h)
-  };
+  const compute=(type,p,pri)=>new Promise(done=>{ queue.push({type,p,pri,n:++jobs,done}); pump(); });
+
+  /* ---------- pictures ---------- */
+  function canvasOf(px,w,h){
+    const c=document.createElement("canvas"); c.width=w; c.height=h;
+    c.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(px.buffer||px),w,h),0,0);
+    return c;
+  }
+  /* galaxies go to the graphics card as one picture (an ImageBitmap): a plain
+     canvas drawn much bigger than itself can be cut into strips by the browser */
+  const bitmap=src=>window.createImageBitmap?createImageBitmap(src).catch(()=>src):Promise.resolve(src);
+  const blobOf=c=>new Promise(res=>{ try{ c.toBlob(b=>res(b),"image/webp",.95); }catch(e){ res(null); } });
+
+  /* ---------- kept on the device (IndexedDB), so the next visit is instant ---------- */
+  const store=(function(){
+    let db=null;
+    const open=()=>db||(db=new Promise(res=>{
+      try{
+        const r=indexedDB.open("nolan-cosmos",1);
+        r.onupgradeneeded=()=>{ r.result.createObjectStore("pics"); r.result.createObjectStore("used"); };
+        r.onsuccess=()=>res(r.result); r.onerror=()=>res(null); r.onblocked=()=>res(null);
+      }catch(e){ res(null); }
+    }));
+    const req=(name,mode,fn)=>open().then(d=>d&&new Promise(res=>{
+      try{ const q=fn(d.transaction(name,mode).objectStore(name)); q.onsuccess=()=>res(q.result); q.onerror=()=>res(null); }catch(e){ res(null); }
+    }));
+    /* pictures not used for two weeks (other screen sizes, older versions) are removed */
+    setTimeout(()=>open().then(d=>{ if(!d) return; try{
+      const tx=d.transaction(["used","pics"],"readwrite"), used=tx.objectStore("used"), pics=tx.objectStore("pics");
+      used.openCursor().onsuccess=e=>{ const c=e.target.result; if(!c) return;
+        if(!String(c.key).startsWith(VERSION)||Date.now()-c.value>14*864e5){ pics.delete(c.key); c.delete(); } c.continue(); };
+    }catch(e){} }),8000);
+    return {
+      get:k=>req("pics","readonly",s=>s.get(k)).then(v=>{ if(v) req("used","readwrite",s=>s.put(Date.now(),k)); return v||null; }),
+      put:(k,v)=>req("pics","readwrite",s=>s.put(v,k)).then(()=>req("used","readwrite",s=>s.put(Date.now(),k)))
+    };
+  })();
+  const later=fn=>(window.requestIdleCallback||setTimeout)(fn,{timeout:3000});
+
+  /* a galaxy: {disk, bulge (or null), crop}. opt.preview (a size) paints a quick small
+     version first and hands it to opt.onPreview; opt.priority orders the work */
+  async function galaxy(p,opt={}){
+    const key=VERSION+"g"+JSON.stringify(p);
+    const hit=await store.get(key);
+    if(hit&&hit.disk){
+      try{ return {disk:await bitmap(hit.disk),bulge:hit.bulge?await bitmap(hit.bulge):null,crop:hit.crop}; }catch(e){}
+    }
+    const pri=opt.priority||0;
+    if(opt.preview&&opt.onPreview&&opt.preview<p.size)
+      compute("galaxy",{...p,size:opt.preview},pri-100).then(o=>pictures(o,opt.preview)).then(r=>opt.onPreview(r.pic));
+    const r=await pictures(await compute("galaxy",p,pri),p.size);
+    /* saved in the background, when the browser has nothing better to do */
+    later(async()=>{ const d=await blobOf(r.c.disk), b=r.c.bulge?await blobOf(r.c.bulge):null; if(d) store.put(key,{disk:d,bulge:b,crop:r.pic.crop}); });
+    return r.pic;
+  }
+  async function pictures(o,S){
+    const c={disk:canvasOf(o.px,S,S),bulge:o.bpx?canvasOf(o.bpx,o.C,o.C):null};
+    return {c,pic:{disk:await bitmap(c.disk),bulge:c.bulge?await bitmap(c.bulge):null,crop:o.C?o.C/S:0}};
+  }
+  /* a nebula: a canvas */
+  async function nebula(p){
+    const key=VERSION+"n"+JSON.stringify(p);
+    const hit=await store.get(key);
+    if(hit&&hit.disk){
+      try{ const bm=await createImageBitmap(hit.disk), c=document.createElement("canvas"); c.width=p.w; c.height=p.h; c.getContext("2d").drawImage(bm,0,0); return c; }catch(e){}
+    }
+    const o=await compute("nebula",p,50), c=canvasOf(o.px,p.w,p.h);
+    later(async()=>{ const d=await blobOf(c); if(d) store.put(key,{disk:d}); });
+    return c;
+  }
+  return {galaxy,nebula};
 })();
