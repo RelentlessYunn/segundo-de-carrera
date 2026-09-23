@@ -1,19 +1,19 @@
 /* ---------- 1 · tokens and base ---------- */
 :root{
-  --space:#050810;
-  --paper:#070B18;
-  /* cards are dark glass: the sky shows faintly through them */
-  --card:rgba(12,17,34,.8);
-  --card-2:rgba(30,40,72,.45);
-  --card-solid:#0D1224;   /* where nothing may show through (timetable blocks, zoomed days) */
-  --hover:rgba(60,78,130,.28);
-  --ink:#E8EEFA;
-  --on-ink:#070B18;
-  --ink-2:#A9B5CE;
-  --ink-3:#8593AF;   /* 5:1 on the cards: readable in small print too */
-  --rule:rgba(140,165,235,.17);
-  --rule-2:rgba(140,165,235,.09);
-  --glow:rgba(120,150,255,.35);
+  --space:#030407;
+  --paper:#05060A;
+  /* cards are smoked glass: the sky shows faintly through them */
+  --card:rgba(8,9,14,.8);
+  --card-2:rgba(40,42,54,.4);
+  --card-solid:#0A0B11;   /* where nothing may show through (timetable blocks, zoomed days) */
+  --hover:rgba(120,125,150,.16);
+  --ink:#ECEEF3;
+  --on-ink:#05060A;
+  --ink-2:#AAAFBC;
+  --ink-3:#878C99;   /* 5:1 on the cards: readable in small print too */
+  --rule:rgba(215,220,240,.11);
+  --rule-2:rgba(215,220,240,.06);
+  --glow:rgba(225,230,255,.22);
   --warn:#FF6B5E;
   --warn-soft:rgba(255,107,94,.13);
   --go:#3FD9A4;
@@ -40,7 +40,7 @@ th{text-align:left;font-weight:700;font-size:.76rem;color:var(--ink-2);padding:9
 td{padding:9px 12px;border-bottom:1px solid var(--rule-2);vertical-align:top}
 tr:last-child td{border-bottom:0}
 tbody tr{transition:background .16s ease}
-@media (hover:hover){tbody tr:hover td{background:rgba(140,165,235,.05)}}
+@media (hover:hover){tbody tr:hover td{background:rgba(205,210,228,.05)}}
 .tbl{border:1px solid var(--rule);border-radius:var(--r);overflow:hidden;overflow-x:auto;background:var(--card)}
 .num{font-variant-numeric:tabular-nums;white-space:nowrap}
 section{padding:26px 0 6px}
@@ -73,12 +73,12 @@ section[hidden]{display:none}
 .sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:7px;vertical-align:0}
 .room{
   font-weight:700;font-size:.82rem;color:var(--ink);
-  background:rgba(140,165,235,.12);border-radius:6px;padding:3px 9px;white-space:nowrap;display:inline-block;
+  background:rgba(205,210,228,.12);border-radius:6px;padding:3px 9px;white-space:nowrap;display:inline-block;
 }
 .pill{display:inline-block;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap}
 .p-ex{background:var(--warn-soft);color:var(--warn)}
 .p-en{background:rgba(165,125,255,.18);color:#B9A8FF}
-.p-cl{background:rgba(140,165,235,.12);color:var(--ink-2)}
+.p-cl{background:rgba(205,210,228,.12);color:var(--ink-2)}
 .p-cf{background:rgba(255,185,70,.18);color:#FFC46A}
 /* small repeated buttons (arrows, "Today", close…) */
 .d-nav,.m-nav{

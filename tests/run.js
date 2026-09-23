@@ -13,7 +13,8 @@ const ok=(c,text)=>{ console.log((c?"  ✔ ":"  ✘ ")+text); if(!c) failures++;
 const section=text=>console.log("\n"+text);
 
 /* opens the page at a given time (local time of this computer) */
-async function open(b,{hash="",time="2026-09-21T13:06:00",mobile=false,clock="fixed",routes,before,settings}={}){
+const DEVICE="f9d8f1cd96a7b5ffd4c1f01c7f5f0a7c00940726b33625b4755a1d4f25a91f20";
+async function open(b,{hash="",time="2026-09-21T13:06:00",mobile=false,clock="fixed",routes,before,settings,locked=false}={}){
   const ctx=await b.newContext({viewport:mobile?{width:390,height:844}:{width:1280,height:900},hasTouch:mobile,isMobile:mobile});
   const p=await ctx.newPage();
   p.errors=[];
@@ -21,6 +22,8 @@ async function open(b,{hash="",time="2026-09-21T13:06:00",mobile=false,clock="fi
   await p.route(/fonts\.(googleapis|gstatic)\.com/,r=>r.abort());
   if(routes) await routes(p);
   if(settings) await p.addInitScript(s=>localStorage.setItem("settings",s),JSON.stringify(settings));
+  /* this device already knows the PIN, unless the test is about the gate */
+  if(!locked) await p.addInitScript(k=>{ if(!sessionStorage.getItem("keep")) localStorage.setItem("nolan-device",k); },DEVICE);
   if(before) await p.addInitScript(before);
   if(clock==="fixed") await p.clock.setFixedTime(new Date(time)); else await p.clock.install({time:new Date(time)});
   await p.goto(PAGE+(hash?"#"+hash:""),{waitUntil:"load"});
@@ -56,6 +59,33 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     ok(!r.errors.length&&!r.banner,`${mobile?"mobile":"desktop"}: data without errors ${r.errors.join(" | ")}`);
     if(mobile) ok(r.width<=390,`mobile: nothing sticks out of the screen (${r.width}px)`);
     if(r.warnings) console.log(`    (the checker leaves ${r.warnings} warnings in the console)`);
+    await p.context().close();
+  }
+
+  section("PIN and start");
+  {
+    const p=await open(b,{locked:true,mobile:true});
+    ok(await p.evaluate(()=>document.documentElement.hasAttribute("data-locked")&&!document.getElementById("gate").hidden
+      &&getComputedStyle(document.querySelector("body > div.wrap")).visibility==="hidden"),"a new device sees only the PIN screen");
+    for(const k of "123456") await p.click(`#gate [data-k="${k}"]`);
+    await p.waitForTimeout(1200);
+    ok(await p.evaluate(()=>document.documentElement.hasAttribute("data-locked")&&/incorrecto/.test(document.getElementById("gateMsg").textContent)),"a wrong PIN keeps it locked");
+    for(const k of "220226") await p.click(`#gate [data-k="${k}"]`);
+    await p.waitForTimeout(4500);
+    const r=await p.evaluate(()=>({locked:document.documentElement.hasAttribute("data-locked"),saved:localStorage.getItem("nolan-device"),
+      home:!document.getElementById("portal").hidden,canvas:!!document.querySelector(".hyperspace")}));
+    ok(!r.locked&&r.saved&&r.home&&!r.canvas,"the right PIN opens it, lands on home and the device remembers it");
+    await p.evaluate(()=>sessionStorage.setItem("keep","1"));
+    await p.reload(); await p.waitForTimeout(600);
+    ok(await p.evaluate(()=>!document.documentElement.hasAttribute("data-locked")&&document.getElementById("gate").hidden),"the same device is not asked again");
+    ok(!(await p.content()).includes("220226"),"the PIN itself is nowhere in the page");
+    await p.context().close();
+  }
+  {
+    const p=await open(b);
+    ok(await p.evaluate(()=>!document.getElementById("portal").hidden),"the app starts at home");
+    await p.waitForTimeout(3500); await p.click("#homeUc3m"); await p.waitForTimeout(3000);
+    ok(await p.evaluate(()=>document.getElementById("portal").hidden&&location.hash==="#schedule"&&!document.querySelector(".zoom-star")),"UC3M flies into a star and lands on the timetable");
     await p.context().close();
   }
 

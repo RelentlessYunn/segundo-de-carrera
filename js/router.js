@@ -2,7 +2,8 @@
    router.js — routes and tabs.
    · #schedule, #subjects, #exams, #tasks, #faculty: UC3M tabs
    · #notes (notes for Claude) and #settings: pages without a tab
-   · #home and #nolan (or #nolan/…): the home screen (home.js)
+   · #home and #nolan (or #nolan/…): the home screen (home.js); an
+     address without a route (the app's start) also opens home
    · #debug: debug panel (debug.js); it does not change tab
    Old Spanish links (#horario, #asignaturas…) still work.
    On mobile you can also switch tabs by swiping.
@@ -73,6 +74,7 @@ const Router=(function(){
   function handle(){
     let r=decodeURIComponent(location.hash.slice(1));
     if(r.includes("debug")) return;                    /* handled by debug.js */
+    if(!r) r="home";                                   /* the app always starts at home */
     if(isHome(r)){
       if(!shownOnce) show(last,{quiet:true});          /* behind home, the last tab */
       const [view,...sub]=r.split("/"); Home.open(view,sub.join("/"),last); return;
@@ -99,7 +101,7 @@ const Router=(function(){
     if(isMobile()&&before>=0&&after!==before) enter(after>before?-1:1);
   }));
   /* the UC3M card on home takes you back to the tab you were on */
-  $("#homeUc3m").addEventListener("click",ev=>{ ev.preventDefault(); goTo(last); });
+  $("#homeUc3m").addEventListener("click",ev=>{ ev.preventDefault(); Home.enter(ev.currentTarget,()=>goTo(last)); });
   /* Escape: closes home or whichever detail panel is open */
   document.addEventListener("keydown",ev=>{
     if(ev.key!=="Escape") return;
@@ -182,6 +184,7 @@ const Router=(function(){
 
   /* ---------- start ---------- */
   handle();
+  if(!Gate.locked()&&Home.isOpen()) Home.intro();      /* the opening, when the app starts at home */
   if(!shownOnce) show("schedule",{quiet:true});        /* e.g. when opened with #debug */
   /* after loading, the browser jumps to the hash's anchor (#schedule is the weekly
      timetable, not Today): undo it so it always starts at the top */

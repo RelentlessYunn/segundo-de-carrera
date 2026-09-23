@@ -2,8 +2,9 @@
    sky.js — the sea of stars behind the whole page (#sky in index.html).
    · The stars are drawn once on canvases and used as background tiles,
      so the browser only moves images around: no drawing every frame.
-   · Layers: far dust, two sets of stars that twinkle out of step, bright
-     four-point stars (like the logo) and a Milky Way band.
+   · Layers: far dust, two sets of stars that twinkle out of step, a few
+     bright stars with a soft bloom, and a Milky Way band.
+   · A film grain and a vignette give it a cinematic look.
    · With Animations = All: slow drift, twinkling, scroll parallax and a
      shooting star now and then. Basic and None leave the sky still, and
      Quality = Low leaves only a plain dark gradient.
@@ -24,7 +25,8 @@
   let seed=20260921;
   const rnd=()=>{ seed=(seed*1664525+1013904223)%4294967296; return seed/4294967296; };
   const pick=a=>a[Math.floor(rnd()*a.length)];
-  const TINTS=["255,255,255","255,255,255","214,228,255","190,214,255","255,236,214","226,214,255","200,255,236"];
+  /* real star colours, by temperature: mostly white, some blue-white, some warm */
+  const TINTS=["255,255,255","255,255,255","255,252,245","228,236,255","206,222,255","255,240,220","255,222,190","255,204,170"];
 
   /* one tile of stars → object URL, set as the layer's background */
   function tile(size,count,{min,max,alpha,spikes=0}){
@@ -38,33 +40,38 @@
       x.fillStyle=g; x.beginPath(); x.arc(px,py,r*3.2,0,Math.PI*2); x.fill();
       x.fillStyle=`rgba(255,255,255,${Math.min(1,a+.15)})`; x.beginPath(); x.arc(px,py,r*.55,0,Math.PI*2); x.fill();
     }
-    /* a few bright stars with four long points, like the logo */
+    /* a few bright stars: a wide soft bloom and a tiny hot core, like through a lens */
     for(let i=0;i<spikes;i++){
-      const px=rnd()*size, py=rnd()*size, L=7+rnd()*9, tint=pick(TINTS.slice(2));
-      const g=x.createRadialGradient(px,py,0,px,py,L*1.1);
-      g.addColorStop(0,`rgba(${tint},.9)`); g.addColorStop(.25,`rgba(${tint},.25)`); g.addColorStop(1,`rgba(${tint},0)`);
-      x.fillStyle=g; x.beginPath(); x.arc(px,py,L*1.1,0,Math.PI*2); x.fill();
-      x.fillStyle="rgba(255,255,255,.95)";
-      x.beginPath();
-      const w=L*.09;
-      x.moveTo(px,py-L*1.6); x.lineTo(px+w,py-w); x.lineTo(px+L*1.6,py); x.lineTo(px+w,py+w);
-      x.lineTo(px,py+L*1.6); x.lineTo(px-w,py+w); x.lineTo(px-L*1.6,py); x.lineTo(px-w,py-w); x.closePath(); x.fill();
-      x.beginPath(); x.arc(px,py,1.5,0,Math.PI*2); x.fill();
+      const px=rnd()*size, py=rnd()*size, R=6+rnd()*9, tint=pick(TINTS);
+      const g=x.createRadialGradient(px,py,0,px,py,R);
+      g.addColorStop(0,`rgba(${tint},.55)`); g.addColorStop(.12,`rgba(${tint},.22)`); g.addColorStop(.4,`rgba(${tint},.06)`); g.addColorStop(1,`rgba(${tint},0)`);
+      x.fillStyle=g; x.beginPath(); x.arc(px,py,R,0,Math.PI*2); x.fill();
+      x.fillStyle="rgba(255,255,255,.98)"; x.beginPath(); x.arc(px,py,1.1+rnd()*.6,0,Math.PI*2); x.fill();
     }
     return new Promise(res=>c.toBlob(b=>res(URL.createObjectURL(b))));
   }
   const LAYERS=[
     /* class,    tile, stars, sizes and brightness */
-    ["l-dust",   520, 420, {min:.25,max:.6, alpha:[.18,.45]}],
+    ["l-dust",   520, 520, {min:.2, max:.55,alpha:[.12,.4]}],
     ["l-a",      760, 120, {min:.4, max:1.1,alpha:[.45,.9]}],
     ["l-b",      820, 120, {min:.4, max:1.1,alpha:[.45,.9]}],
-    ["l-bright",1200,  26, {min:.8, max:1.7,alpha:[.75,1], spikes:7}]
+    ["l-bright",1200,  30, {min:.7, max:1.5,alpha:[.6,1], spikes:9}]
   ];
   LAYERS.forEach(([cls,size,count,opt])=>{
     const el=sky.querySelector("."+cls); if(!el) return;
     el.style.setProperty("--tile",size+"px");
     tile(size,count,opt).then(url=>{ el.style.backgroundImage=`url(${url})`; el.classList.add("ready"); });
   });
+
+  /* film grain: a small tile of noise, drawn once */
+  const grain=sky.querySelector(".sky-grain");
+  if(grain){
+    const c=document.createElement("canvas"), x=c.getContext("2d"), N=160;
+    c.width=c.height=N; const img=x.createImageData(N,N);
+    for(let i=0;i<img.data.length;i+=4){ const v=Math.random()*255; img.data[i]=img.data[i+1]=img.data[i+2]=v; img.data[i+3]=255; }
+    x.putImageData(img,0,0);
+    c.toBlob(b=>{ grain.style.backgroundImage=`url(${URL.createObjectURL(b)})`; });
+  }
 
   /* ---------- the Milky Way: a band across the screen, drawn at screen size ---------- */
   const milky=sky.querySelector(".sky-milky");
@@ -79,7 +86,7 @@
     const D=Math.hypot(W,H);
     x.translate(W*.5,H*.42); x.rotate(-.42);
     /* soft glow along the band */
-    [["120,150,255",.16,.34],["170,120,255",.12,.22],["90,210,200",.07,.14],["255,190,220",.05,.1]].forEach(([c,a,thick])=>{
+    [["215,215,230",.09,.34],["160,140,200",.06,.22],["110,150,165",.035,.14],["235,200,175",.045,.1]].forEach(([c,a,thick])=>{
       for(let i=0;i<9;i++){
         const px=(i/8-.5)*D*1.1+(rnd()-.5)*80, py=(rnd()-.5)*D*.05, r=D*thick*(.7+rnd()*.5);
         const g=x.createRadialGradient(px,py,0,px,py,r);

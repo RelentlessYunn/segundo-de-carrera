@@ -5,20 +5,23 @@
 html{background:var(--space,#050810)}
 #sky{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;
   background:
-    radial-gradient(120% 80% at 50% 0%,#0C1330 0%,transparent 60%),
-    linear-gradient(180deg,#070B1A 0%,#050810 55%,#04060D 100%);
+    radial-gradient(120% 80% at 50% 0%,#0B0C14 0%,transparent 60%),
+    linear-gradient(180deg,#05060A 0%,#030407 60%,#020203 100%);
 }
+/* cinematic finish: darker edges and a fine film grain (sky.js draws the grain) */
+#sky::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 120% 90% at 50% 45%,transparent 50%,rgba(0,0,0,.6) 100%)}
+.sky-grain{position:absolute;inset:0;opacity:.045;background-size:160px 160px}
 /* nebulae: big soft clouds of colour that breathe very slowly */
 .sky-nebula{position:absolute;inset:-20%}
 .sky-nebula i{position:absolute;display:block;border-radius:50%;will-change:transform}
 .sky-nebula i:nth-child(1){width:70vmax;height:52vmax;left:-18%;top:-12%;
-  background:radial-gradient(closest-side,rgba(98,70,210,.30),rgba(98,70,210,.10) 55%,transparent);animation:neb1 60s ease-in-out infinite alternate}
+  background:radial-gradient(closest-side,rgba(80,60,130,.20),rgba(80,60,130,.06) 55%,transparent);animation:neb1 60s ease-in-out infinite alternate}
 .sky-nebula i:nth-child(2){width:62vmax;height:46vmax;right:-20%;top:18%;
-  background:radial-gradient(closest-side,rgba(30,150,190,.24),rgba(30,150,190,.08) 55%,transparent);animation:neb2 75s ease-in-out infinite alternate}
+  background:radial-gradient(closest-side,rgba(30,90,105,.16),rgba(30,90,105,.05) 55%,transparent);animation:neb2 75s ease-in-out infinite alternate}
 .sky-nebula i:nth-child(3){width:58vmax;height:40vmax;left:12%;bottom:-18%;
-  background:radial-gradient(closest-side,rgba(210,70,160,.16),rgba(210,70,160,.05) 55%,transparent);animation:neb3 90s ease-in-out infinite alternate}
+  background:radial-gradient(closest-side,rgba(140,60,80,.12),rgba(140,60,80,.04) 55%,transparent);animation:neb3 90s ease-in-out infinite alternate}
 .sky-nebula i:nth-child(4){width:40vmax;height:30vmax;left:46%;top:-8%;
-  background:radial-gradient(closest-side,rgba(63,217,164,.12),transparent);animation:neb2 70s ease-in-out infinite alternate-reverse}
+  background:radial-gradient(closest-side,rgba(180,150,110,.07),transparent);animation:neb2 70s ease-in-out infinite alternate-reverse}
 @keyframes neb1{to{transform:translate3d(8%,6%,0) scale(1.12)}}
 @keyframes neb2{to{transform:translate3d(-9%,7%,0) scale(.9)}}
 @keyframes neb3{to{transform:translate3d(6%,-9%,0) scale(1.15)}}
@@ -42,7 +45,7 @@ html{background:var(--space,#050810)}
 @keyframes twinkle-b{from{opacity:.25}to{opacity:1}}
 @keyframes twinkle-c{from{opacity:1}to{opacity:.6}}
 .sky-milky{position:absolute;left:0;top:0;opacity:0;transition:opacity 1.6s ease}
-.sky-milky.ready{opacity:.9}
+.sky-milky.ready{opacity:.85}
 
 /* shooting stars (sky.js adds and removes them) */
 .sky-meteors{position:absolute;inset:0}

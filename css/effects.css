@@ -12,15 +12,15 @@
 }
 @keyframes ripple{to{transform:scale(1);opacity:0}}
 .ag-btn .ripple{background:radial-gradient(circle,rgba(255,255,255,.55),transparent 70%)}
-/* stardust: little four-point stars that fly out and fade (effects.js) */
+/* stardust: soft points of light that drift out and fade (effects.js) */
 .stardust{
-  position:fixed;pointer-events:none;z-index:999;margin:0;
-  clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);
+  position:fixed;pointer-events:none;z-index:999;margin:0;border-radius:50%;
+  box-shadow:0 0 6px 1px currentColor;
   animation:stardust var(--life,.9s) cubic-bezier(.15,.7,.3,1) forwards;
 }
 @keyframes stardust{
-  0%{transform:translate(-50%,-50%) scale(.4) rotate(0);opacity:1}
-  100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(1) rotate(var(--rot));opacity:0}
+  0%{transform:translate(-50%,-50%) scale(.5);opacity:1}
+  100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(.2);opacity:0}
 }
 /* a ring of light when a task is done */
 .nova{
@@ -29,13 +29,6 @@
   animation:nova .75s cubic-bezier(.2,.7,.3,1) forwards;
 }
 @keyframes nova{from{transform:scale(.3);opacity:1}to{transform:scale(7);opacity:0}}
-/* warp: the sky stretches for a moment when you change tab */
-#sky.warp{animation:warp .7s cubic-bezier(.25,.7,.3,1)}
-@keyframes warp{
-  0%{transform:none}
-  30%{transform:scale(1.05,1.45);filter:brightness(1.5)}
-  100%{transform:none;filter:none}
-}
 @media (max-width:820px){
   /* no fades: on mobile only the swipe animates */
   .enter,.stagger,.peek,.shead h2::after,.m-name,.ev,.hdr-top,.clock,.hdr-meta{animation:none!important}

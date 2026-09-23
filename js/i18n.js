@@ -83,6 +83,7 @@ es:{
   "home.doneToday":"Clases de hoy terminadas", "home.noClassToday":"Hoy no tienes clase.", "home.nextExam":"{type} de {subject}: {when}",
   "nolan.wip":"En construcción. Aquí irá lo que me indiques.", "nolan.back":"← Volver al inicio",
   /* cloud */
+  "gate.title":"Introduce el PIN", "gate.wrong":"PIN incorrecto", "gate.delete":"Borrar",
   "astro.rises":"sale el sol a las {time}", "astro.sets":"el sol se pone a las {time}", "astro.risesTomorrow":"mañana sale el sol a las {time}",
   "astro.moon.new":"Luna nueva", "astro.moon.waxingCrescent":"Luna creciente", "astro.moon.firstQuarter":"Cuarto creciente",
   "astro.moon.waxingGibbous":"Gibosa creciente", "astro.moon.full":"Luna llena", "astro.moon.waningGibbous":"Gibosa menguante",
@@ -181,6 +182,7 @@ en:{
   "home.now":"Now: {subject} · {time} · {room}", "home.next":"Next: {subject} · {time} · {room}",
   "home.doneToday":"Today's classes are over", "home.noClassToday":"No class today.", "home.nextExam":"{type} · {subject}: {when}",
   "nolan.wip":"Under construction. Whatever you tell me will go here.", "nolan.back":"← Back to home",
+  "gate.title":"Enter your PIN", "gate.wrong":"Wrong PIN", "gate.delete":"Delete",
   "astro.rises":"sunrise at {time}", "astro.sets":"sunset at {time}", "astro.risesTomorrow":"sunrise tomorrow at {time}",
   "astro.moon.new":"New moon", "astro.moon.waxingCrescent":"Waxing crescent", "astro.moon.firstQuarter":"First quarter",
   "astro.moon.waxingGibbous":"Waxing gibbous", "astro.moon.full":"Full moon", "astro.moon.waningGibbous":"Waning gibbous",

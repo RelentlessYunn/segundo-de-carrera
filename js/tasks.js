@@ -47,7 +47,6 @@
      The stars are placed along a gentle zigzag (always the same for the
      same number of tasks); lines join the lit ones in order. */
   const box=$("#tasksConstellation");
-  const STAR="M0 -1L.22 -.22L1 0L.22 .22L0 1L-.22 .22L-1 0L-.22 -.22Z";
   let shownDone=null;
   function constellation(){
     const inputs=$$("#subjectTasks input, #generalTasks input"), n=inputs.length;
@@ -65,7 +64,7 @@
       const sc=inputs[i].closest(".checkitem").style.getPropertyValue("--sc")||"#FFFFFF";
       const fresh=shownDone&&done[i]&&!shownDone[i];
       return `<g class="c-star${done[i]?" on":""}${fresh?" fresh":""}" style="--sc:${sc}" transform="translate(${p[0].toFixed(1)} ${p[1].toFixed(1)})">`+
-        `<g class="c-pop"><circle r="16" class="halo"/><path d="${STAR}" transform="scale(${done[i]?9:5})"/></g></g>`;
+        `<g class="c-pop"><circle r="14" class="halo"/><circle r="${done[i]?3.4:2}" class="core"/></g></g>`;
     }).join("");
     box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tn(count===n?"tasks.constellationDone":"tasks.constellation",count,{total:n}))}">`+
       `<g class="c-lines">${lines}</g>${stars}</svg>`+
