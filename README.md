@@ -27,8 +27,11 @@ The whole app is one universe, drawn in 3D on a canvas behind everything (`js/un
 - **Home is the Nolan galaxy.** After the PIN the camera flies from deep space into it (five seconds, the far stars fading in around you) and stays there: home's background *is* that galaxy, low on the left.
 - **Each section is a galaxy you can see from home**: UC3M, Nolan (under construction), and two kept for future sections, Andrómeda and Sombrero (cards "Por explorar" on home, route `#soon/<id>`).
 - **Opening a section** flies the camera into its galaxy (`Home.enter` → `Universe.go(id)`), and the section appears inside it: UC3M's timetable has UC3M's galaxy glowing over the header. **Going home** flies back out.
-- Every galaxy has its own personality: shape (`oval`, `spiral`, `elliptical`, `edge`), colours of its core, stars and glow, and details such as Sombrero's dark dust lane. Nolan (home) is a golden oval; UC3M a blue spiral with a sea-green heart; Nolan-in-construction an amber ember; Andrómeda a violet spiral; Sombrero edge-on.
-- Galaxies are clouds of thousands of stars (seeded: always the same). Far away they are drawn from a small pre-rendered picture; close, star by star. The scene is only redrawn while the camera moves or the window changes size.
+- **Galaxies look like photographs** (`js/cosmos.js`). Each one is painted pixel by pixel the way Hubble and JWST pictures look: a small, very bright core that falls off steeply (a Sérsic profile), an exponential disk whose arms break into clumps and spurs, blue arms with pink star-forming knots, dark dust lanes on the inner edge of the arms, fine grain made of countless faint stars, and a camera-like tone curve. The picture is see-through where it is dark, so it sits over the starry sky with no box or glow cloud around it. Painting runs in a background worker (a second or two) and each picture fades in; until then a galaxy is drawn from its own stars.
+- Every galaxy has its own personality, set in its `tex` parameters in `GALAXIES`: Nolan (home) a calm golden spiral with soft arms; UC3M a lively blue spiral full of pink knots; Nolan-in-construction an amber elliptical; Andrómeda a violet spiral seen steeply; Sombrero edge-on, a bright bulge cut by a dark band of dust.
+- A few thousand real stars sit on top of each picture (seeded: always the same): when you fly into a galaxy the picture fades and you pass between its stars.
+- **Deep field**: dozens of tiny galaxies far behind everything, like the Hubble Deep Field.
+- The scene is only redrawn while the camera moves, a picture fades in, or the window changes size.
 - **To add a section**: add a galaxy to `GALAXIES` in `universe.js` (kind, size, angle, colours, where it sits seen from home), a card with `data-galaxy="<id>"` in home, and its view.
 - **Notes and Settings belong to every section**: their buttons are in UC3M's header and on home, they open where you are without moving the camera, and "← Volver" takes you back there.
 - **The logo is the home button** (top left in UC3M).
@@ -40,7 +43,7 @@ The whole app is one universe, drawn in 3D on a canvas behind everything (`js/un
 
 The whole site lives in the night sky:
 
-- **Sea of stars** (`js/sky.js`, `css/sky.css`): a fixed `#sky` behind the page, almost black, with faint nebulae, a Milky Way band, four layers of stars in real star colours (drawn once on canvas and used as tiles), film grain and a vignette; slow drift, twinkling, scroll parallax and a rare shooting star. Only transforms and opacity move, so it is cheap.
+- **Sea of stars** (`js/sky.js`, `css/sky.css`): a fixed `#sky` behind the page, almost black, with a faint torn nebula of gas and dust (painted once by `cosmos.js`, drifting very slowly), four layers of stars in real star colours (drawn once on canvas and used as tiles), film grain and a vignette; slow drift, twinkling, scroll parallax and a rare shooting star. Only transforms and opacity move, so it is cheap.
 - **Glass** (`css/astral.css`): cards, tab bar and buttons are dark translucent glass with starlight borders and glows; section titles end in a four-point star.
 - **Effects** (`js/effects.js`): soft points of light where you tap, sparks and a ring of light when a task is ticked. Stars in the interface are round points of light, never geometric shapes.
 - **The sky outside** (`js/weather.js`, on home): weather now, today's high and low, chance of rain and the next sunrise or sunset. The place is where the device is (the browser asks once); if not allowed, Getafe. Weather from Open-Meteo, place names from BigDataCloud, both free and without keys, saved for 20 minutes. Without connection the sun is still computed offline (`js/astro.js`).
@@ -113,8 +116,9 @@ Each file does one thing. To change something you usually only need one or two.
 | `i18n.js` | Spanish and English texts (`t`, `tn`) and date formatting. |
 | `core.js` | Shared helpers: dates, weeks, term in force, classes on a day (`classesOn`), event labels (`eventLabel`, `whenLabel`), detail panel, error banner. |
 | `gate.js` | The PIN screen and Log out. |
-| `universe.js` | The universe: home's galaxy and one galaxy per section, and the camera flights between them. |
+| `cosmos.js` | Paints photographic galaxies and the nebula, pixel by pixel, in a background worker. |
 | `sky.js` | The sea of stars behind the page. |
+| `universe.js` | The universe: home's galaxy and one galaxy per section, the deep field, and the camera flights between them. |
 | `validate.js` | Checks `data.js` and `eval.js` before rendering. Whatever would break the page is left out and reported at the top; odd things go to the console and `#debug`. |
 | `derived.js` | Computed data: clashes between classes (added to `EVENTS`) and the timetable grid layout. |
 | `cloud.js` | Saving to JSONBin, by changes, queued and without overwriting anything (see *The cloud*). |

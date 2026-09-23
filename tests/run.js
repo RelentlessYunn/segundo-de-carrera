@@ -256,11 +256,14 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
       header:!!document.getElementById("skyInfo")}));
     ok(/24°/.test(r.w)&&/Getafe/.test(r.w)&&/20:13/.test(r.w)&&/Máx\.28°/.test(r.w)&&/Puesta de sol20:13/.test(r.w)&&!r.header,`weather and sunset on home, nothing under the UC3M clock ("${r.w}")`);
     ok(r.layers===4&&r.shown!=="none","the sea of stars is drawn with Quality = High");
+    const painted=await p.waitForFunction(()=>Universe.painted()===5&&!!document.querySelector("#sky .sky-nebula canvas.ready"),null,{timeout:20000}).then(()=>true,()=>false);
+    ok(painted,"the five galaxies and the nebula are painted as photographs (cosmos.js)");
     await p.context().close();
     const q=await open(b,{settings:{quality:"low"},hash:"tasks"});
     const s=await q.evaluate(()=>({shown:getComputedStyle(document.querySelector("#sky .sky-par")).display,
       blur:getComputedStyle(document.querySelector("nav.bar")).backdropFilter,stars:document.querySelectorAll("#tasksConstellation .c-star").length}));
     ok(s.shown==="none"&&(s.blur==="none"||!s.blur),"Quality = Low: no stars, no glass");
+    ok(await q.evaluate(()=>Universe.painted()===0&&!document.querySelector("#sky .sky-nebula canvas")),"Quality = Low: no galaxies or nebula are painted");
     await q.locator("#generalTasks input").nth(0).check(); await q.waitForTimeout(200);
     ok(s.stars>0&&await q.evaluate(()=>document.querySelectorAll("#tasksConstellation .c-star.on").length===1),`the constellation lights a star per task done (${s.stars} stars)`);
     await q.context().close();

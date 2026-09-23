@@ -3,7 +3,7 @@
    · The stars are drawn once on canvases and used as background tiles,
      so the browser only moves images around: no drawing every frame.
    · Layers: far dust, two sets of stars that twinkle out of step, a few
-     bright stars with a soft bloom, and a Milky Way band.
+     bright stars with a soft bloom, and a faint torn nebula (cosmos.js).
    · A film grain and a vignette give it a cinematic look.
    · With Animations = All: slow drift, twinkling, scroll parallax and a
      shooting star now and then. Basic and None leave the sky still, and
@@ -71,6 +71,15 @@
     for(let i=0;i<img.data.length;i+=4){ const v=Math.random()*255; img.data[i]=img.data[i+1]=img.data[i+2]=v; img.data[i+3]=255; }
     x.putImageData(img,0,0);
     c.toBlob(b=>{ grain.style.backgroundImage=`url(${URL.createObjectURL(b)})`; });
+  }
+
+  /* ---------- the nebula: painted once, small, and stretched (gas is soft anyway) ---------- */
+  const neb=sky.querySelector(".sky-nebula");
+  if(neb&&typeof Cosmos!=="undefined"){
+    const wide=innerWidth>=innerHeight, w=wide?560:340, h=wide?340:560;
+    Cosmos.nebula({w,h,seed:7,c1:"70,40,95",c2:"120,45,60",c3:"160,140,120"}).then(c=>{
+      neb.appendChild(c); requestAnimationFrame(()=>c.classList.add("ready"));
+    });
   }
 
   /* ---------- the Milky Way: a band across the screen, drawn at screen size ---------- */
