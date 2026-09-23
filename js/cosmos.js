@@ -149,19 +149,23 @@ const Cosmos=(function(){
     worker.onerror=()=>{ worker=null; };
   }catch(e){ worker=null; }
   let local=null;
-  function run(type,p,w,h){
+  function run(type,p,w,h,bitmap){
     return new Promise(res=>{
       const done=px=>{
         const c=document.createElement("canvas"); c.width=w; c.height=h;
         c.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(px),w,h),0,0);
-        res(c);
+        /* galaxies go to the graphics card as one picture (an ImageBitmap): a
+           plain canvas drawn much bigger than itself can be cut into strips by
+           the browser, and the joins showed as thin bright lines */
+        if(bitmap&&window.createImageBitmap) createImageBitmap(c).then(res,()=>res(c));
+        else res(c);
       };
       if(worker){ const id=++jobs; waiting.set(id,done); worker.postMessage({id,type,p}); }
       else setTimeout(()=>{ local=local||engine(); done(local[type](p)); },30);
     });
   }
   return {
-    galaxy:p=>run("galaxy",p,p.size,p.size),
+    galaxy:p=>run("galaxy",p,p.size,p.size,true),
     nebula:p=>run("nebula",p,p.w,p.h)
   };
 })();

@@ -207,7 +207,7 @@ const Universe=(function(){
       const k=F/dz, sx=cx0+(d.x-cam.x)*k, sy=cy0+(d.y-cam.y)*k, sz=d.s*k;
       if(sz<1.5||sx<-sz||sx>W+sz||sy<-sz||sy>H+sz) continue;
       x.globalAlpha=d.a*texAlpha(d)*Math.min(1,(sz-1.5)/4);
-      x.save(); x.translate(sx,sy); x.rotate(d.rot); x.drawImage(d.img,-sz,-sz,sz*2,sz*2); x.restore();
+      x.save(); x.globalCompositeOperation="source-over"; x.translate(sx,sy); x.rotate(d.rot); x.drawImage(d.img,-sz,-sz,sz*2,sz*2); x.restore();
     }
     /* galaxies, far to near */
     const order=IDS.map(id=>world[id]).filter(Boolean).sort((a,b)=>(b.cz-cam.z)-(a.cz-cam.z));
@@ -220,7 +220,11 @@ const Universe=(function(){
       const through=Math.min(1,Math.max(0,(dz-R*.12)/(R*.7)));
       if(ta>0&&through>0&&px+pr>0&&px-pr<W&&py+pr>0&&py-pr<H){
         x.globalAlpha=ta*through*(w.g.texA||1);
+        /* painted normally, not added: the picture already carries its own see-through
+           edges, and adding it could double any seam the browser leaves when scaling */
+        x.globalCompositeOperation="source-over";
         x.drawImage(t.img,px-pr,py-pr,pr*2,pr*2);
+        x.globalCompositeOperation="lighter";
       }
       /* until the photograph arrives: far, a picture made of its stars; near, star by star */
       const mix=Math.min(1,Math.max(0,(pr-70)/60));
