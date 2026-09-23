@@ -63,10 +63,10 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
   {
     const p=await open(b,{hash:"schedule"});
     for(const tab of ["subjects","exams","tasks","faculty","schedule"]){
-      await p.click(`nav.bar a[data-tab=${tab}]`); await p.waitForTimeout(600);
+      await p.click(`nav.bar a[data-tab=${tab}]`); await p.waitForTimeout(1000);
       const r=await p.evaluate(()=>{ const on=document.querySelector("a[data-tab].on"), i=document.querySelector(".tab-pill").getBoundingClientRect(), a=on.getBoundingClientRect();
         return {tab:on.dataset.tab,dx:Math.abs(i.left-a.left),cur:on.getAttribute("aria-current")}; });
-      ok(r.tab===tab&&r.dx<2&&r.cur==="page",`${tab}: active, with the pill on top and aria-current`);
+      ok(r.tab===tab&&r.dx<2&&r.cur==="page",`${tab}: active, with the pill on top and aria-current (${r.dx.toFixed(1)}px)`);
     }
     await p.goto(PAGE+"#asignaturas"); await p.waitForTimeout(500);
     ok(await p.evaluate(()=>location.hash==="#subjects"&&!document.getElementById("subjects").hidden),"old Spanish links (#asignaturas) still work");
@@ -153,7 +153,7 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
   section("Settings");
   {
     const p=await open(b,{hash:"settings"});
-    ok(await p.evaluate(()=>!document.getElementById("settings").hidden&&document.querySelectorAll("#settingsList .seg").length===3),"#settings shows language, theme and animations");
+    ok(await p.evaluate(()=>!document.getElementById("settings").hidden&&document.querySelectorAll("#settingsList .seg").length===4),"#settings shows language, theme, animations and quality");
     await p.click('.seg[data-key=theme] button[data-value=light]'); await p.waitForTimeout(300);
     const light=await p.evaluate(()=>({theme:document.documentElement.dataset.theme,paper:getComputedStyle(document.body).backgroundColor,
       saved:JSON.parse(localStorage.getItem("settings")).theme}));
@@ -183,6 +183,23 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.context().close();
     const q=await open(b,{settings:{motion:"basic"},hash:"schedule"});
     ok(await q.evaluate(()=>getComputedStyle(document.querySelector(".aurora i")).animationName==="none"&&getComputedStyle(document.querySelector("#stats b")).animationName!==undefined),"Animations: Basic stops the decorations");
+    await q.context().close();
+  }
+
+  section("Astral");
+  {
+    const p=await open(b,{time:"2026-09-23T16:05:00"});
+    const r=await p.evaluate(()=>({info:document.getElementById("skyInfo").textContent,
+      layers:document.querySelectorAll("#sky .sky-layer").length,shown:getComputedStyle(document.querySelector("#sky .sky-par")).display}));
+    ok(/Gibosa creciente/.test(r.info)&&/20:1[0-9]/.test(r.info),`moon phase and sunset under the clock ("${r.info}")`);
+    ok(r.layers===4&&r.shown!=="none","the sea of stars is drawn with Quality = High");
+    await p.context().close();
+    const q=await open(b,{settings:{quality:"low"},hash:"tasks"});
+    const s=await q.evaluate(()=>({shown:getComputedStyle(document.querySelector("#sky .sky-par")).display,
+      blur:getComputedStyle(document.querySelector("nav.bar")).backdropFilter,stars:document.querySelectorAll("#tasksConstellation .c-star").length}));
+    ok(s.shown==="none"&&(s.blur==="none"||!s.blur),"Quality = Low: no stars, no glass");
+    await q.locator("#generalTasks input").nth(0).check(); await q.waitForTimeout(200);
+    ok(s.stars>0&&await q.evaluate(()=>document.querySelectorAll("#tasksConstellation .c-star.on").length===1),`the constellation lights a star per task done (${s.stars} stars)`);
     await q.context().close();
   }
 

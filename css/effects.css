@@ -1,5 +1,6 @@
 /* ---------- 10 · effects ---------- */
-@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+/* sections arrive as if out of hyperspace: from a little below and a touch smaller */
+@keyframes rise{from{opacity:0;transform:translateY(16px) scale(.985)}}
 @keyframes fade-in{from{opacity:0}}
 .stagger{animation:rise .42s var(--ease) backwards;animation-delay:var(--d,0ms)}
 .enter{animation:fade-in .3s ease backwards}
@@ -11,14 +12,29 @@
 }
 @keyframes ripple{to{transform:scale(1);opacity:0}}
 .ag-btn .ripple{background:radial-gradient(circle,rgba(255,255,255,.55),transparent 70%)}
-/* confetti when ticking a task */
-.confetti{
-  position:fixed;width:7px;height:7px;pointer-events:none;z-index:999;
-  animation:burst .9s cubic-bezier(.15,.7,.3,1) forwards;
+/* stardust: little four-point stars that fly out and fade (effects.js) */
+.stardust{
+  position:fixed;pointer-events:none;z-index:999;margin:0;
+  clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);
+  animation:stardust var(--life,.9s) cubic-bezier(.15,.7,.3,1) forwards;
 }
-@keyframes burst{
-  0%{transform:translate(-50%,-50%) scale(1);opacity:1}
-  100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty) + 18px)) rotate(var(--rot)) scale(.35);opacity:0}
+@keyframes stardust{
+  0%{transform:translate(-50%,-50%) scale(.4) rotate(0);opacity:1}
+  100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(1) rotate(var(--rot));opacity:0}
+}
+/* a ring of light when a task is done */
+.nova{
+  position:fixed;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;pointer-events:none;z-index:998;
+  border:2px solid var(--sc,#3FD9A4);box-shadow:0 0 14px var(--sc,#3FD9A4),inset 0 0 10px var(--sc,#3FD9A4);
+  animation:nova .75s cubic-bezier(.2,.7,.3,1) forwards;
+}
+@keyframes nova{from{transform:scale(.3);opacity:1}to{transform:scale(7);opacity:0}}
+/* warp: the sky stretches for a moment when you change tab */
+#sky.warp{animation:warp .7s cubic-bezier(.25,.7,.3,1)}
+@keyframes warp{
+  0%{transform:none}
+  30%{transform:scale(1.05,1.45);filter:brightness(1.5)}
+  100%{transform:none;filter:none}
 }
 @media (max-width:820px){
   /* no fades: on mobile only the swipe animates */
@@ -28,7 +44,7 @@
 /* idle: after a while without touching anything, self-moving decorations stop (effects.js) */
 body.idle .aurora i,body.idle header.top::before,body.idle .p-sky,body.idle .ag-btn::after,
 body.idle .clock-time .sep,body.idle .week-badge .w-bar u::after,body.idle .live::before,
-body.idle .now-line::after,body.idle .prog .track::after,body.idle .i-crane .hook{animation-play-state:paused}
+body.idle .now-line::after,body.idle .sky-nebula i,body.idle .sky-layer,body.idle .shead h2::before,body.idle .prog .track::after,body.idle .i-crane .hook{animation-play-state:paused}
 
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
@@ -41,6 +57,7 @@ body.idle .now-line::after,body.idle .prog .track::after,body.idle .i-crane .hoo
 [data-motion=basic] .aurora i,[data-motion=basic] header.top::before,[data-motion=basic] .p-sky,[data-motion=basic] .ag-btn::after,
 [data-motion=basic] .clock-time .sep,[data-motion=basic] .week-badge .w-bar u::after,
 [data-motion=basic] .live::before,[data-motion=basic] .now-line::after,[data-motion=basic] .prog .track::after,
-[data-motion=basic] .i-crane .hook{animation:none!important}
+[data-motion=basic] .i-crane .hook,[data-motion=basic] .sky-nebula i,[data-motion=basic] .sky-layer,
+[data-motion=basic] .shead h2::before{animation:none!important}
 [data-motion=none] *,[data-motion=none] *::before,[data-motion=none] *::after{animation:none!important;transition:none!important}
 html[data-motion=none]{scroll-behavior:auto}

@@ -11,6 +11,27 @@ A static site (HTML, CSS and JavaScript, no libraries, no build step) published 
 
 ---
 
+## The astral theme
+
+The whole site lives in the night sky:
+
+- **Sea of stars** (`js/sky.js`, `css/sky.css`): a fixed `#sky` behind the page with nebulae, a Milky Way band, four layers of stars drawn once on canvas and used as tiles, slow drift, twinkling, scroll parallax and a rare shooting star. Only transforms and opacity move, so it is cheap.
+- **Glass** (`css/astral.css`): cards, tab bar and buttons are dark translucent glass with starlight borders and glows; section titles end in a four-point star.
+- **Effects** (`js/effects.js`): stardust where you tap, a burst of stars and a ring of light when a task is ticked, a warp through the stars when you change tab.
+- **Real sky** (`js/astro.js`): under the clock, tonight's moon phase (drawn as it looks) and the next sunrise or sunset in Getafe, computed offline.
+- **Your constellation** (Tasks): one star per task, lit and joined when done.
+- **Ticks are stars**, the red "now" line ends in a star, exams in the planner are stars.
+
+How much of it runs depends on Settings:
+
+| | Quality High | Quality Low |
+|---|---|---|
+| **Animations All** | everything | plain background, no glass or glows; ripple and bursts only |
+| **Animations Basic** | the sky stands still; no stardust, warp or shooting stars | plain and still |
+| **Animations None** | nothing moves | everything off |
+
+In code: `fullMotion()` for decorations that move, `lowMotion()` for any motion, `highQuality()` for heavy visuals, `fancy()` (both) for the showy extras. The light theme is daylight: no sea of stars, but the header, home and the constellation keep a night sky.
+
 ## Name and logo
 
 The site is called **Nolan**. The logo is an astral N: four identical four-point stars joined by straight lines, symmetric (green → blue gradient): `favicon.svg` is the source; `favicon.ico`, `apple-touch-icon.png`, `icon-192.png` and `icon-512.png` are rendered from it. The same mark sits small in the header (`.brand-mark` in `index.html`).
@@ -26,7 +47,7 @@ The site is called **Nolan**. The logo is an astral N: four identical four-point
 | **Tasks** (`#tasks`) | Tasks per subject and general ones. Ticks are saved to the cloud. |
 | **Faculty** (`#faculty`) | Table with email and office. |
 | **Notes for Claude** (`#notes`) | Free text saved to the cloud. **Claude cannot read JSONBin**: to pass them on, press *Copy notes* and paste into the chat. |
-| **Settings** (gear icon, `#settings`) | Language (Spanish / English), theme (dark / light / system) and animations (all / basic / none). Saved on each device. |
+| **Settings** (gear icon, `#settings`) | Language (Spanish / English), theme (dark / light / system), animations (all / basic / none) and quality (high / low). Saved on each device. Animations = None plus Quality = Low turns every effect off. |
 | **Nolan** (`#nolan`) | Under construction. |
 
 On mobile the tabs sit at the bottom and you can swipe between them.
@@ -63,13 +84,15 @@ Each file does one thing. To change something you usually only need one or two.
 
 | File | What it does |
 |---|---|
-| `prefs.js` | Settings (`SETTINGS`, `saveSetting`), theme, and `lowMotion()` / `fullMotion()`. |
+| `prefs.js` | Settings (`SETTINGS`, `saveSetting`), theme, and `lowMotion()` / `fullMotion()` / `highQuality()` / `fancy()`. |
 | `i18n.js` | Spanish and English texts (`t`, `tn`) and date formatting. |
 | `core.js` | Shared helpers: dates, weeks, term in force, classes on a day (`classesOn`), event labels (`eventLabel`, `whenLabel`), detail panel, error banner. |
+| `sky.js` | The sea of stars behind the page. |
 | `validate.js` | Checks `data.js` and `eval.js` before rendering. Whatever would break the page is left out and reported at the top; odd things go to the console and `#debug`. |
 | `derived.js` | Computed data: clashes between classes (added to `EVENTS`) and the timetable grid layout. |
 | `cloud.js` | Saving to JSONBin, by changes, queued and without overwriting anything (see *The cloud*). |
 | `header.js` | Clock, date, week and figures. It is the only clock: it emits the `minute` and `newDay` events. |
+| `astro.js` | Moon phase and sunrise/sunset under the clock. |
 | `schedule.js` | Weekly timetable (grid and list by day) and the clash status bar. |
 | `today.js` | The *Today* viewer. |
 | `subjects.js` | Subject cards and grade calculator (`subjectCard`, `recalc`). |
@@ -78,14 +101,14 @@ Each file does one thing. To change something you usually only need one or two.
 | `home.js` | The home window (UC3M / Nolan). |
 | `router.js` | Routes (`#schedule`, `#home`, `#nolan/…`), tabs, the swipe gesture and the Escape key. |
 | `debug.js` | `#debug` panel with screen measurements, data warnings and missing translations. |
-| `effects.js` | Ripple on tap, confetti and *idle* (decorations pause after 45 s without touching anything). |
+| `effects.js` | Ripple and stardust on tap, star burst on ticking a task, warp on changing tab, and *idle* (decorations pause after 45 s without touching anything). |
 
 ### Design (`css/`)
 
-`base` · `header` · `tabbar` · `today` · `schedule` · `planner` · `subjects` · `exams` · `tasks` · `home` · `nolan` · `settings` · `effects` · `light`.
+`base` · `sky` · `header` · `tabbar` · `today` · `schedule` · `planner` · `subjects` · `exams` · `tasks` · `home` · `nolan` · `settings` · `effects` · `astral` · `light`.
 Each one has its own mobile tweaks at the end.
 
-- **Colours** are tokens on `:root` in `base.css` (`--paper`, `--card`, `--ink`, `--ink-2`, `--rule`, `--go`, `--warn`…). Use them instead of fixed colours.
+- **Colours** are tokens on `:root` in `base.css` (`--space`, `--paper`, `--card`, `--card-solid`, `--ink`, `--ink-2`, `--rule`, `--go`, `--warn`…). Use them instead of fixed colours. `--card` is see-through glass; use `--card-solid` where nothing may show through.
 - **Light theme**: `light.css` changes the tokens under `[data-theme=light]` and fixes the few fixed colours. The header and the home screen stay dark in both themes. If you add a fixed colour somewhere, add its light version there.
 - **Animations setting**: `<html data-motion="full|basic|none">`. `basic` stops the decorations that move on their own; `none` stops everything (`effects.css`, section 13). In JavaScript, check `fullMotion()` for decorations and `lowMotion()` for everything else.
 
@@ -164,7 +187,7 @@ Settings are not in the cloud: they are per device (`localStorage`, key `setting
 
 ## Publishing a version
 
-1. Bump the number in `index.html`: the footer (`<p class="version">v43</p>`) and every `?v=43`, all at once. If the logo changes, also bump the `?v=` of the icons in `index.html` and `manifest.webmanifest`: browsers keep favicons cached for a long time and only fetch them again when the URL changes.
+1. Bump the number in `index.html`: the footer (`<p class="version">v44</p>`) and every `?v=44`, all at once. If the logo changes, also bump the `?v=` of the icons in `index.html` and `manifest.webmanifest`: browsers keep favicons cached for a long time and only fetch them again when the URL changes.
 2. Upload the changed files to GitHub, keeping the `js/` and `css/` folders.
 3. GitHub Pages takes a minute or two. The footer number tells you which version you are seeing.
 
@@ -174,7 +197,7 @@ Settings are not in the cloud: they are per device (`localStorage`, key `setting
 node tests/run.js
 ```
 
-Needs Node and Playwright. 43 checks in a real browser:
+Needs Node and Playwright. 47 checks in a real browser:
 
 - the page loads without errors;
 - the tabs, and old Spanish links;
@@ -184,6 +207,7 @@ Needs Node and Playwright. 43 checks in a real browser:
 - grades with a comma;
 - the home window;
 - settings: light theme, English after reloading, every text translated in both languages, English dates, and the animation levels;
+- the astral layer: moon and sun, the sea of stars, Quality = Low and the tasks constellation;
 - the swipe gesture;
 - idle.
 

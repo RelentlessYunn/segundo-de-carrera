@@ -35,7 +35,7 @@
 /* Today rows: buttons that open the subject card */
 .trow.tap{
   position:relative;overflow:hidden;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;
-  background:var(--card);border:0;border-bottom:1px solid var(--rule-2);
+  background:transparent;border:0;border-bottom:1px solid var(--rule-2);
   transition:background .16s ease,opacity .25s ease,filter .25s ease;
   animation:rise .42s var(--ease) backwards;animation-delay:var(--d,0ms);
 }
@@ -86,7 +86,7 @@
 .n7-empty{padding:16px 18px;color:var(--ink-3);font-size:.88rem}
 .n7-card{
   position:relative;overflow:hidden;display:flex;align-items:center;gap:14px;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;
-  padding:11px 18px 11px 22px;border:0;border-bottom:1px solid var(--rule-2);background:var(--card);
+  padding:11px 18px 11px 22px;border:0;border-bottom:1px solid var(--rule-2);background:transparent;
   transition:background .16s ease;
 }
 .n7-card::before{

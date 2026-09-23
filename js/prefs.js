@@ -4,8 +4,8 @@
    no flash of the wrong theme) and leaves them in window.SETTINGS.
    ========================================================== */
 const SETTINGS_KEY="settings";
-const SETTINGS_DEFAULTS={lang:"es",theme:"dark",motion:"full"};
-const SETTINGS_OPTIONS={lang:["es","en"],theme:["dark","light","system"],motion:["full","basic","none"]};
+const SETTINGS_DEFAULTS={lang:"es",theme:"dark",motion:"full",quality:"high"};
+const SETTINGS_OPTIONS={lang:["es","en"],theme:["dark","light","system"],motion:["full","basic","none"],quality:["high","low"]};
 const SETTINGS=Object.assign({},SETTINGS_DEFAULTS,window.SETTINGS||{});
 Object.keys(SETTINGS_OPTIONS).forEach(k=>{ if(!SETTINGS_OPTIONS[k].includes(SETTINGS[k])) SETTINGS[k]=SETTINGS_DEFAULTS[k]; });
 
@@ -14,6 +14,10 @@ const systemReduced=()=>matchMedia("(prefers-reduced-motion:reduce)").matches;
 const lowMotion=()=>SETTINGS.motion==="none"||systemReduced();
 /* decorations too (aurora, stars, confetti, counters): only with "full" */
 const fullMotion=()=>SETTINGS.motion==="full"&&!systemReduced();
+/* high quality: the sea of stars, glass, glows. Low: plain background and nothing heavy */
+const highQuality=()=>SETTINGS.quality==="high";
+/* the showy extras (stardust, warp, shooting stars) need both */
+const fancy=()=>fullMotion()&&highQuality();
 
 /* the header stays dark in both themes, so the browser's bar colour (theme-color) does not change */
 function applyTheme(){
@@ -29,7 +33,7 @@ function saveSetting(key,value){
   SETTINGS[key]=value;
   try{ localStorage.setItem(SETTINGS_KEY,JSON.stringify(SETTINGS)); }catch(e){}
   if(!changed) return;
-  if(key==="lang"||key==="motion"){ location.reload(); return; }
+  if(key==="lang"||key==="motion"||key==="quality"){ location.reload(); return; }
   if(key==="theme") applyTheme();
   emit("settings",{key,value});
 }

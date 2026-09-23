@@ -1,45 +1,66 @@
 /* ==========================================================
-   effects.js — motion details: ripple on tap, confetti when a task is
-   ticked, and idle mode: after a while without touching anything the
-   decorations that move by themselves (aurora, stars, shines) pause to save
-   battery, and resume as soon as you touch something.
-   With animations set to "basic" or "none" in Settings (or reduced motion
-   in the system) the decorative ones don't run.
+   effects.js — motion details, all in the astral style:
+   · a ripple where you tap, and a pinch of stardust with it;
+   · a burst of stars when a task is ticked;
+   · a warp through the stars when you change tab;
+   · idle mode: after a while without touching anything, whatever moves by
+     itself (the sky, sparkles) pauses to save battery.
+   Settings decide how much of this runs: Animations = None turns it all
+   off, Basic keeps only the ripple; the stardust, the burst and the warp
+   also need Quality = High (fancy()).
    ========================================================== */
 (function(){
   if(lowMotion()) return;
 
   /* ripple born where you tap */
-  const RIPPLE=".p-card,.p-back,.trow.tap,.n7-card,nav.bar a[data-tab],.day-nav,.day-today,.m-nav,.m-today,.ag-btn,#examFilters button,.mailbtn,.mailcopy,.seg button";
+  const RIPPLE=".p-card,.p-back,.trow.tap,.n7-card,nav.bar a[data-tab],.d-nav,.d-today,.m-nav,.m-today,.ag-btn,.icon,#examFilters button,.mailbtn,.mailcopy,.seg button";
   document.addEventListener("pointerdown",e=>{
-    const tgt=e.target.closest(RIPPLE); if(!tgt) return;
+    const tgt=e.target.closest(RIPPLE); if(!tgt||tgt.disabled) return;
     const r=tgt.getBoundingClientRect(), d=Math.max(r.width,r.height)*2.2;
     const o=document.createElement("span");
     o.className="ripple";
     o.style.cssText=`width:${d}px;height:${d}px;left:${e.clientX-r.left-d/2}px;top:${e.clientY-r.top-d/2}px`;
     tgt.appendChild(o);
     setTimeout(()=>o.remove(),650);
+    if(fancy()) stars(e.clientX,e.clientY,5,["#FFFFFF","#CFE0FF","#B9A8FF"],18,34,.55);
   },{passive:true});
 
   if(!fullMotion()) return;
 
-  /* confetti when a task is ticked, in its subject colour */
+  /* small four-point stars flying out of a point (fixed on screen) */
+  function stars(x,y,n,colours,min,max,life){
+    for(let i=0;i<n;i++){
+      const p=document.createElement("i"), ang=Math.random()*Math.PI*2, dist=min+Math.random()*(max-min), size=5+Math.random()*7;
+      p.className="stardust";
+      p.style.cssText=`left:${x}px;top:${y}px;width:${size}px;height:${size}px;background:${colours[i%colours.length]};`+
+        `--tx:${(Math.cos(ang)*dist).toFixed(1)}px;--ty:${(Math.sin(ang)*dist).toFixed(1)}px;--rot:${Math.round(Math.random()*180)}deg;--life:${life}s`;
+      document.body.appendChild(p);
+      setTimeout(()=>p.remove(),life*1000+80);
+    }
+  }
+
+  /* a task ticked: a burst of stars in its subject's colour and a ring of light */
   document.addEventListener("change",e=>{
     const inp=e.target;
     if(!inp.matches(".checkitem input[type=checkbox]")||!inp.checked) return;
-    const r=inp.getBoundingClientRect();
+    const r=inp.getBoundingClientRect(), x=r.left+r.width/2, y=r.top+r.height/2;
     const c=getComputedStyle(inp.closest(".checkitem")).getPropertyValue("--sc").trim()||"#3FD9A4";
-    const cols=[c,"#FFD66B","#FFFFFF",c,"#5AA9FF"];
-    for(let i=0;i<18;i++){
-      const p=document.createElement("i"), ang=Math.random()*Math.PI*2, dist=24+Math.random()*40;
-      p.className="confetti";
-      p.style.cssText=`left:${r.left+r.width/2}px;top:${r.top+r.height/2}px;background:${cols[i%cols.length]};`+
-        `--tx:${(Math.cos(ang)*dist).toFixed(1)}px;--ty:${(Math.sin(ang)*dist-14).toFixed(1)}px;--rot:${Math.round(Math.random()*540)}deg;`+
-        `border-radius:${i%3?"2px":"50%"}`;
-      document.body.appendChild(p);
-      setTimeout(()=>p.remove(),950);
+    stars(x,y,highQuality()?16:8,[c,"#FFFFFF","#FFE59A",c,"#CFE0FF"],26,70,.95);
+    if(highQuality()){
+      const ring=document.createElement("i");
+      ring.className="nova"; ring.style.cssText=`left:${x}px;top:${y}px;--sc:${c}`;
+      document.body.appendChild(ring); setTimeout(()=>ring.remove(),800);
     }
   });
+
+  /* changing tab: the stars stretch for a moment, as if jumping to hyperspace */
+  const sky=$("#sky"); let first=true;
+  document.addEventListener("tab",()=>{
+    if(first){ first=false; return; }
+    if(!sky||!fancy()) return;
+    sky.classList.remove("warp"); void sky.offsetWidth; sky.classList.add("warp");
+  });
+  if(sky) sky.addEventListener("animationend",e=>{ if(e.target===sky) sky.classList.remove("warp"); });
 
   /* idle: after 45 s without input the decorations pause */
   const IDLE=45000;

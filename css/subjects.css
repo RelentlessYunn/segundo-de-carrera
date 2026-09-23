@@ -16,10 +16,10 @@
 .subject>.sh .facts{margin-left:auto;display:flex;flex-wrap:wrap;gap:6px}
 @media (hover:hover){
   #subjectCards .subject:hover{transform:translateY(-3px);box-shadow:0 22px 44px -24px rgba(0,0,0,.95)}
-  .subject:hover>.sh{background:#1A2029}
+  .subject:hover>.sh{background:rgba(140,165,235,.05)}
   .subject:hover>.sh::after{opacity:.5}
 }
-.fact{font-size:.72rem;font-weight:600;background:#222A36;color:var(--ink-2);padding:3px 9px;border-radius:11px;white-space:nowrap}
+.fact{font-size:.72rem;font-weight:600;background:rgba(140,165,235,.11);color:var(--ink-2);padding:3px 9px;border-radius:11px;white-space:nowrap}
 .fact-leg{background:rgba(90,169,255,.15);color:#7FB8FF}
 .fact-get{background:rgba(255,166,64,.15);color:#FFB866}
 .panels{display:grid;grid-template-columns:1fr 1fr;align-items:start}
@@ -75,7 +75,7 @@ tr.wk-now td.num{color:#FFC46A;font-weight:700}
 .r-theory{background:rgba(90,169,255,.15);color:#7FB8FF}
 .r-lecture{background:rgba(169,135,255,.15);color:#B9A8FF}
 .r-lab{background:rgba(63,217,164,.15);color:#5FE3B8}
-.r-assistant{background:#222A36;color:#525C6B}
+.r-assistant{background:rgba(140,165,235,.1);color:#7A86A0}
 .r-coord{background:var(--ink);color:var(--on-ink)}
 .mailrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
 .mailbtn,.mailcopy{
@@ -89,7 +89,7 @@ tr.wk-now td.num{color:#FFC46A;font-weight:700}
 .mailcopy.ok{background:var(--go-soft);border-color:var(--go);color:var(--go)}
 .mailbtn:active,.mailcopy:active{transform:scale(.95)}
 /* grade calculator */
-.calc{background:var(--paper);border:1px solid var(--rule-2);border-radius:8px;padding:10px;margin-top:10px}
+.calc{background:rgba(3,6,16,.45);border:1px solid var(--rule-2);border-radius:8px;padding:10px;margin-top:10px}
 .calc-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:.82rem;gap:10px}
 .calc-row:last-of-type{margin-bottom:0}
 .g-input{width:64px;padding:4px 6px;border:1px solid var(--rule);border-radius:5px;font-family:inherit;font-size:.85rem;text-align:right;background:var(--card);color:var(--ink);transition:border-color .16s ease,box-shadow .2s ease}
@@ -97,7 +97,7 @@ tr.wk-now td.num{color:#FFC46A;font-weight:700}
 /* grade out of range or not a number */
 .g-input.invalid{border-color:var(--warn);box-shadow:0 0 0 3px var(--warn-soft)}
 .calc-res{margin-top:10px;padding-top:10px;border-top:1px dashed var(--rule);font-size:.85rem;display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:space-between;align-items:baseline}
-.g-input.ro{background:#222A36;color:var(--ink-2);border-color:var(--rule-2);cursor:default}
+.g-input.ro{background:rgba(140,165,235,.1);color:var(--ink-2);border-color:var(--rule-2);cursor:default}
 .g-input.ro:focus{box-shadow:none;border-color:var(--rule-2)}
 .calc-ro{margin-top:10px;padding-top:9px;border-top:1px dashed var(--rule);font-size:.76rem;color:var(--ink-3)}
 .calc-ro a{color:var(--ink-2);font-weight:600}

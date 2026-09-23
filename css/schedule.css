@@ -28,7 +28,7 @@
 /* class block: the colour sits on an opaque background, so the lines do not show through */
 .ev{
   position:absolute;border-radius:7px;padding:7px 9px;overflow:hidden;
-  background-color:var(--card);border:1px solid;border-left-width:4px;
+  background-color:var(--card-solid);border:1px solid;border-left-width:4px;
   transition:transform .22s var(--ease),box-shadow .25s ease;
   animation:block-in .5s var(--ease) backwards;animation-delay:calc(var(--i,0) * 28ms);
 }

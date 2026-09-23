@@ -83,6 +83,12 @@ es:{
   "home.doneToday":"Clases de hoy terminadas", "home.noClassToday":"Hoy no tienes clase.", "home.nextExam":"{type} de {subject}: {when}",
   "nolan.wip":"En construcción. Aquí irá lo que me indiques.", "nolan.back":"← Volver al inicio",
   /* cloud */
+  "astro.rises":"sale el sol a las {time}", "astro.sets":"el sol se pone a las {time}", "astro.risesTomorrow":"mañana sale el sol a las {time}",
+  "astro.moon.new":"Luna nueva", "astro.moon.waxingCrescent":"Luna creciente", "astro.moon.firstQuarter":"Cuarto creciente",
+  "astro.moon.waxingGibbous":"Gibosa creciente", "astro.moon.full":"Luna llena", "astro.moon.waningGibbous":"Gibosa menguante",
+  "astro.moon.lastQuarter":"Cuarto menguante", "astro.moon.waningCrescent":"Luna menguante",
+  "tasks.constellation":{one:"1 de {total} hecha · tu constelación", other:"{n} de {total} hechas · tu constelación"},
+  "tasks.constellationDone":"Constelación completa: todo hecho",
   "cloud.off":"Guardado desactivado: falta config.js.", "cloud.loading":"Cargando…", "cloud.synced":"Sincronizado.",
   "cloud.retrying":"Sin conexión con la nube. Reintento en {s} s; lo que cambies se guardará al conectar.",
   "cloud.saving":"Guardando…", "cloud.saved":"Guardado.", "cloud.saveFailed":"No se pudo guardar. Se reintentará.",
@@ -115,9 +121,11 @@ es:{
   "s.set.theme":"Tema", "s.set.themeHelp":"Sistema sigue el modo claro u oscuro de tu dispositivo.",
   "s.set.theme.dark":"Oscuro", "s.set.theme.light":"Claro", "s.set.theme.system":"Sistema",
   "s.set.motion":"Animaciones",
-  "s.set.motionHelp":"Básicas quita los adornos (aurora, destellos, confeti, contadores) y deja las transiciones. Ninguna lo deja todo quieto. Si tu sistema pide reducir el movimiento, no se anima nada.",
+  "s.set.motionHelp":"Básicas quita lo que se mueve solo (estrellas, estrellas fugaces, destellos, contadores) y deja las transiciones. Ninguna lo deja todo quieto. Si tu sistema pide reducir el movimiento, no se anima nada.",
   "s.set.motion.full":"Todas", "s.set.motion.basic":"Básicas", "s.set.motion.none":"Ninguna",
-  "s.set.reload":"Cambiar el idioma o las animaciones recarga la página.", "s.set.back":"← Volver"
+  "s.set.quality":"Calidad", "s.set.quality.high":"Alta", "s.set.quality.low":"Baja",
+  "s.set.qualityHelp":"Alta: mar de estrellas, cristal y brillos. Baja: fondo liso y todo sencillo, para móviles lentos o ahorrar batería. Con Animaciones en Ninguna y Calidad baja queda todo apagado.",
+  "s.set.reload":"Cambiar el idioma, las animaciones o la calidad recarga la página.", "s.set.back":"← Volver"
 },
 en:{
   "and":"and", "close":"Close", "copied.f":"Copied",
@@ -173,6 +181,12 @@ en:{
   "home.now":"Now: {subject} · {time} · {room}", "home.next":"Next: {subject} · {time} · {room}",
   "home.doneToday":"Today's classes are over", "home.noClassToday":"No class today.", "home.nextExam":"{type} · {subject}: {when}",
   "nolan.wip":"Under construction. Whatever you tell me will go here.", "nolan.back":"← Back to home",
+  "astro.rises":"sunrise at {time}", "astro.sets":"sunset at {time}", "astro.risesTomorrow":"sunrise tomorrow at {time}",
+  "astro.moon.new":"New moon", "astro.moon.waxingCrescent":"Waxing crescent", "astro.moon.firstQuarter":"First quarter",
+  "astro.moon.waxingGibbous":"Waxing gibbous", "astro.moon.full":"Full moon", "astro.moon.waningGibbous":"Waning gibbous",
+  "astro.moon.lastQuarter":"Last quarter", "astro.moon.waningCrescent":"Waning crescent",
+  "tasks.constellation":{one:"1 of {total} done · your constellation", other:"{n} of {total} done · your constellation"},
+  "tasks.constellationDone":"Constellation complete: all done",
   "cloud.off":"Saving is off: config.js is missing.", "cloud.loading":"Loading…", "cloud.synced":"Synced.",
   "cloud.retrying":"No connection to the cloud. Retrying in {s} s; your changes will be saved once connected.",
   "cloud.saving":"Saving…", "cloud.saved":"Saved.", "cloud.saveFailed":"Could not save. It will retry.",
@@ -203,9 +217,11 @@ en:{
   "s.set.theme":"Theme", "s.set.themeHelp":"System follows your device's light or dark mode.",
   "s.set.theme.dark":"Dark", "s.set.theme.light":"Light", "s.set.theme.system":"System",
   "s.set.motion":"Animations",
-  "s.set.motionHelp":"Basic drops the decorations (aurora, sparkles, confetti, counters) and keeps the transitions. None keeps everything still. If your system asks for reduced motion, nothing animates.",
+  "s.set.motionHelp":"Basic stops whatever moves by itself (stars, shooting stars, sparkles, counters) and keeps the transitions. None keeps everything still. If your system asks for reduced motion, nothing animates.",
   "s.set.motion.full":"All", "s.set.motion.basic":"Basic", "s.set.motion.none":"None",
-  "s.set.reload":"Changing the language or the animations reloads the page.", "s.set.back":"← Back"
+  "s.set.quality":"Quality", "s.set.quality.high":"High", "s.set.quality.low":"Low",
+  "s.set.qualityHelp":"High: sea of stars, glass and glows. Low: plain background and everything simple, for slow phones or to save battery. With Animations on None and Quality on Low, everything is off.",
+  "s.set.reload":"Changing the language, the animations or the quality reloads the page.", "s.set.back":"← Back"
 }};
 
 /* ---------- lookup ---------- */

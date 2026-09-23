@@ -4,7 +4,10 @@
    of the page, and their stars and aurora only make sense on a dark sky.
    Their tokens are set back to the dark ones so their text stays readable. */
 [data-theme=light]{
+  --space:#F3F5F9;
   --paper:#F3F5F9;
+  --card-solid:#FFFFFF;
+  --glow:rgba(31,111,209,.2);
   --card:#FFFFFF;
   --card-2:#F6F8FB;
   --hover:#EDF1F6;
@@ -25,8 +28,23 @@
   --ink:#E6ECF4;--on-ink:#0E1218;--ink-2:#A3AEBF;--ink-3:#7F8B9E;
   --rule:#2B333F;--rule-2:#212834;--warn:#FF6B5E;--warn-soft:rgba(255,107,94,.13);
   --go:#3FD9A4;--go-soft:rgba(63,217,164,.13);
+  --card-solid:#0D1224;
   color-scheme:dark;
 }
+[data-theme=light] header.top{background:linear-gradient(165deg,#0B1022 0%,#111A33 48%,#090E1D 100%)}
+[data-theme=light] .portal{background:linear-gradient(165deg,#0B1022 0%,#111A33 50%,#090E1D 100%)}
+[data-theme=light] header.top::before,[data-theme=light] header.top .aurora,[data-theme=light] .portal .aurora,[data-theme=light] .p-sky{display:block}
+/* the astral glass and glows, toned down for daylight */
+[data-theme=light] .today,[data-theme=light] .n7,[data-theme=light] .statusbar,[data-theme=light] .calbox,[data-theme=light] .month,
+[data-theme=light] .subject,[data-theme=light] .note,[data-theme=light] .settings,[data-theme=light] .tbl,[data-theme=light] .dayblock,
+[data-theme=light] .ev-detail,[data-theme=light] #faculty tr,[data-theme=light] #exams tr{box-shadow:0 4px 18px rgba(20,30,50,.07)}
+[data-theme=light] .shead h2{background:none;-webkit-text-fill-color:currentColor}
+[data-theme=light] .shead h2::before{background:#5AA9FF}
+[data-theme=light] .m-day.today{box-shadow:inset 0 0 0 2px var(--go)}
+[data-theme=light] nav.bar{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+[data-theme=light] ::selection{background:rgba(31,111,209,.2);color:inherit}
+[data-theme=light] .calc{background:#F6F8FB}
+[data-theme=light] .m-day.out{background:#EEF1F5}
 
 /* base */
 :where([data-theme=light]) a{color:#1F6FD1}
@@ -107,3 +125,20 @@
 [data-theme=light] .ripple{background:radial-gradient(circle,rgba(0,0,0,.10) 0%,rgba(0,0,0,.04) 45%,transparent 70%)}
 [data-theme=light] header.top .ripple,[data-theme=light] .portal .ripple{background:radial-gradient(circle,rgba(255,255,255,.22) 0%,rgba(255,255,255,.08) 45%,transparent 70%)}
 [data-theme=light] .ag-btn .ripple{background:radial-gradient(circle,rgba(255,255,255,.55),transparent 70%)}
+
+/* astral buttons, ticks and constellation, in daylight colours */
+[data-theme=light] .d-nav,[data-theme=light] .m-nav,[data-theme=light] .d-today,[data-theme=light] .m-today,
+[data-theme=light] .mailcopy,[data-theme=light] #examFilters button{background:var(--card);border-color:var(--rule);color:var(--ink-2)}
+[data-theme=light] .d-nav,[data-theme=light] .m-nav{color:var(--ink)}
+@media (hover:hover){
+  [data-theme=light] .d-nav:hover:not(:disabled),[data-theme=light] .m-nav:hover:not(:disabled),[data-theme=light] .d-today:hover,
+  [data-theme=light] .m-today:hover,[data-theme=light] .mailcopy:hover,[data-theme=light] #examFilters button:hover{
+    background:var(--ink);color:var(--on-ink);border-color:var(--ink);box-shadow:none}
+}
+[data-theme=light] #examFilters button[aria-pressed=true]{color:#fff;border-color:transparent;background:linear-gradient(135deg,#4E6BFF,#8A5CFF)}
+[data-theme=light] .seg{background:var(--card-2);border-color:var(--rule)}
+[data-theme=light] .seg button[aria-checked=true]{background:var(--ink);color:var(--on-ink);box-shadow:0 2px 8px rgba(0,0,0,.2)}
+[data-theme=light] .checkitem input:not(:checked){background:#fff}
+[data-theme=light] .constellation p{color:#A9B5CE}
+[data-theme=light] .constellation{background:linear-gradient(165deg,#0B1022,#111A33 60%,#090E1D);border-color:transparent}
+[data-theme=light] .now-line .pt{background:radial-gradient(circle,#fff 0 18%,#E0352B 45%)}
