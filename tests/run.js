@@ -71,21 +71,30 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.waitForTimeout(1200);
     ok(await p.evaluate(()=>document.documentElement.hasAttribute("data-locked")&&/incorrecto/.test(document.getElementById("gateMsg").textContent)),"a wrong PIN keeps it locked");
     for(const k of "220226") await p.click(`#gate [data-k="${k}"]`);
+    await p.waitForTimeout(2500);
+    ok(await p.evaluate(()=>!!document.querySelector(".journey")&&document.getElementById("gate").classList.contains("leaving")),"the keypad drifts away and the flight into the galaxy begins");
     await p.waitForTimeout(4500);
     const r=await p.evaluate(()=>({locked:document.documentElement.hasAttribute("data-locked"),saved:localStorage.getItem("nolan-device"),
-      home:!document.getElementById("portal").hidden,canvas:!!document.querySelector(".hyperspace")}));
+      home:!document.getElementById("portal").hidden,canvas:!!document.querySelector(".journey")}));
     ok(!r.locked&&r.saved&&r.home&&!r.canvas,"the right PIN opens it, lands on home and the device remembers it");
     await p.evaluate(()=>sessionStorage.setItem("keep","1"));
     await p.reload(); await p.waitForTimeout(600);
     ok(await p.evaluate(()=>!document.documentElement.hasAttribute("data-locked")&&document.getElementById("gate").hidden),"the same device is not asked again");
     ok(!(await p.content()).includes("220226"),"the PIN itself is nowhere in the page");
+    await p.click("#logout"); await p.waitForTimeout(400);
+    ok(await p.evaluate(()=>document.documentElement.hasAttribute("data-locked")&&!document.getElementById("gate").hidden&&!localStorage.getItem("nolan-device")),
+      "Log out forgets the device and asks for the PIN again");
     await p.context().close();
   }
   {
     const p=await open(b);
     ok(await p.evaluate(()=>!document.getElementById("portal").hidden),"the app starts at home");
-    await p.waitForTimeout(3500); await p.click("#homeUc3m"); await p.waitForTimeout(3000);
-    ok(await p.evaluate(()=>document.getElementById("portal").hidden&&location.hash==="#schedule"&&!document.querySelector(".zoom-star")),"UC3M flies into a star and lands on the timetable");
+    await p.waitForTimeout(3500); await p.click("#homeUc3m"); await p.waitForTimeout(2500);
+    ok(await p.evaluate(()=>document.getElementById("portal").hidden&&location.hash==="#schedule"),"UC3M moves forward into the timetable");
+    await p.goto(PAGE+"#notes"); await p.waitForTimeout(500);
+    ok(await p.evaluate(()=>!document.getElementById("portal").hidden&&!document.getElementById("notes").hidden&&!!document.querySelector("#portal #notesText")),"Notes open inside home");
+    await p.goto(PAGE+"#ajustes"); await p.waitForTimeout(500);
+    ok(await p.evaluate(()=>!document.getElementById("portal").hidden&&!document.getElementById("settings").hidden&&location.hash==="#settings"),"Settings open inside home (old links too)");
     await p.context().close();
   }
 
@@ -218,10 +227,17 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
 
   section("Astral");
   {
-    const p=await open(b,{time:"2026-09-23T16:05:00"});
-    const r=await p.evaluate(()=>({info:document.getElementById("skyInfo").textContent,
-      layers:document.querySelectorAll("#sky .sky-layer").length,shown:getComputedStyle(document.querySelector("#sky .sky-par")).display}));
-    ok(/Gibosa creciente/.test(r.info)&&/20:1[0-9]/.test(r.info),`moon phase and sunset under the clock ("${r.info}")`);
+    const weather=async p=>{
+      await p.route("https://api.open-meteo.com/**",r=>r.fulfill({status:200,contentType:"application/json",body:JSON.stringify({
+        current:{temperature_2m:24.4,weather_code:1,is_day:1},
+        daily:{temperature_2m_max:[28.2,27],temperature_2m_min:[14.1,13],sunrise:["2026-09-23T08:04","2026-09-24T08:05"],sunset:["2026-09-23T20:13","2026-09-24T20:11"],precipitation_probability_max:[5,0]}})}));
+    };
+    const p=await open(b,{time:"2026-09-23T16:05:00",routes:weather});
+    await p.waitForTimeout(1500);
+    const r=await p.evaluate(()=>({w:document.getElementById("homeWeather").textContent,
+      layers:document.querySelectorAll("#sky .sky-layer").length,shown:getComputedStyle(document.querySelector("#sky .sky-par")).display,
+      header:!!document.getElementById("skyInfo")}));
+    ok(/24°/.test(r.w)&&/Getafe/.test(r.w)&&/20:13/.test(r.w)&&/máx\. 28°/.test(r.w)&&!r.header,`weather and sunset on home, nothing under the UC3M clock ("${r.w}")`);
     ok(r.layers===4&&r.shown!=="none","the sea of stars is drawn with Quality = High");
     await p.context().close();
     const q=await open(b,{settings:{quality:"low"},hash:"tasks"});

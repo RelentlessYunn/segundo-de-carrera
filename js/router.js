@@ -1,8 +1,8 @@
 /* ==========================================================
    router.js — routes and tabs.
    · #schedule, #subjects, #exams, #tasks, #faculty: UC3M tabs
-   · #notes (notes for Claude) and #settings: pages without a tab
-   · #home and #nolan (or #nolan/…): the home screen (home.js); an
+   · #home, #notes, #settings and #nolan (or #nolan/…): the home screen
+     and its pages (home.js); an
      address without a route (the app's start) also opens home
    · #debug: debug panel (debug.js); it does not change tab
    Old Spanish links (#horario, #asignaturas…) still work.
@@ -14,7 +14,7 @@ const Router=(function(){
     schedule:["today","schedule","planner"], subjects:["subjects"],
     exams:["exams"], tasks:["tasks"], faculty:["faculty"]
   };
-  const PAGES=["notes","settings"];
+  const PAGES=[];                                  /* pages without a tab (notes and settings now live in home) */
   const ALIASES={horario:"schedule",hoy:"schedule",planificador:"schedule",asignaturas:"subjects",
     calendario:"exams",pendientes:"tasks",profesorado:"faculty",notas:"notes",configuracion:"settings",ajustes:"settings"};
   const order=Object.keys(TABS);
@@ -70,11 +70,12 @@ const Router=(function(){
   }
 
   /* ---------- routes ---------- */
-  const isHome=r=>r==="home"||r==="nolan"||r.startsWith("nolan/");
+  const isHome=r=>r==="home"||r==="notes"||r==="settings"||r==="nolan"||r.startsWith("nolan/");
   function handle(){
     let r=decodeURIComponent(location.hash.slice(1));
     if(r.includes("debug")) return;                    /* handled by debug.js */
     if(!r) r="home";                                   /* the app always starts at home */
+    if(ALIASES[r]){ r=ALIASES[r]; history.replaceState(null,"","#"+r); }
     if(isHome(r)){
       if(!shownOnce) show(last,{quiet:true});          /* behind home, the last tab */
       const [view,...sub]=r.split("/"); Home.open(view,sub.join("/"),last); return;

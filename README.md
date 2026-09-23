@@ -23,9 +23,10 @@ The site opens behind a PIN screen (`js/gate.js`, styles in `css/cinema.css`).
 ## The cinema
 
 - **Start**: the app always opens at home (an address without a route opens `#home`). The first time, the opening plays: the sky fades up, the constellation N draws itself, NOLAN comes out of the dark, then the cards.
-- **Right PIN**: a jump to hyperspace into the galaxy (canvas in `gate.js`), a white flash, and the opening.
-- **Entering UC3M**: the camera flies into a star born on the card's icon; the star swallows the screen and the timetable comes out of the light (`Home.enter` in `home.js`).
-- With Animations = None everything jumps straight to the end; the flight into the star also needs Quality = High.
+- **Right PIN**: the digits drift away and a five-second flight into a spiral galaxy (drawn once on canvas in `gate.js`) dissolves into the page's sky, then the opening. No flash.
+- **Entering UC3M**: home drifts towards you and dissolves, the sky pushes in, and the timetable comes forward out of the dark (`Home.enter` in `home.js`).
+- **Log out** (home): `Gate.lock()` forgets the device and shows the PIN again.
+- With Animations = None everything jumps straight to the end; the move into UC3M also needs Quality = High.
 
 ## The astral theme
 
@@ -34,7 +35,7 @@ The whole site lives in the night sky:
 - **Sea of stars** (`js/sky.js`, `css/sky.css`): a fixed `#sky` behind the page, almost black, with faint nebulae, a Milky Way band, four layers of stars in real star colours (drawn once on canvas and used as tiles), film grain and a vignette; slow drift, twinkling, scroll parallax and a rare shooting star. Only transforms and opacity move, so it is cheap.
 - **Glass** (`css/astral.css`): cards, tab bar and buttons are dark translucent glass with starlight borders and glows; section titles end in a four-point star.
 - **Effects** (`js/effects.js`): soft points of light where you tap, sparks and a ring of light when a task is ticked. Stars in the interface are round points of light, never geometric shapes.
-- **Real sky** (`js/astro.js`): under the clock, tonight's moon phase (drawn as it looks) and the next sunrise or sunset in Getafe, computed offline.
+- **The sky outside** (`js/weather.js`, on home): weather now, today's high and low, chance of rain and the next sunrise or sunset. The place is where the device is (the browser asks once); if not allowed, Getafe. Weather from Open-Meteo, place names from BigDataCloud, both free and without keys, saved for 20 minutes. Without connection the sun is still computed offline (`js/astro.js`).
 - **Your constellation** (Tasks): one star per task, lit and joined when done.
 - **Ticks light up** like stars, the red "now" line ends in a glowing point.
 
@@ -56,14 +57,14 @@ The site is called **Nolan**. The logo is an astral N: four identical four-point
 
 | Part | What it does |
 |---|---|
-| **Home** (house icon, `#home`; also where the app starts) | Choose between **UC3M** and **Nolan**. The UC3M card sums up the week, the class now and the next assessment. |
+| **Home** (house icon, `#home`; also where the app starts) | Choose between **UC3M** and **Nolan**. The UC3M card sums up the week, the class now and the next assessment. Also: the weather where you are and the next sunrise/sunset, and buttons for Notes, Settings and Log out. |
 | **Schedule** (`#schedule`) | *Today*: the day's classes with their room, the red "now" line and "X min left"; the next 7 days; the week's dates and advice. Below: weekly timetable and monthly planner. |
 | **Subjects** (`#subjects`) | One card per subject: timetable and rooms, faculty, grading with a grade calculator, dates, and syllabus with progress. |
 | **Exams** (`#exams`) | Everything graded, with filters. Past items are dimmed. |
 | **Tasks** (`#tasks`) | Tasks per subject and general ones. Ticks are saved to the cloud. |
 | **Faculty** (`#faculty`) | Table with email and office. |
-| **Notes for Claude** (`#notes`) | Free text saved to the cloud. **Claude cannot read JSONBin**: to pass them on, press *Copy notes* and paste into the chat. |
-| **Settings** (gear icon, `#settings`) | Language (Spanish / English), theme (dark / light / system), animations (all / basic / none) and quality (high / low). Saved on each device. Animations = None plus Quality = Low turns every effect off. |
+| **Notes for Claude** (`#notes`, inside home) | Free text saved to the cloud. **Claude cannot read JSONBin**: to pass them on, press *Copy notes* and paste into the chat. |
+| **Settings** (`#settings`, inside home) | Language (Spanish / English), theme (dark / light / system), animations (all / basic / none) and quality (high / low). Saved on each device. Animations = None plus Quality = Low turns every effect off. |
 | **Nolan** (`#nolan`) | Under construction. |
 
 On mobile the tabs sit at the bottom and you can swipe between them.
@@ -103,13 +104,14 @@ Each file does one thing. To change something you usually only need one or two.
 | `prefs.js` | Settings (`SETTINGS`, `saveSetting`), theme, and `lowMotion()` / `fullMotion()` / `highQuality()` / `fancy()`. |
 | `i18n.js` | Spanish and English texts (`t`, `tn`) and date formatting. |
 | `core.js` | Shared helpers: dates, weeks, term in force, classes on a day (`classesOn`), event labels (`eventLabel`, `whenLabel`), detail panel, error banner. |
-| `gate.js` | The PIN screen and the jump to hyperspace. |
+| `gate.js` | The PIN screen, the flight into the galaxy and Log out. |
 | `sky.js` | The sea of stars behind the page. |
 | `validate.js` | Checks `data.js` and `eval.js` before rendering. Whatever would break the page is left out and reported at the top; odd things go to the console and `#debug`. |
 | `derived.js` | Computed data: clashes between classes (added to `EVENTS`) and the timetable grid layout. |
 | `cloud.js` | Saving to JSONBin, by changes, queued and without overwriting anything (see *The cloud*). |
 | `header.js` | Clock, date, week and figures. It is the only clock: it emits the `minute` and `newDay` events. |
-| `astro.js` | Moon phase and sunrise/sunset under the clock. |
+| `astro.js` | Sunrise and sunset for any place, offline. |
+| `weather.js` | Weather and sun on home. |
 | `schedule.js` | Weekly timetable (grid and list by day) and the clash status bar. |
 | `today.js` | The *Today* viewer. |
 | `subjects.js` | Subject cards and grade calculator (`subjectCard`, `recalc`). |
@@ -204,7 +206,7 @@ Settings are not in the cloud: they are per device (`localStorage`, key `setting
 
 ## Publishing a version
 
-1. Versions are numbered 0.45, 0.46… Bump the number in `index.html`: the footer (`v0.45`) and every `?v=0.45` of the code files, all at once. If the logo changes, also bump the `?v=` of the icons in `index.html` and `manifest.webmanifest`: browsers keep favicons cached for a long time and only fetch them again when the URL changes.
+1. Versions are numbered 0.46, 0.47… Bump the number in `index.html`: the footer (`v0.46`) and every `?v=0.46` of the code files, all at once. If the logo changes, also bump the `?v=` of the icons in `index.html` and `manifest.webmanifest`: browsers keep favicons cached for a long time and only fetch them again when the URL changes.
 2. Upload the changed files to GitHub, keeping the `js/` and `css/` folders.
 3. GitHub Pages takes a minute or two. The footer number tells you which version you are seeing.
 
@@ -214,10 +216,10 @@ Settings are not in the cloud: they are per device (`localStorage`, key `setting
 node tests/run.js
 ```
 
-Needs Node and Playwright. 54 checks in a real browser:
+Needs Node and Playwright. 58 checks in a real browser:
 
 - the page loads without errors;
-- the PIN screen (wrong PIN, right PIN, remembered device, PIN not in the page) and starting at home;
+- the PIN screen (wrong PIN, the flight into the galaxy, remembered device, PIN not in the page, Log out), starting at home, and Notes and Settings inside home;
 - the tabs, and old Spanish links;
 - the red line at different times, the minute change and midnight;
 - dates without a day and multi-day windows (and the line that joins them in the planner);
@@ -225,7 +227,7 @@ Needs Node and Playwright. 54 checks in a real browser:
 - grades with a comma;
 - the home window;
 - settings: light theme, English after reloading, every text translated in both languages, English dates, and the animation levels;
-- the astral layer: moon and sun, the sea of stars, Quality = Low and the tasks constellation;
+- the astral layer: weather and sun on home, the sea of stars, Quality = Low and the tasks constellation;
 - the swipe gesture;
 - idle.
 

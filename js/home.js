@@ -29,6 +29,7 @@ const Home=(function(){
     if(backTo) $("#homeUc3m").setAttribute("href","#"+backTo);
     if(view==="nolan") Nolan.render($("#nolanView"),subroute||"");
     views.forEach(v=>v.hidden=v.dataset.view!==view);
+    P.dataset.view=view;
     clearTimeout(closeTimer);
     if(P.hidden||P.classList.contains("leaving")){ returnFocus=document.activeElement; P.scrollTop=0; }
     P.classList.remove("leaving"); P.hidden=false;
@@ -55,45 +56,34 @@ const Home=(function(){
     P.classList.remove("intro"); void P.offsetWidth; P.classList.add("intro");
     setTimeout(()=>P.classList.remove("intro"),4200);
   }
-  if(Gate.locked()) Gate.onOpen(intro);           /* after the PIN; otherwise router.js starts it */
+  Gate.onUnlock(intro);
+  /* Log out: this device forgets the PIN and the gate comes back */
+  $("#logout").addEventListener("click",()=>Gate.lock());                            /* after the PIN; at start, router.js starts it */
 
-  /* ---------- entering UC3M: the camera flies into a star ----------
-     The star is born on the card's icon; the sky rushes towards it, the star
-     swallows the screen in white, and the timetable appears out of the light. */
+  /* ---------- entering UC3M: the camera moves forward ----------
+     Home drifts towards you and dissolves, the sky pushes in towards the
+     card, and the timetable comes forward out of the dark. No flash. */
   let entering=false;
   function enter(card,go){
     if(entering) return;
     if(!fancy()){ go(); return; }
     entering=true;
-    const r=(card.querySelector(".p-ic")||card).getBoundingClientRect();
-    const x=r.left+r.width/2, y=r.top+r.height/2;
-    const star=document.createElement("div");
-    star.className="zoom-star"; star.style.left=x+"px"; star.style.top=y+"px";
-    document.body.appendChild(star);
+    const r=card.getBoundingClientRect(), origin=`${r.left+r.width/2}px ${r.top+r.height/2}px`;
     const sky=$("#sky"), inner=$("#portal .p-in");
-    const origin=`${x}px ${y}px`;
-    const EASE_IN="cubic-bezier(.55,0,.85,.3)";
+    const IN="cubic-bezier(.45,0,.75,.35)", OUT="cubic-bezier(.2,.7,.2,1)";
     inner.style.transformOrigin=origin;
-    inner.animate([{transform:"none",opacity:1,filter:"blur(0)"},{transform:"scale(1.6)",opacity:0,filter:"blur(6px)"}],
-      {duration:700,easing:EASE_IN,fill:"forwards"});
+    const leave=inner.animate([{transform:"none",opacity:1},{transform:"scale(1.1)",opacity:0}],{duration:650,easing:IN,fill:"forwards"});
+    let push=null;
     if(sky){ sky.style.transformOrigin=origin;
-      sky.animate([{transform:"none"},{transform:"scale(4)"}],{duration:1400,easing:EASE_IN,fill:"forwards"}); }
-    /* big enough for its white core to cover the farthest corner of the screen */
-    const far=Math.max(Math.hypot(x,y),Math.hypot(innerWidth-x,y),Math.hypot(x,innerHeight-y),Math.hypot(innerWidth-x,innerHeight-y));
-    const S=Math.ceil(far/(44*.3)*1.15);
-    star.animate([
-      {transform:"translate(-50%,-50%) scale(.4)",opacity:0},
-      {transform:"translate(-50%,-50%) scale(1.6)",opacity:1,offset:.22},
-      {transform:"translate(-50%,-50%) scale(2.2)",opacity:1,offset:.45},
-      {transform:`translate(-50%,-50%) scale(${S})`,opacity:1}
-    ],{duration:1400,easing:EASE_IN,fill:"forwards"}).onfinish=()=>{
-      go();                                                     /* behind the white, the timetable */
+      push=sky.animate([{transform:"none"},{transform:"scale(1.3)"}],{duration:1500,easing:"cubic-bezier(.45,0,.4,1)",fill:"forwards"}); }
+    leave.onfinish=()=>{
+      go();                                                /* the timetable, behind the dark */
       document.body.classList.add("arriving");
-      inner.getAnimations().forEach(a=>a.cancel()); inner.style.transformOrigin="";
-      if(sky){ sky.getAnimations().forEach(a=>a.cancel()); sky.style.transformOrigin=""; }
-      star.animate([{opacity:1},{opacity:0}],{duration:900,easing:"ease-out",fill:"forwards"}).onfinish=()=>{
-        star.remove(); document.body.classList.remove("arriving"); entering=false;
-      };
+      leave.cancel(); inner.style.transformOrigin="";
+      setTimeout(()=>{ document.body.classList.remove("arriving"); entering=false; },1100);
+      /* the sky settles back, slowly, once we have arrived */
+      if(push) push.onfinish=()=>{ const back=sky.animate([{transform:"scale(1.3)"},{transform:"none"}],{duration:2600,easing:OUT});
+        push.cancel(); back.onfinish=()=>{ sky.style.transformOrigin=""; }; };
     };
   }
 
