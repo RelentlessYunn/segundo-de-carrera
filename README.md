@@ -164,7 +164,7 @@ Settings are not in the cloud: they are per device (`localStorage`, key `setting
 
 ## Publishing a version
 
-1. Bump the number in `index.html`: the footer (`<p class="version">v43</p>`) and every `?v=43`, all at once.
+1. Bump the number in `index.html`: the footer (`<p class="version">v43</p>`) and every `?v=43`, all at once. If the logo changes, also bump the `?v=` of the icons in `index.html` and `manifest.webmanifest`: browsers keep favicons cached for a long time and only fetch them again when the URL changes.
 2. Upload the changed files to GitHub, keeping the `js/` and `css/` folders.
 3. GitHub Pages takes a minute or two. The footer number tells you which version you are seeing.
 
