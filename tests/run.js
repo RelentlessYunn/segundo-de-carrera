@@ -81,16 +81,20 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.reload(); await p.waitForTimeout(600);
     ok(await p.evaluate(()=>!document.documentElement.hasAttribute("data-locked")&&document.getElementById("gate").hidden),"the same device is not asked again");
     ok(!(await p.content()).includes("220226"),"the PIN itself is nowhere in the page");
+    await p.goto(PAGE+"#settings"); await p.waitForTimeout(500);
     await p.click("#logout"); await p.waitForTimeout(400);
     ok(await p.evaluate(()=>document.documentElement.hasAttribute("data-locked")&&!document.getElementById("gate").hidden&&!localStorage.getItem("nolan-device")),
-      "Log out forgets the device and asks for the PIN again");
+      "Log out (in Settings) forgets the device and asks for the PIN again");
     await p.context().close();
   }
   {
     const p=await open(b);
     ok(await p.evaluate(()=>!document.getElementById("portal").hidden),"the app starts at home");
-    await p.waitForTimeout(3500); await p.click("#homeUc3m"); await p.waitForTimeout(2500);
-    ok(await p.evaluate(()=>document.getElementById("portal").hidden&&location.hash==="#schedule"),"UC3M moves forward into the timetable");
+    await p.waitForTimeout(3500); await p.click("#homeUc3m"); await p.waitForTimeout(1200);
+    ok(await p.evaluate(()=>!!document.querySelector(".journey")),"UC3M flies into home's galaxy");
+    await p.waitForTimeout(3200);
+    ok(await p.evaluate(()=>document.getElementById("portal").hidden&&location.hash==="#schedule"&&!document.querySelector(".journey")
+      &&getComputedStyle(document.querySelector("#sky .sky-inside")).opacity==="1"),"…and lands on the timetable, inside the galaxy's sky");
     await p.goto(PAGE+"#notes"); await p.waitForTimeout(500);
     ok(await p.evaluate(()=>!document.getElementById("portal").hidden&&!document.getElementById("notes").hidden&&!!document.querySelector("#portal #notesText")),"Notes open inside home");
     await p.goto(PAGE+"#ajustes"); await p.waitForTimeout(500);
@@ -237,7 +241,7 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     const r=await p.evaluate(()=>({w:document.getElementById("homeWeather").textContent,
       layers:document.querySelectorAll("#sky .sky-layer").length,shown:getComputedStyle(document.querySelector("#sky .sky-par")).display,
       header:!!document.getElementById("skyInfo")}));
-    ok(/24°/.test(r.w)&&/Getafe/.test(r.w)&&/20:13/.test(r.w)&&/máx\. 28°/.test(r.w)&&!r.header,`weather and sunset on home, nothing under the UC3M clock ("${r.w}")`);
+    ok(/24°/.test(r.w)&&/Getafe/.test(r.w)&&/20:13/.test(r.w)&&/Máx\.28°/.test(r.w)&&/Puesta de sol20:13/.test(r.w)&&!r.header,`weather and sunset on home, nothing under the UC3M clock ("${r.w}")`);
     ok(r.layers===4&&r.shown!=="none","the sea of stars is drawn with Quality = High");
     await p.context().close();
     const q=await open(b,{settings:{quality:"low"},hash:"tasks"});

@@ -23,9 +23,10 @@ The site opens behind a PIN screen (`js/gate.js`, styles in `css/cinema.css`).
 ## The cinema
 
 - **Start**: the app always opens at home (an address without a route opens `#home`). The first time, the opening plays: the sky fades up, the constellation N draws itself, NOLAN comes out of the dark, then the cards.
-- **Right PIN**: the digits drift away and a five-second flight into a spiral galaxy (drawn once on canvas in `gate.js`) dissolves into the page's sky, then the opening. No flash.
-- **Entering UC3M**: home drifts towards you and dissolves, the sky pushes in, and the timetable comes forward out of the dark (`Home.enter` in `home.js`).
-- **Log out** (home): `Gate.lock()` forgets the device and shows the PIN again.
+- **Right PIN**: the digits drift away; an oval galaxy appears as a tiny smudge and the camera flies into it for five seconds while stars appear all around; the scene dissolves into the page's sky, then the opening. No flash. The galaxy is a real 3D cloud of stars (`js/galaxy.js`, `Galaxy.fly`).
+- **Home's galaxy**: the same galaxy waits far away in home's background (`Galaxy.still`).
+- **Entering UC3M**: home fades, the camera flies into that galaxy (`Home.enter` → `Galaxy.fly`), and UC3M appears inside it, with its own sky: a warm core, violet haze and a bright Milky Way (`.sky-inside`). Back at home the sky is open space again.
+- **Log out** (Settings, red button): `Gate.lock()` forgets the device and shows the PIN again.
 - With Animations = None everything jumps straight to the end; the move into UC3M also needs Quality = High.
 
 ## The astral theme
@@ -57,7 +58,7 @@ The site is called **Nolan**. The logo is an astral N: four identical four-point
 
 | Part | What it does |
 |---|---|
-| **Home** (house icon, `#home`; also where the app starts) | Choose between **UC3M** and **Nolan**. The UC3M card sums up the week, the class now and the next assessment. Also: the weather where you are and the next sunrise/sunset, and buttons for Notes, Settings and Log out. |
+| **Home** (house icon, `#home`; also where the app starts) | Choose between **UC3M** and **Nolan**. The UC3M card sums up the week, the class now and the next assessment. Also: a weather card (now, high, low, rain, next sunrise/sunset) for where you are, and buttons for Notes and Settings. |
 | **Schedule** (`#schedule`) | *Today*: the day's classes with their room, the red "now" line and "X min left"; the next 7 days; the week's dates and advice. Below: weekly timetable and monthly planner. |
 | **Subjects** (`#subjects`) | One card per subject: timetable and rooms, faculty, grading with a grade calculator, dates, and syllabus with progress. |
 | **Exams** (`#exams`) | Everything graded, with filters. Past items are dimmed. |
@@ -104,7 +105,8 @@ Each file does one thing. To change something you usually only need one or two.
 | `prefs.js` | Settings (`SETTINGS`, `saveSetting`), theme, and `lowMotion()` / `fullMotion()` / `highQuality()` / `fancy()`. |
 | `i18n.js` | Spanish and English texts (`t`, `tn`) and date formatting. |
 | `core.js` | Shared helpers: dates, weeks, term in force, classes on a day (`classesOn`), event labels (`eventLabel`, `whenLabel`), detail panel, error banner. |
-| `gate.js` | The PIN screen, the flight into the galaxy and Log out. |
+| `gate.js` | The PIN screen and Log out. |
+| `galaxy.js` | The galaxy as a 3D cloud of stars: standing far away, or flown into. |
 | `sky.js` | The sea of stars behind the page. |
 | `validate.js` | Checks `data.js` and `eval.js` before rendering. Whatever would break the page is left out and reported at the top; odd things go to the console and `#debug`. |
 | `derived.js` | Computed data: clashes between classes (added to `EVENTS`) and the timetable grid layout. |
@@ -206,7 +208,7 @@ Settings are not in the cloud: they are per device (`localStorage`, key `setting
 
 ## Publishing a version
 
-1. Versions are numbered 0.46, 0.47… Bump the number in `index.html`: the footer (`v0.46`) and every `?v=0.46` of the code files, all at once. If the logo changes, also bump the `?v=` of the icons in `index.html` and `manifest.webmanifest`: browsers keep favicons cached for a long time and only fetch them again when the URL changes.
+1. Versions are numbered 0.47, 0.48… Bump the number in `index.html`: the footer (`v0.47`) and every `?v=0.47` of the code files, all at once. If the logo changes, also bump the `?v=` of the icons in `index.html` and `manifest.webmanifest`: browsers keep favicons cached for a long time and only fetch them again when the URL changes.
 2. Upload the changed files to GitHub, keeping the `js/` and `css/` folders.
 3. GitHub Pages takes a minute or two. The footer number tells you which version you are seeing.
 
@@ -216,10 +218,10 @@ Settings are not in the cloud: they are per device (`localStorage`, key `setting
 node tests/run.js
 ```
 
-Needs Node and Playwright. 58 checks in a real browser:
+Needs Node and Playwright. 59 checks in a real browser:
 
 - the page loads without errors;
-- the PIN screen (wrong PIN, the flight into the galaxy, remembered device, PIN not in the page, Log out), starting at home, and Notes and Settings inside home;
+- the PIN screen (wrong PIN, the flight into the galaxy, remembered device, PIN not in the page, Log out), starting at home, flying into the galaxy when entering UC3M, and Notes and Settings inside home;
 - the tabs, and old Spanish links;
 - the red line at different times, the minute change and midnight;
 - dates without a day and multi-day windows (and the line that joins them in the planner);

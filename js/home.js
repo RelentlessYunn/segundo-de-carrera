@@ -37,6 +37,7 @@ const Home=(function(){
     behind.forEach(el=>el.inert=true);
     /* focus goes into the window (Tab continues through the cards), without marking any */
     P.focus({preventScroll:true});
+    drawGalaxy();
   }
   function close(){
     if(P.hidden) return;
@@ -57,34 +58,40 @@ const Home=(function(){
     setTimeout(()=>P.classList.remove("intro"),4200);
   }
   Gate.onUnlock(intro);
-  /* Log out: this device forgets the PIN and the gate comes back */
-  $("#logout").addEventListener("click",()=>Gate.lock());                            /* after the PIN; at start, router.js starts it */
 
-  /* ---------- entering UC3M: the camera moves forward ----------
-     Home drifts towards you and dissolves, the sky pushes in towards the
-     card, and the timetable comes forward out of the dark. No flash. */
+  /* ---------- home's galaxy, far away in the background ----------
+     Drawn once (and again if the window changes size) by galaxy.js. */
+  const gal=$("#homeGalaxy");
+  let galDrawn="";
+  function drawGalaxy(){
+    if(!gal||P.hidden||!highQuality()) return;
+    const key=innerWidth+"x"+innerHeight; if(key===galDrawn) return;
+    galDrawn=key; Galaxy.still(gal); gal.classList.add("ready");
+  }
+  let rzg=0; window.addEventListener("resize",()=>{ clearTimeout(rzg); rzg=setTimeout(drawGalaxy,250); });
+
+  /* ---------- entering UC3M: into the galaxy ----------
+     Home fades away, the camera flies into home's galaxy, and UC3M appears
+     inside it, with its own sky (css: .sky-inside). */
   let entering=false;
   function enter(card,go){
     if(entering) return;
-    if(!fancy()){ go(); return; }
+    if(!fancy()||!gal){ go(); return; }
     entering=true;
-    const r=card.getBoundingClientRect(), origin=`${r.left+r.width/2}px ${r.top+r.height/2}px`;
-    const sky=$("#sky"), inner=$("#portal .p-in");
-    const IN="cubic-bezier(.45,0,.75,.35)", OUT="cubic-bezier(.2,.7,.2,1)";
-    inner.style.transformOrigin=origin;
-    const leave=inner.animate([{transform:"none",opacity:1},{transform:"scale(1.1)",opacity:0}],{duration:650,easing:IN,fill:"forwards"});
-    let push=null;
-    if(sky){ sky.style.transformOrigin=origin;
-      push=sky.animate([{transform:"none"},{transform:"scale(1.3)"}],{duration:1500,easing:"cubic-bezier(.45,0,.4,1)",fill:"forwards"}); }
-    leave.onfinish=()=>{
-      go();                                                /* the timetable, behind the dark */
+    const inner=$("#portal .p-in"), bar=$("#portal .p-bar");
+    const fade=[{opacity:1,transform:"none"},{opacity:0,transform:"translateY(-10px)"}];
+    inner.animate(fade,{duration:500,easing:"ease-in",fill:"forwards"});
+    if(bar) bar.animate(fade,{duration:400,easing:"ease-in",fill:"forwards"});
+    Galaxy.fly({from:"home",duration:2800,black:false,arrive:()=>{
+      go();
       document.body.classList.add("arriving");
-      leave.cancel(); inner.style.transformOrigin="";
-      setTimeout(()=>{ document.body.classList.remove("arriving"); entering=false; },1100);
-      /* the sky settles back, slowly, once we have arrived */
-      if(push) push.onfinish=()=>{ const back=sky.animate([{transform:"scale(1.3)"},{transform:"none"}],{duration:2600,easing:OUT});
-        push.cancel(); back.onfinish=()=>{ sky.style.transformOrigin=""; }; };
-    };
+      setTimeout(()=>{
+        document.body.classList.remove("arriving"); entering=false;
+        inner.getAnimations().forEach(a=>a.cancel()); if(bar) bar.getAnimations().forEach(a=>a.cancel());
+        gal.style.opacity="";
+      },1200);
+    }});
+    gal.style.opacity="0";                          /* the flying galaxy takes its place */
   }
 
   return {open, close, enter, intro, isOpen:()=>!P.hidden&&!P.classList.contains("leaving")};

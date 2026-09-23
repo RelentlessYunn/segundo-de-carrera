@@ -134,17 +134,27 @@ body.arriving>div.wrap{animation-delay:.2s}
 .p-tool:focus-visible{outline:2px solid #fff;outline-offset:2px}
 .portal.intro .p-bar{animation:fade-in 1s 2.6s ease backwards}
 
-/* the sky outside: weather now and the sun */
-.p-weather{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px 18px;margin-top:14px;font-size:.84rem;color:#A9AEBB}
-.p-weather>span{display:inline-flex;align-items:center;gap:7px}
-.w-now b{font-size:1.05rem;font-weight:600;color:#EEF0F5}
-.w-now em{font-style:normal;color:#80869A}
-.w-now em::before{content:"· ";}
-.w-ic,.w-sun-ic{width:20px;height:20px;flex:0 0 auto;fill:none;stroke:#E9EBF2;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;
-  filter:drop-shadow(0 0 6px rgba(255,255,255,.25))}
-.w-sun-ic{width:18px;height:18px;stroke:#E8B872;filter:drop-shadow(0 0 6px rgba(232,184,114,.35))}
+/* the sky outside: a small glass card — now on top, the day below */
+.p-weather{display:flex;justify-content:center;margin-top:18px;width:100%}
+.w-card{
+  width:100%;max-width:400px;padding:14px 16px 12px;border-radius:18px;text-align:left;
+  background:linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,.015)),rgba(6,7,11,.55);
+  border:1px solid rgba(255,255,255,.09);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+}
+.w-main{display:flex;align-items:center;gap:12px}
+.w-ic{width:34px;height:34px;flex:0 0 auto;fill:none;stroke:#EEF0F6;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;
+  filter:drop-shadow(0 0 8px rgba(255,255,255,.25))}
+.w-temp{font-size:2.1rem;font-weight:300;letter-spacing:-.03em;line-height:1;color:#F4F5F9}
+.w-what{display:flex;flex-direction:column;gap:2px;min-width:0}
+.w-what span{font-size:.9rem;font-weight:600;color:#E3E5EC}
+.w-what em{font-style:normal;font-size:.78rem;color:#8B90A0}
+.w-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)}
+.w-stat{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}
+.w-stat small{display:inline-flex;align-items:center;gap:4px;font-size:.66rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#80869A;white-space:nowrap}
+.w-stat b{font-size:.98rem;font-weight:600;color:#ECEEF3;font-variant-numeric:tabular-nums}
+.w-sun-ic{width:14px;height:14px;flex:0 0 auto;fill:none;stroke:#E8B872;stroke-width:1.5;stroke-linecap:round}
 .portal.intro .p-weather{animation:rise 1s 2.3s var(--ease) backwards}
-@media (max-width:620px){.p-weather{font-size:.78rem;gap:5px 14px}}
+@media (max-width:620px){.w-card{max-width:none}.w-temp{font-size:1.8rem}.w-stat small{font-size:.6rem;letter-spacing:.03em}}
 
 /* Notes and Settings open inside home: the hero steps aside, a back link on top */
 .portal[data-view=notes] .p-top,.portal[data-view=settings] .p-top{display:none}
@@ -157,3 +167,36 @@ body.arriving>div.wrap{animation-delay:.2s}
 @keyframes view-in{from{opacity:0;transform:translateY(10px) scale(.99)}}
 .portal.intro .p-view{animation:rise 1s 2.5s var(--ease) backwards}
 @media (max-width:620px){.p-bar{top:calc(10px + env(safe-area-inset-top,0px));right:10px}.p-tool{width:38px;height:38px}}
+
+/* ---------- home's galaxy and UC3M's sky ---------- */
+.home-galaxy{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0;transition:opacity 1.2s ease}
+.home-galaxy.ready{opacity:.95}
+.portal.intro .home-galaxy{animation:fade-in 2.6s 1s ease backwards}
+.p-in,.p-bar{z-index:2}
+[data-quality=low] .home-galaxy{display:none}
+/* inside the galaxy (UC3M): a warm core low on one side, a violet haze, the Milky Way bright */
+.sky-inside{position:absolute;inset:0;transition:opacity 1.6s ease}
+.sky-inside i{position:absolute;display:block;border-radius:50%}
+.sky-inside i:nth-child(1){width:120vmax;height:80vmax;left:-45vmax;bottom:-45vmax;
+  background:radial-gradient(closest-side,rgba(255,214,168,.20),rgba(255,190,140,.08) 45%,transparent)}
+.sky-inside i:nth-child(2){width:90vmax;height:40vmax;left:10%;top:18%;transform:rotate(-24deg);
+  background:radial-gradient(closest-side,rgba(170,150,220,.10),transparent)}
+.sky-inside i:nth-child(3){width:50vmax;height:50vmax;right:-15vmax;top:-20vmax;
+  background:radial-gradient(closest-side,rgba(120,150,190,.07),transparent)}
+/* home is open space: no core, a fainter Milky Way; the galaxy waits in the distance */
+body.portal-open #sky .sky-inside{opacity:0}
+.sky-milky{transition:opacity 1.6s ease}
+body.portal-open #sky .sky-milky.ready{opacity:.3}
+[data-quality=low] .sky-inside{display:none}
+
+/* ---------- Log out (in Settings): red ---------- */
+.set-danger{border-top:1px solid var(--rule)}
+.logout-btn{
+  flex:0 0 auto;font:inherit;font-size:.88rem;font-weight:700;padding:10px 20px;border-radius:11px;cursor:pointer;
+  color:#fff;background:linear-gradient(180deg,#FF4A55,#D5202E);border:0;
+  box-shadow:0 8px 24px -10px rgba(255,60,70,.8),inset 0 1px 0 rgba(255,255,255,.25);
+  transition:filter .2s ease,transform .15s var(--spring),box-shadow .2s ease;
+}
+@media (hover:hover){.logout-btn:hover{filter:brightness(1.08);box-shadow:0 10px 28px -8px rgba(255,60,70,.95),inset 0 1px 0 rgba(255,255,255,.25)}}
+.logout-btn:active{transform:scale(.96)}
+@media (max-width:620px){.logout-btn{width:100%;padding:12px}}

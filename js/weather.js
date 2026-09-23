@@ -32,11 +32,12 @@
   const hm=d=>hhmm(minutesOf(d));
 
   /* the next sun event: sunrise before dawn, sunset during the day, tomorrow's sunrise at night */
-  function sunText(now,rise,set,riseTomorrow){
-    if(now<rise) return t("weather.sunrise",{time:hm(rise)});
-    if(now<set) return t("weather.sunset",{time:hm(set)});
-    return t("weather.sunriseTomorrow",{time:hm(riseTomorrow)});
+  function nextSun(now,rise,set,riseTomorrow){
+    if(now<rise) return [t("weather.sunriseLabel"),hm(rise)];
+    if(now<set) return [t("weather.sunsetLabel"),hm(set)];
+    return [t("weather.sunriseTomorrowLabel"),hm(riseTomorrow)];
   }
+  /* a small card: now (icon, temperature, sky, place) on top, the day in four figures below */
   function draw(){
     const now=new Date(), p=place||FALLBACK;
     let rise,set,riseT;
@@ -47,15 +48,18 @@
       const s=Astro.sun(now,p.lat,p.lon), tm=new Date(now); tm.setDate(tm.getDate()+1);
       rise=s.rise; set=s.set; riseT=Astro.sun(tm,p.lat,p.lon).rise;
     }
-    let html="";
-    if(data&&data.current){
-      const c=data.current, k=KIND(c.weather_code);
-      html+=`<span class="w-now">${svg(ICON[k](c.is_day),"w-ic")}<b>${Math.round(c.temperature_2m)}°</b>`+
-        `<span>${esc(t("weather."+(k==="rain"?"rain_":k)))}</span><em>${esc(p.name)}</em></span>`;
-      if(data.daily) html+=`<span class="w-day">${esc(t("weather.range",{max:Math.round(data.daily.temperature_2m_max[0]),min:Math.round(data.daily.temperature_2m_min[0])}))}`+
-        (data.daily.precipitation_probability_max&&data.daily.precipitation_probability_max[0]>=20?` · ${esc(t("weather.rain",{p:data.daily.precipitation_probability_max[0]}))}`:"")+`</span>`;
-    }
-    html+=`<span class="w-sun">${svg(SUN,"w-sun-ic")}${esc(sunText(now,rise,set,riseT))}</span>`;
+    const [sunLabel,sunTime]=nextSun(now,rise,set,riseT);
+    const c=data&&data.current, dl=data&&data.daily, k=c?KIND(c.weather_code):null;
+    const stat=(label,value)=>`<div class="w-stat"><small>${esc(label)}</small><b>${esc(value)}</b></div>`;
+    const html=`<div class="w-card">`+
+      (c?`<div class="w-main">${svg(ICON[k](c.is_day),"w-ic")}<b class="w-temp">${Math.round(c.temperature_2m)}°</b>`+
+          `<div class="w-what"><span>${esc(t("weather."+(k==="rain"?"rain_":k)))}</span><em>${esc(p.name)}</em></div></div>`
+        :`<div class="w-main"><div class="w-what"><em>${esc(p.name)}</em></div></div>`)+
+      `<div class="w-stats">`+
+        (dl?stat(t("weather.max"),Math.round(dl.temperature_2m_max[0])+"°")+stat(t("weather.min"),Math.round(dl.temperature_2m_min[0])+"°")+
+            stat(t("weather.rainLabel"),(dl.precipitation_probability_max?dl.precipitation_probability_max[0]:0)+" %"):"")+
+        `<div class="w-stat w-sunstat"><small>${svg(SUN,"w-sun-ic")}${esc(sunLabel)}</small><b>${esc(sunTime)}</b></div>`+
+      `</div></div>`;
     if(html!==box.dataset.html){ box.dataset.html=html; box.innerHTML=html; }
   }
 
