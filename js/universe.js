@@ -8,7 +8,7 @@
      a section flies the camera into its galaxy and its inside becomes the
      background; going back home flies you back out. Same scene all along.
    · Galaxies are clouds of thousands of stars (seeded, so they always look
-     the same). Far away they are drawn from a small pre-rendered picture;
+     the same), each with its own shape and colours. Far away they are drawn from a small pre-rendered picture;
      up close, star by star.
    · Universe.go(scene, {animate, duration, onArrive}) moves the camera.
      Without animations (or Quality = Low) it simply jumps.
@@ -18,12 +18,28 @@ const Universe=(function(){
   const HQ=highQuality();
   /* every galaxy: its kind, size, angle, colours, and where it sits seen from home
      (at: fraction of the half screen, x to the right and y down; z: how far) */
+  /* each has its own colours: core (the bulge), stars (the disk, [colour, weight]) and glow (inner, outer) */
   const GALAXIES={
-    nolan:    {kind:"oval",      r:10,  n:6500, tilt:1.10, roll:-.50, warm:.8,  at:{d:[-.8,.78],m:[-.95,.82]},    z:30},
-    uc3m:     {kind:"spiral",    r:5.5, n:5200, tilt:.85,  roll:.55,  warm:.25, at:{d:[.62,-.42],m:[.62,-.56]},   z:60},
-    forge:    {kind:"elliptical",r:4.2, n:3200, tilt:.6,   roll:-.2,  warm:1,   at:{d:[-.66,-.5],m:[-.62,-.74]},  z:75},
-    andromeda:{kind:"spiral",    r:6,   n:3800, tilt:1.25, roll:-.9,  warm:.45, at:{d:[.82,.42],m:[.7,.72]},      z:110},
-    sombrero: {kind:"edge",      r:4.6, n:3000, tilt:1.5,  roll:.18,  warm:.7,  at:{d:[-.2,-.78],m:[.05,-.86]},   z:130}
+    /* home: a calm golden oval, rose at the edges */
+    nolan:    {kind:"oval",      r:10,  n:6500, tilt:1.10, roll:-.50, at:{d:[-.8,.78],m:[-.95,.82]},  z:30,
+               core:"255,214,160", stars:[["255,236,208",5],["255,200,170",2],["246,190,210",1.2],["220,226,255",.8]],
+               glow:["255,205,150","210,140,150"]},
+    /* UC3M: a lively blue spiral with a sea-green heart and pink star-forming knots */
+    uc3m:     {kind:"spiral",    r:5.5, n:5200, tilt:.85,  roll:.55,  at:{d:[.62,-.42],m:[.62,-.56]}, z:60,
+               core:"200,255,232", stars:[["190,214,255",4],["150,235,215",2],["236,242,255",2],["255,170,205",.9]],
+               glow:["120,230,200","80,130,230"]},
+    /* Nolan (under construction): a big round ember, amber and orange */
+    forge:    {kind:"elliptical",r:4.2, n:3200, tilt:.6,   roll:-.2,  at:{d:[-.66,-.5],m:[-.62,-.74]}, z:75,
+               core:"255,196,120", stars:[["255,176,96",3],["255,214,160",2],["255,140,80",1]],
+               glow:["255,170,90","200,90,40"]},
+    /* Andrómeda: a wide violet spiral, seen almost flat */
+    andromeda:{kind:"spiral",    r:6,   n:3800, tilt:.55,  roll:-.9,  at:{d:[.82,.42],m:[.7,.72]},     z:110,
+               core:"236,216,255", stars:[["200,180,255",3],["170,200,255",2],["255,200,240",1],["240,236,255",1.5]],
+               glow:["200,170,255","110,90,200"]},
+    /* Sombrero: seen edge-on, a bright white bulge cut by a dark lane of dust */
+    sombrero: {kind:"edge",      r:4.6, n:3000, tilt:1.52, roll:.18,  at:{d:[-.2,-.78],m:[.05,-.86]},  z:130,
+               core:"255,246,226", stars:[["255,240,215",3],["230,230,240",2],["255,210,170",1]],
+               glow:["255,240,215","180,170,160"]}
   };
   /* scenes: where the camera stands */
   const IDS=Object.keys(GALAXIES);
@@ -33,27 +49,26 @@ const Universe=(function(){
   let seed=1;
   const rnd=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; };
   const gauss=()=>{ let u=0; for(let i=0;i<4;i++) u+=rnd(); return (u-2)/1.15; };
-  const COL={warm:"255,222,184",cream:"255,242,226",white:"236,240,255",blue:"196,214,255",pink:"255,190,212"};
+  const pick=list=>{ const tot=list.reduce((t,c)=>t+c[1],0); let r=rnd()*tot; for(const c of list){ r-=c[1]; if(r<=0) return c[0]; } return list[0][0]; };
 
   /* a galaxy's stars, in its own frame (unit ≈ its radius) */
   function makeStars(g,idx){
     seed=idx*7919+11;
     const n=Math.round(g.n*(HQ?1:.4)), out=[];
+    const bulgeShare={elliptical:1,spiral:.18,edge:.42,oval:.3}[g.kind];
     for(let i=0;i<n;i++){
       let px,py,pz,col;
-      const bulgeShare=g.kind==="elliptical"?1:g.kind==="spiral"?.18:g.kind==="edge"?.35:.3;
       if(rnd()<bulgeShare){
-        const s=g.kind==="elliptical"?[.42,.3,.28]:[.12,.1,.08];
+        const s=g.kind==="elliptical"?[.42,.34,.3]:g.kind==="edge"?[.14,.12,.12]:[.12,.1,.08];
         px=gauss()*s[0]; py=gauss()*s[1]; pz=gauss()*s[2];
-        col=rnd()<g.warm?COL.warm:COL.cream;
+        col=rnd()<.6?g.core:pick(g.stars);
       } else {
         let r,th;
-        const arms=g.kind==="spiral"?.5:g.kind==="oval"?.18:0;
-        do{ r=-Math.log(1-rnd()*.985)*.3; th=rnd()*Math.PI*2; }
+        const arms=g.kind==="spiral"?.55:g.kind==="oval"?.18:0;
+        do{ r=-Math.log(1-rnd()*.985)*(g.kind==="edge"?.36:.3); th=rnd()*Math.PI*2; }
         while(arms&&rnd()>1-arms+arms*Math.cos(2*(th-2.1*Math.log(r*10+.6))));
-        px=Math.cos(th)*r; py=Math.sin(th)*r*(g.kind==="oval"?.78:1); pz=gauss()*(g.kind==="edge"?.025:.02+r*.04);
-        const k=rnd();
-        col=k<g.warm*.35?COL.warm:k<.72?COL.cream:k<.94?COL.blue:(g.kind==="spiral"?COL.pink:COL.white);
+        px=Math.cos(th)*r; py=Math.sin(th)*r*(g.kind==="oval"?.78:1); pz=gauss()*(g.kind==="edge"?.012:.02+r*.04);
+        col=pick(g.stars);
       }
       out.push({px,py,pz,col,b:.25+rnd()*.65,s:.6+rnd()*.9});
     }
@@ -81,10 +96,10 @@ const Universe=(function(){
         const wx=s.px*cr-y1*sr, wy=s.px*sr+y1*cr;
         return {x:cx+wx*g.r*3, y:cy+wy*g.r*3, z:g.z+z1*g.r*3, col:s.col, b:s.b, s:s.s};
       });
-      world[id]={cx,cy,cz:g.z,r:g.r,pts,sprite:sprite(g,pts,cx,cy),flat:Math.max(.25,ct)};
+      world[id]={g,cx,cy,cz:g.z,r:g.r,pts,sprite:sprite(g,pts,cx,cy)};
     });
     if(!scene) scene=startScene();
-    Object.assign(cam,camFor(scene));
+    if(!anim) Object.assign(cam,camFor(scene));
     draw();
   }
   /* a small picture of a galaxy, for when it is far away */
@@ -92,17 +107,40 @@ const Universe=(function(){
     const S=256, c=document.createElement("canvas"); c.width=c.height=S;
     const k=c.getContext("2d"), R=g.r*3.3, sc=S/2/R;
     k.globalCompositeOperation="lighter";
-    const gl=k.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2);
-    gl.addColorStop(0,"rgba(255,236,210,.55)"); gl.addColorStop(.1,"rgba(255,225,195,.22)"); gl.addColorStop(.45,"rgba(170,170,210,.05)"); gl.addColorStop(1,"rgba(0,0,0,0)");
-    k.fillStyle=gl; k.fillRect(0,0,S,S);
+    glowShape(k,g,S/2,S/2,S/2,1);
     for(const p of pts){ k.fillStyle=`rgba(${p.col},${p.b*.55})`; k.fillRect(S/2+(p.x-cx)*sc,S/2+(p.y-cy)*sc,1,1); }
+    if(g.kind==="edge") dustLane(k,g,S/2,S/2,S/2,1);
     return c;
+  }
+  /* the glow: an ellipse along the disk in the galaxy's colours, and a rounder core */
+  function glowShape(k,g,px,py,pr,alpha){
+    const flat=Math.max(.12,Math.abs(Math.cos(g.tilt)));
+    k.save(); k.translate(px,py); k.rotate(g.roll);
+    /* the disk */
+    k.save(); k.scale(1,g.kind==="elliptical"?.8:flat);
+    let gr=k.createRadialGradient(0,0,0,0,0,pr);
+    gr.addColorStop(0,`rgba(${g.glow[0]},${.32*alpha})`); gr.addColorStop(.3,`rgba(${g.glow[1]},${.12*alpha})`); gr.addColorStop(1,`rgba(${g.glow[1]},0)`);
+    k.fillStyle=gr; k.beginPath(); k.arc(0,0,pr,0,6.283); k.fill(); k.restore();
+    /* the core: small and bright; round, or a little squashed */
+    const cr=pr*(g.kind==="elliptical"?.45:g.kind==="edge"?.3:.22);
+    k.save(); k.scale(1,g.kind==="edge"?.75:Math.max(.55,flat));
+    gr=k.createRadialGradient(0,0,0,0,0,cr);
+    gr.addColorStop(0,`rgba(255,255,255,${.7*alpha})`); gr.addColorStop(.2,`rgba(${g.core},${.5*alpha})`); gr.addColorStop(1,`rgba(${g.core},0)`);
+    k.fillStyle=gr; k.beginPath(); k.arc(0,0,cr,0,6.283); k.fill(); k.restore();
+    k.restore();
+  }
+  /* Sombrero's dark lane of dust, right across its middle */
+  function dustLane(k,g,px,py,pr,alpha){
+    k.save(); k.globalCompositeOperation="source-over"; k.translate(px,py); k.rotate(g.roll); k.scale(1,.05);
+    const gr=k.createRadialGradient(0,0,0,0,0,pr*.9);
+    gr.addColorStop(0,`rgba(4,4,8,${.75*alpha})`); gr.addColorStop(.8,`rgba(4,4,8,${.5*alpha})`); gr.addColorStop(1,"rgba(4,4,8,0)");
+    k.fillStyle=gr; k.beginPath(); k.arc(0,0,pr*.9,0,6.283); k.fill(); k.restore();
   }
 
   /* ---------- scenes ---------- */
   function camFor(s){
     if(s==="gate") return {x:0,y:0,z:-430};
-    if(s==="home"||!GALAXIES[s]) return {x:0,y:0,z:0};
+    if(s==="home"||!GALAXIES[s]||!world[s]) return {x:0,y:0,z:0};
     const w=world[s], r=w.r*3;
     /* close to the galaxy, a little off its centre: the core glows high on the right, over the header */
     return {x:w.cx-r*.5, y:w.cy+r*.32, z:w.cz-r*1.3};
@@ -139,13 +177,7 @@ const Universe=(function(){
       const k=F/Math.max(dz,.5), px=cx0+(w.cx-cam.x)*k, py=cy0+(w.cy-cam.y)*k, pr=R*1.1*k;
       /* the glow: fades once we are inside */
       const inside=Math.min(1,Math.max(0,(dz-R*.5)/(R*1.2)));
-      if(dz>0&&pr>2&&inside>0){
-        const gr=x.createRadialGradient(px,py,0,px,py,pr*1.05);
-        gr.addColorStop(0,`rgba(255,236,208,${.55*inside})`); gr.addColorStop(.08,`rgba(255,222,188,${.3*inside})`);
-        gr.addColorStop(.35,`rgba(190,180,215,${.07*inside})`); gr.addColorStop(1,"rgba(0,0,0,0)");
-        x.save(); x.translate(px,py); x.scale(1,w.flat); x.translate(-px,-py);
-        x.globalAlpha=1; x.fillStyle=gr; x.beginPath(); x.arc(px,py,pr*1.05,0,6.283); x.fill(); x.restore();
-      }
+      if(dz>0&&pr>2&&inside>0&&(pr>60)){ x.globalAlpha=1; glowShape(x,w.g,px,py,pr*1.05,inside*Math.min(1,(pr-60)/60)); }
       /* far: the picture; near: star by star; in between, one fades into the other */
       const mix=Math.min(1,Math.max(0,(pr-70)/60));
       if(mix<1&&dz>0){
@@ -164,6 +196,7 @@ const Universe=(function(){
           x.globalAlpha=mix*p.b*Math.min(1,.3+kk*.004)*Math.min(1,pz/1.2);
           if(sz<2) x.fillRect(sx-sz/2,sy-sz/2,sz,sz); else { x.beginPath(); x.arc(sx,sy,sz/2,0,6.283); x.fill(); }
         }
+        if(w.g.kind==="edge"&&dz>0){ x.globalAlpha=1; dustLane(x,w.g,px,py,pr,mix); x.globalCompositeOperation="lighter"; }
       }
     }
     x.globalCompositeOperation="source-over"; x.globalAlpha=1;
@@ -172,27 +205,34 @@ const Universe=(function(){
   /* ---------- moving the camera ---------- */
   const easeInOut=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
   function go(to,{animate=true,duration=2600,onArrive,arriveAt=.85}={}){
+    /* already flying there: let that flight finish */
+    if(anim&&to===scene){ if(onArrive) onArrive(); return; }
     if(anim){ cancelAnimationFrame(anim.raf); anim=null; }
-    const target=camFor(to), from={...cam};
     const sameScene=to===scene;
     scene=to;
-    if(!x){ if(onArrive) onArrive(); return; }
+    if(!x){ if(onArrive) onArrive(); return; }          /* no universe drawn (Quality = Low) */
+    const target=camFor(to), from={...cam};
     if(!animate||!fancy()||sameScene){ Object.assign(cam,target); draw(); if(onArrive) onArrive(); return; }
     const t0=performance.now(); let arrived=false;
+    const me={raf:0}; anim=me;
     const step=now=>{
+      if(anim!==me) return;                               /* replaced by a newer flight */
       const p=Math.min(1,(now-t0)/duration), e=easeInOut(p);
       cam.x=from.x+(target.x-from.x)*e; cam.y=from.y+(target.y-from.y)*e; cam.z=from.z+(target.z-from.z)*e;
       /* while flying, the scattered stars shine more: that is where the sense of speed comes from */
       draw(Math.sin(Math.PI*p)*.9);
       if(p>=arriveAt&&!arrived){ arrived=true; if(onArrive) onArrive(); }
-      if(p<1) anim.raf=requestAnimationFrame(step); else anim=null;
+      if(anim!==me) return;
+      if(p<1) me.raf=requestAnimationFrame(step); else anim=null;
     };
-    anim={raf:requestAnimationFrame(step)};
+    me.raf=requestAnimationFrame(step);
   }
 
   if(cv&&HQ){
     place();
-    let rz=0; window.addEventListener("resize",()=>{ clearTimeout(rz); rz=setTimeout(place,200); });
+    /* only a real change of size: the phone's address bar showing or hiding is not one */
+    let rz=0; window.addEventListener("resize",()=>{ clearTimeout(rz); rz=setTimeout(()=>{
+      if(Math.abs(innerWidth-W)>2||Math.abs(innerHeight-H)>140) place(); },200); });
   }
   return {go, scene:()=>scene, busy:()=>!!anim, GALAXIES};
 })();

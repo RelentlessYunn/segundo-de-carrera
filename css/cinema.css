@@ -98,9 +98,6 @@ html[data-locked] #sky{opacity:0}
 .portal.intro .p-view{animation:rise 1s 2.5s var(--ease) backwards}
 .portal.intro .p-card{animation-delay:2.6s}
 .portal.intro .p-card+.p-card{animation-delay:2.75s}
-/* the sky itself fades up from black */
-body:has(.portal.intro) #sky{animation:sky-up 2.4s ease backwards}
-@keyframes sky-up{from{opacity:0}}
 
 /* ---------- entering UC3M: the timetable comes forward out of the dark ---------- */
 body.arriving>header.top,body.arriving>nav.bar,body.arriving>div.wrap{animation:arrive-page 1s cubic-bezier(.2,.7,.2,1) backwards}
@@ -198,3 +195,7 @@ html.flying #sky{opacity:1;transition:opacity 4.5s ease}
 @media (hover:hover){.logout-btn:hover{filter:brightness(1.08);box-shadow:0 10px 28px -8px rgba(255,60,70,.95),inset 0 1px 0 rgba(255,255,255,.25)}}
 .logout-btn:active{transform:scale(.96)}
 @media (max-width:620px){.logout-btn{width:100%;padding:12px}}
+
+/* ---------- no visible scroll bars (scrolling still works: wheel, touch, keys) ---------- */
+html,body,.portal,body>div.wrap,.m-day,.tbl{scrollbar-width:none;-ms-overflow-style:none}
+html::-webkit-scrollbar,body::-webkit-scrollbar,.portal::-webkit-scrollbar,body>div.wrap::-webkit-scrollbar,.tbl::-webkit-scrollbar{display:none;width:0;height:0}

@@ -27,7 +27,10 @@ const Home=(function(){
     $("#homeUc3mInfo").innerHTML=(w?`<i>${esc(t("header.week",{n:w.n}))}</i>`:"")+`<span>${esc(cls)}</span>`+(exam?`<span>${esc(exam)}</span>`:"");
   }
   /* which galaxy each view of home lives in */
-  const sceneOf=(view,sub)=>view==="nolan"?"forge":view==="soon"?(Universe.GALAXIES[sub]?sub:"home"):"home";
+  /* Notes and Settings belong to every section: they open where you are, without moving the camera */
+  const PAGES=["notes","settings"];
+  const sceneOf=(view,sub)=>PAGES.includes(view)?Universe.scene()||"home":view==="nolan"?"forge":view==="soon"?(Universe.GALAXIES[sub]?sub:"home"):"home";
+  let lastView="home";                                 /* the last view of home that is not Notes or Settings */
   const SOON_NAMES={andromeda:"Andrómeda",sombrero:"Sombrero"};
   function renderSoon(id){
     $("#soonView").innerHTML=`<span class="p-ic big" style="--ac:#9FB3FF">${$(`.p-card[data-galaxy="${id}"] .p-ic`)?$(`.p-card[data-galaxy="${id}"] .p-ic`).innerHTML:""}</span>`+
@@ -40,6 +43,12 @@ const Home=(function(){
     /* (behind the PIN the camera stays in deep space, ready for the flight) */
     if(!Gate.locked()){ Universe.go(sceneOf(view,subroute),{animate:opened,duration:2400}); opened=true; }
     if(view==="soon") renderSoon(subroute);
+    /* "← Back" in Notes and Settings returns to where you came from: a tab of the app, or a view of home */
+    if(PAGES.includes(view)){
+      const fromApp=P.hidden||P.classList.contains("leaving");
+      const back=fromApp?"#"+(backTo||"schedule"):"#"+lastView;
+      $$("#portal .p-back-top").forEach(a=>a.setAttribute("href",back));
+    } else lastView=view+(subroute?"/"+subroute:"");
     /* the UC3M card points at the tab you were on */
     if(backTo) $("#homeUc3m").setAttribute("href","#"+backTo);
     if(view==="nolan") Nolan.render($("#nolanView"),subroute||"");

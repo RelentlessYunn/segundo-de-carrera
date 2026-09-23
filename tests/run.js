@@ -99,8 +99,12 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.waitForTimeout(3200);
     ok(await p.evaluate(()=>document.getElementById("portal").hidden&&location.hash==="#schedule"&&!Universe.busy()&&Universe.scene()==="uc3m"),
       "…and lands on the timetable, inside that galaxy");
-    await p.goto(PAGE+"#home"); await p.waitForTimeout(200);
-    ok(await p.evaluate(()=>Universe.scene()==="home"),"going home flies back to the home galaxy");
+    await p.click('header a[href="#notes"]'); await p.waitForTimeout(600);
+    ok(await p.evaluate(()=>Universe.scene()==="uc3m"&&!document.getElementById("notes").hidden&&document.querySelector("#notes .p-back-top").getAttribute("href")==="#schedule"),
+      "Notes open from UC3M without leaving its galaxy, and Back returns to the timetable");
+    await p.click("#notes .p-back-top"); await p.waitForTimeout(600);
+    await p.click("header .home-btn"); await p.waitForTimeout(200);
+    ok(await p.evaluate(()=>Universe.scene()==="home"&&!!document.querySelector("header .home-btn .logo-mark")),"the logo takes you home, flying back to the home galaxy");
     await p.waitForTimeout(2800);
     await p.click('.p-card[data-galaxy="andromeda"]'); await p.waitForTimeout(3600);
     ok(await p.evaluate(()=>Universe.scene()==="andromeda"&&!document.getElementById("soonView").hidden&&location.hash==="#soon/andromeda"),"a galaxy to explore opens inside its own galaxy");

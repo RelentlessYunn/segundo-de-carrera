@@ -27,8 +27,11 @@ The whole app is one universe, drawn in 3D on a canvas behind everything (`js/un
 - **Home is the Nolan galaxy.** After the PIN the camera flies from deep space into it (five seconds, the far stars fading in around you) and stays there: home's background *is* that galaxy, low on the left.
 - **Each section is a galaxy you can see from home**: UC3M, Nolan (under construction), and two kept for future sections, Andrómeda and Sombrero (cards "Por explorar" on home, route `#soon/<id>`).
 - **Opening a section** flies the camera into its galaxy (`Home.enter` → `Universe.go(id)`), and the section appears inside it: UC3M's timetable has UC3M's galaxy glowing over the header. **Going home** flies back out.
+- Every galaxy has its own personality: shape (`oval`, `spiral`, `elliptical`, `edge`), colours of its core, stars and glow, and details such as Sombrero's dark dust lane. Nolan (home) is a golden oval; UC3M a blue spiral with a sea-green heart; Nolan-in-construction an amber ember; Andrómeda a violet spiral; Sombrero edge-on.
 - Galaxies are clouds of thousands of stars (seeded: always the same). Far away they are drawn from a small pre-rendered picture; close, star by star. The scene is only redrawn while the camera moves or the window changes size.
-- **To add a section**: add a galaxy to `GALAXIES` in `universe.js` (kind `oval`, `spiral`, `elliptical` or `edge`; size; angle; where it sits seen from home), a card with `data-galaxy="<id>"` in home, and its view.
+- **To add a section**: add a galaxy to `GALAXIES` in `universe.js` (kind, size, angle, colours, where it sits seen from home), a card with `data-galaxy="<id>"` in home, and its view.
+- **Notes and Settings belong to every section**: their buttons are in UC3M's header and on home, they open where you are without moving the camera, and "← Volver" takes you back there.
+- **The logo is the home button** (top left in UC3M).
 - The opening of home (the N drawing itself, NOLAN appearing) plays after the PIN and when the app starts.
 - **Log out** (Settings, red button): `Gate.lock()` forgets the device, puts the camera back in deep space and returns to home, so the next PIN lands at home.
 - With Animations = None or Quality = Low there are no flights: the camera jumps. Quality = Low and the light theme hide the universe.
@@ -212,7 +215,7 @@ Settings are not in the cloud: they are per device (`localStorage`, key `setting
 
 ## Publishing a version
 
-1. Versions are numbered 0.48, 0.49… Bump the number in `index.html`: the footer (`v0.48`) and every `?v=0.48` of the code files, all at once. If the logo changes, also bump the `?v=` of the icons in `index.html` and `manifest.webmanifest`: browsers keep favicons cached for a long time and only fetch them again when the URL changes.
+1. Versions are numbered 0.49, 0.50… Bump the number in `index.html`: the footer (`v0.49`) and every `?v=0.49` of the code files, all at once. If the logo changes, also bump the `?v=` of the icons in `index.html` and `manifest.webmanifest`: browsers keep favicons cached for a long time and only fetch them again when the URL changes.
 2. Upload the changed files to GitHub, keeping the `js/` and `css/` folders.
 3. GitHub Pages takes a minute or two. The footer number tells you which version you are seeing.
 
@@ -222,7 +225,7 @@ Settings are not in the cloud: they are per device (`localStorage`, key `setting
 node tests/run.js
 ```
 
-Needs Node and Playwright. 62 checks in a real browser:
+Needs Node and Playwright. 63 checks in a real browser:
 
 - the page loads without errors;
 - the PIN screen (wrong PIN, the flight into the galaxy, remembered device, PIN not in the page, Log out), starting at home, the camera flights between galaxies (UC3M, back home, a galaxy to explore), and Notes and Settings inside home;
