@@ -21,9 +21,19 @@
   const chip=(e,closing)=>{
     const S=SUBJECTS[e.subject];
     const label=t("event.title",{type:typeName(e.type),subject:S.name})+(e.noDay?", "+t("event.noDay"):"")+(closing?", "+t("planner.closes"):"");
-    return `<button class="m-chip ${e.type}${e.noDay?" tbd":""}${closing?" closing":""}" data-ev="${EVENTS.indexOf(e)}" style="--sc:${S.color}" `+
+    const opens=!closing&&!e.noDay&&e.until&&e.until>e.date;   /* a window of several days starts here */
+    return `<button class="m-chip ${e.type}${e.noDay?" tbd":""}${closing?" closing":""}${opens?" opens":""}" data-ev="${EVENTS.indexOf(e)}" style="--sc:${S.color}" `+
       `aria-label="${esc(label)}"><i></i><span>${esc(S.short)} · ${esc(closing?t("planner.closes"):typeName(e.type))}</span></button>`;
   };
+
+  /* windows of several days (an online test, a submission…): a line in the
+     subject's colour joins the opening chip to the closing one, across the
+     days in between. They go first in each day so the lines line up. */
+  const spans=EVENTS.filter(e=>!e.noDay&&e.until&&e.until>e.date).sort(byDate);
+  const link=e=>`<i class="m-link" style="--sc:${SUBJECTS[e.subject].color}" aria-hidden="true"></i>`;
+  /* what a day shows for those windows: the chips on the first and last day, a line on the others */
+  const spanItems=(k,chips)=>spans.filter(e=>e.date<=k&&e.until>=k)
+    .map(e=>!chips?link(e):e.date===k?chip(e):e.until===k?chip(e,true):link(e));
 
   function render(){
     const mo=months[current], today=todayISO();
@@ -37,7 +47,7 @@
     const first=new Date(mo.y,mo.m,1).getDay(), lead=first===0?6:first-1;
     const total=new Date(mo.y,mo.m+1,0).getDate();
     /* days of the previous and next month fill the rows */
-    const outside=dt=>`<div class="m-day out">${weekTag(isoDate(dt))}<div class="m-date">${dt.getDate()}</div></div>`;
+    const outside=dt=>`<div class="m-day out">${weekTag(isoDate(dt))}<div class="m-date">${dt.getDate()}</div>${spanItems(isoDate(dt),false).join("")}</div>`;
     for(let i=lead;i>0;i--) html+=outside(new Date(mo.y,mo.m,1-i));
 
     for(let d=1;d<=total;d++){
@@ -56,8 +66,8 @@
       if(k===today) cls+=" today";
       if(mark) tag=`<div class="m-tag mark">${esc(mark.label)}</div>`+tag;
       /* the chip goes on its date; windows of several days also get one on the closing day */
-      const chips=EVENTS.filter(e=>e.date===k).map(e=>chip(e))
-        .concat(EVENTS.filter(e=>e.until===k&&e.date!==k).map(e=>chip(e,true)));
+      const chips=spanItems(k,true)
+        .concat(EVENTS.filter(e=>e.date===k&&!spans.includes(e)).map(e=>chip(e)));
       html+=`<div class="${cls}"${k===today?' aria-current="date"':""}>${weekTag(k)}<div class="m-date">${d}</div>${tag}${chips.join("")}</div>`;
     }
     const rest=(lead+total)%7;

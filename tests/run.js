@@ -129,6 +129,15 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.context().close();
   }
 
+  section("Planner");
+  {
+    const p=await open(b,{time:"2026-10-20T10:00:00"});
+    const r=await p.evaluate(()=>({opens:document.querySelectorAll("#planner-grid .m-chip.opens").length,
+      closes:document.querySelectorAll("#planner-grid .m-chip.closing").length,links:document.querySelectorAll("#planner-grid .m-link").length}));
+    ok(r.opens===1&&r.closes===1&&r.links===4,`a window of several days (26–31 Oct) is joined by a line (${r.links} days in between)`);
+    await p.context().close();
+  }
+
   section("Home");
   {
     const p=await open(b,{hash:"subjects"});

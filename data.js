@@ -112,7 +112,8 @@ const TERMS=[
 const GENERAL_TASKS=[
  ["Apuntar las fechas de los exámenes finales","El calendario oficial solo da las ventanas: 16–22 de diciembre y 11–25 de enero. El día de cada asignatura lo publica el calendario de exámenes de la titulación."],
  ["Preguntar por las cuatro prácticas de los lunes","Si son obligatorias o evaluables, el 1081 no te sirve tal cual."],
- ["Esperar el calendario oficial de exámenes","Las diapositivas de TALF llevan fechas del curso pasado sin actualizar."]
+ ["Esperar el calendario oficial de exámenes","Las diapositivas de TALF llevan fechas del curso pasado sin actualizar."],
+ ["Decidir cómo pasarle las notas a Claude","Claude no puede leer la nube (JSONBin). De momento: Notas → Copiar notas y pegarlas en el chat."]
 ];
 
 /* Official academic calendar 2026/27 (v9, 3 Jun 2026). from/to inclusive.
@@ -185,6 +186,6 @@ const TASKS={
  is:[["Adelantar el trabajo individual","Se entrega en la semana 14, la peor del cuatrimestre. Trabájalo en las prácticas de octubre y noviembre."]],
  ec:[["Instalar WepSIM y CREATOR antes del laboratorio 1","El jueves 24 a las 14:00 en INF 7.0.J04. Llega con el entorno montado."]],
  eco:[["Confirmar los viernes de recuperación","Tres magistrales caen en lunes festivo (12 oct, 2 nov y 7 dic) y se recuperan online un viernes. Pregunta las fechas."]],
- dcp:[],
+ dcp:[["Confirmar el día del cuestionario de autoevaluación","En la web está el miércoles 4 de noviembre (semana 9), pero la guía docente lo pone en la semana 8. Pregúntalo en clase o mira Aula Global."]],
  est:[]
 };

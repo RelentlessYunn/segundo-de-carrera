@@ -99,7 +99,7 @@ Each one has its own mobile tweaks at the end.
 - `type`: `ex` exam · `en` submission · `cl` class or lab · `cf` clash.
 - The week and the date label ("vie 13 nov") are computed.
 - If **the day is unknown**: use that week's Saturday and `noDay:1`. It shows as "semana N". A custom text can go in `label`.
-- If it **lasts several days** (an online test open Monday to Saturday): `until:"2026-10-31"`.
+- If it **lasts several days** (an online test open Monday to Saturday): `until:"2026-10-31"`. The planner joins the first and last day with a line.
 - If it is **online**: `online:1`, so there is no warning that there is no class that day.
 - It shows up by itself in the subject card, *Today*, the planner, *Exams* and the week.
 
@@ -160,7 +160,7 @@ Settings are not in the cloud: they are per device (`localStorage`, key `setting
 
 ## Publishing a version
 
-1. Bump the number in `index.html`: the footer (`<p class="version">v41</p>`) and every `?v=41`, all at once.
+1. Bump the number in `index.html`: the footer (`<p class="version">v42</p>`) and every `?v=42`, all at once.
 2. Upload the changed files to GitHub, keeping the `js/` and `css/` folders.
 3. GitHub Pages takes a minute or two. The footer number tells you which version you are seeing.
 
@@ -170,12 +170,12 @@ Settings are not in the cloud: they are per device (`localStorage`, key `setting
 node tests/run.js
 ```
 
-Needs Node and Playwright. 42 checks in a real browser:
+Needs Node and Playwright. 43 checks in a real browser:
 
 - the page loads without errors;
 - the tabs, and old Spanish links;
 - the red line at different times, the minute change and midnight;
-- dates without a day and multi-day windows;
+- dates without a day and multi-day windows (and the line that joins them in the planner);
 - the cloud, with a simulated JSONBin: a failed or slow first read and migration of old ticks;
 - grades with a comma;
 - the home window;

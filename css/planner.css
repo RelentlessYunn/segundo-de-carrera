@@ -77,7 +77,8 @@
   .m-grid.days{grid-auto-rows:66px}
   .m-day{flex-flow:row wrap;align-content:flex-start;gap:3px;padding:4px 3px}
   .m-date{width:100%;align-self:auto;text-align:center;margin-bottom:1px;font-size:.72rem}
-  .m-wk{position:static;width:100%;text-align:center;font-size:.55rem;margin-bottom:-2px}
+  /* the week number sits in the corner, so Mondays keep the same rows as the other days */
+  .m-wk{top:3px;left:4px;font-size:.52rem}
   .m-tag{width:100%;text-align:center;font-size:.53rem;line-height:1.1}
   .m-chip{width:auto;padding:3px;border:0;background:none!important;border-radius:50%}
   .m-chip span{display:none}
@@ -87,4 +88,34 @@
 @media (max-width:380px){
   .m-grid.days{grid-auto-rows:58px}
   .m-name{flex:0 0 11ch;font-size:.88rem}
+}
+
+/* ---- windows of several days: a line joins the opening and closing chips ----
+   .opens: line from the chip to the right edge · .closing: from the left edge
+   to the chip · .m-link: the days in between, edge to edge. The link has the
+   same height as a chip so the line keeps its height from day to day. */
+.m-chip.opens,.m-chip.closing{position:relative;overflow:visible}
+.m-chip.opens::after,.m-chip.closing::before,.m-link::before{
+  content:"";position:absolute;top:50%;height:2px;margin-top:-1px;border-radius:2px;
+  background:var(--sc);box-shadow:0 0 6px color-mix(in srgb,var(--sc) 55%,transparent);pointer-events:none;
+}
+.m-chip.opens::after{left:100%;width:9px}
+.m-chip.closing::before{right:100%;width:9px}
+.m-link{
+  position:relative;display:block;flex:0 0 auto;margin:0 -8px;
+  font-size:.7rem;line-height:1.15;padding:4px 0;border:1px solid transparent;
+}
+.m-link::after{content:"\00a0"}
+.m-link::before{left:0;right:0}
+.m-day.out .m-link{opacity:.45}
+@media (max-width:1000px){
+  .m-link{font-size:.64rem;padding:3px 0}
+}
+@media (max-width:620px){
+  /* on the phone the chips are dots: windows take a whole row so the line can run through it */
+  .m-chip.opens,.m-chip.closing{width:100%;border-radius:0}
+  .m-chip.closing{justify-content:flex-end}
+  .m-chip.opens::after{left:13px;right:-3px;width:auto}
+  .m-chip.closing::before{left:-3px;right:13px;width:auto}
+  .m-link{width:calc(100% + 6px);margin:0 -3px;padding:3px 0;border:0;font-size:10px;line-height:10px}
 }
