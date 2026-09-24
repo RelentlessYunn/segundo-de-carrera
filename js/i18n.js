@@ -100,6 +100,13 @@ es:{
   "cloud.saving":"Guardando…", "cloud.saved":"Guardado.", "cloud.saveFailed":"No se pudo guardar. Se reintentará.",
   "cloud.waiting":"Sin conexión: se guardará al conectar.",
   "cloud.offline":"Sin conexión: se guarda en este dispositivo y se subirá al volver la conexión.",
+  "weather.tonight":"Esta noche", "weather.planets":"Se ven {list}", "weather.noPlanets":"Ningún planeta a la vista",
+  "weather.shower":"Lluvia de estrellas: {name}", "weather.showerPeak":"Máximo de las {name}",
+  "moon.new":"Luna nueva", "moon.waxingCrescent":"Luna creciente", "moon.firstQuarter":"Cuarto creciente", "moon.waxingGibbous":"Luna gibosa creciente",
+  "moon.full":"Luna llena", "moon.waningGibbous":"Luna gibosa menguante", "moon.lastQuarter":"Cuarto menguante", "moon.waningCrescent":"Luna menguante",
+  "planet.mercury":"Mercurio", "planet.venus":"Venus", "planet.mars":"Marte", "planet.jupiter":"Júpiter", "planet.saturn":"Saturno",
+  "shower.quadrantids":"Cuadrántidas", "shower.lyrids":"Líridas", "shower.etaAquariids":"Eta Acuáridas", "shower.perseids":"Perseidas",
+  "shower.draconids":"Dracónidas", "shower.orionids":"Oriónidas", "shower.leonids":"Leónidas", "shower.geminids":"Gemínidas", "shower.ursids":"Úrsidas",
 
   /* ---- static texts of index.html ---- */
   "s.home":"Inicio", "s.brand":"Nolan · UC3M · ", "s.aulaGlobalAria":"Aula Global (se abre en otra pestaña)",
@@ -201,6 +208,13 @@ en:{
   "cloud.saving":"Saving…", "cloud.saved":"Saved.", "cloud.saveFailed":"Could not save. It will retry.",
   "cloud.waiting":"Offline: it will save once connected.",
   "cloud.offline":"Offline: kept on this device, uploaded when the connection is back.",
+  "weather.tonight":"Tonight", "weather.planets":"{list} in view", "weather.noPlanets":"No planets in view",
+  "weather.shower":"Meteor shower: {name}", "weather.showerPeak":"Peak of the {name}",
+  "moon.new":"New Moon", "moon.waxingCrescent":"Waxing crescent", "moon.firstQuarter":"First quarter", "moon.waxingGibbous":"Waxing gibbous",
+  "moon.full":"Full Moon", "moon.waningGibbous":"Waning gibbous", "moon.lastQuarter":"Last quarter", "moon.waningCrescent":"Waning crescent",
+  "planet.mercury":"Mercury", "planet.venus":"Venus", "planet.mars":"Mars", "planet.jupiter":"Jupiter", "planet.saturn":"Saturn",
+  "shower.quadrantids":"Quadrantids", "shower.lyrids":"Lyrids", "shower.etaAquariids":"Eta Aquariids", "shower.perseids":"Perseids",
+  "shower.draconids":"Draconids", "shower.orionids":"Orionids", "shower.leonids":"Leonids", "shower.geminids":"Geminids", "shower.ursids":"Ursids",
 
   "s.home":"Home", "s.brand":"Nolan · UC3M · ", "s.aulaGlobalAria":"Aula Global (opens in a new tab)",
   "s.notes":"Notes", "s.settings":"Settings", "s.sections":"Sections",

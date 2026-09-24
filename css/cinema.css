@@ -253,3 +253,13 @@ html.viewing #portal{overflow:hidden}
 [data-quality=low] .view-btn{display:none}
 .view-btn svg .f{fill:currentColor;fill-opacity:.5}
 button.icon,button.p-tool{padding:0;font:inherit}
+
+/* tonight's sky, at the foot of the weather card: the Moon as it is, the planets in view, a meteor shower */
+.w-night{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.07);font-size:.78rem;color:#B9BECB}
+.w-night-l{font-size:.64rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#80869A}
+.w-night-i{display:inline-flex;align-items:center;gap:6px}
+.w-night-i b{font-weight:600;color:#E6E8EF}
+.w-moon{width:16px;height:16px;flex:0 0 auto;filter:drop-shadow(0 0 4px rgba(255,250,230,.35))}
+.w-moon .dark{fill:rgba(255,255,255,.06);stroke:rgba(255,255,255,.22);stroke-width:.8}
+.w-moon .lit{fill:#F1EEE4}
+.w-shower{color:#FFB8E4}

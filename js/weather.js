@@ -59,8 +59,32 @@
         (dl?stat(t("weather.max"),Math.round(dl.temperature_2m_max[0])+"°")+stat(t("weather.min"),Math.round(dl.temperature_2m_min[0])+"°")+
             stat(t("weather.rainLabel"),(dl.precipitation_probability_max?dl.precipitation_probability_max[0]:0)+" %"):"")+
         `<div class="w-stat w-sunstat"><small>${svg(SUN,"w-sun-ic")}${esc(sunLabel)}</small><b>${esc(sunTime)}</b></div>`+
-      `</div></div>`;
+      `</div>`+tonight(now,p)+`</div>`;
     if(html!==box.dataset.html){ box.dataset.html=html; box.innerHTML=html; }
+  }
+
+  /* ---------- tonight's sky: the Moon as it is, the planets you can see, a meteor shower ---------- */
+  function moonIcon(ph){
+    /* the lit part: the outer edge is a half circle, the line between light and dark an ellipse */
+    const r=8.2, c=12, k=Math.cos(ph*2*Math.PI), rx=Math.abs(k)*r, wax=ph<.5, gib=k<0;
+    const lit=`M${c} ${c-r}A${r} ${r} 0 0 ${wax?1:0} ${c} ${c+r}A${rx.toFixed(2)} ${r} 0 0 ${wax===gib?1:0} ${c} ${c-r}z`;
+    return `<svg class="w-moon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="${c}" cy="${c}" r="${r}" class="dark"/><path d="${lit}" class="lit"/></svg>`;
+  }
+  let night=null;
+  function tonight(now,p){
+    const key=now.toDateString()+p.lat.toFixed(2)+p.lon.toFixed(2)+LANG;
+    if(!night||night.key!==key){
+      /* the planets are worked out once a day for a place (a few hundred small sums) */
+      const list=Astro.planets(now,p.lat,p.lon).map(k=>t("planet."+k));
+      const fmt=typeof Intl!=="undefined"&&Intl.ListFormat?new Intl.ListFormat(LANG,{type:"conjunction"}).format(list):list.join(", ");
+      night={key,planets:list.length?t("weather.planets",{list:fmt}):t("weather.noPlanets")};
+    }
+    const m=Astro.moon(now), sh=Astro.shower(now);
+    return `<div class="w-night"><span class="w-night-l">${esc(t("weather.tonight"))}</span>`+
+      `<span class="w-night-i">${moonIcon(m.phase)}<b>${esc(t("moon."+m.name))}</b> ${Math.round(m.fraction*100)} %</span>`+
+      `<span class="w-night-i">${esc(night.planets)}</span>`+
+      (sh?`<span class="w-night-i w-shower">${esc(t(sh.peak?"weather.showerPeak":"weather.shower",{name:t("shower."+sh.id)}))}</span>`:"")+
+      `</div>`;
   }
 
   async function fetchWeather(p){

@@ -132,6 +132,11 @@ const Universe=(function(){
       bulge:{I:.12,Rb:.45,n:1.6,q:[1,.6,.55]}, col:{old:[1,.9,.76],core:[1,.9,.78]}, rot:{vmax:.006,ac:.3,pat:0}, stars:{bulge:2600}, gain:{bulge:.8,stars:1}}
   ];
   const IDS=Object.keys(GALAXIES);
+  /* the other wonders of the sky (nebulae, a cluster, a pulsar…), each described in wonders.js,
+     which registers them in window.UNIVERSE_EXTRAS before this file runs. Each one has its own
+     fragment shaders (drawn on a screen quad, SPRITE_VS), a place, and a draw() called every frame
+     with the api below: "far" before the galaxies, "near" after them */
+  const EXTRAS=window.UNIVERSE_EXTRAS||[];
   /* the black hole, seen from home (at and z as for the galaxies) and a scene of its own
      ("blackhole": the camera flies straight up to it). R radius of its shadow; its disk leans
      open radians out of edge-on and turns roll on the screen, so it is seen a little from above
@@ -161,6 +166,7 @@ const Universe=(function(){
       world[c.id]=frame(c,h.cx+o[0],h.cy+o[1],h.cz+o[2],h.R*c.size,c.tilt,c.roll);
     });
     Object.values(SIGHTS).forEach(s=>{ const at=small?s.at.m:s.at.d; s.p=[at[0]*(W/2)/F*s.z, at[1]*(H/2)/F*s.z, s.z]; });
+    EXTRAS.forEach(x=>{ if(x.layout) x.layout(api); });
     const bh=SIGHTS.bh, co=Math.cos(bh.open), so=Math.sin(bh.open);
     bh.n=unit([co*Math.sin(bh.roll),-co*Math.cos(bh.roll),-so]);
   }
@@ -880,6 +886,15 @@ void main(){
   o=vec4(c,1.);
 }`;
 
+  /* a quad on the screen around a point (css px), half-size and turn: vQ runs from -1 to 1 across it */
+  const SPRITE_VS=HEAD+`uniform vec2 uCss, uC, uHalf; uniform float uRot; out vec2 vQ;
+void main(){
+  vec2 c=vec2(float(gl_VertexID&1),float(gl_VertexID>>1))*2.-1.;
+  float cs=cos(uRot), sn=sin(uRot); vec2 q=c*uHalf;
+  vec2 p=uC+vec2(cs*q.x-sn*q.y,sn*q.x+cs*q.y);
+  gl_Position=vec4(p.x/uCss.x*2.-1.,1.-p.y/uCss.y*2.,0.,1.); vQ=c;
+}`;
+
   /* ---------- small helpers ---------- */
   /* programs are compiled in the background (the page does not wait for them) and
      finished — checked, their settings looked up — once they are ready */
@@ -903,7 +918,12 @@ void main(){
       if(lost) return;
       const all=Object.values(P).every(pr=>!ext||gl.getProgramParameter(pr.p,ext.COMPLETION_STATUS_KHR));
       if(!all&&performance.now()-t0<8000){ setTimeout(check,30); return; }
-      try{ Object.values(P).forEach(finish); done(); }catch(e){ fail(e); }
+      try{
+        /* a wonder that does not compile is left out; the rest of the universe goes on */
+        Object.entries(P).forEach(([k,pr])=>{ if(!pr.extra) return;
+          try{ finish(pr); pr.extra.ready=true; }catch(e){ pr.extra.broken=true; delete P[k]; console.warn("universe: wonder",pr.extra.id,"left out:",e.message); } });
+        Object.values(P).forEach(pr=>{ if(!pr.u) finish(pr); }); done();
+      }catch(e){ fail(e); }
     };
     check();
   }
@@ -957,6 +977,36 @@ void main(){
     P.blur=compile(FULL_VS,BLUR_FS);
     P.comp=compile(FULL_VS,COMP_FS);
     P.up=compile(FULL_VS,UP_FS);
+    /* the wonders wait until the universe is on the screen (compiling them all at once held the
+       page back), except the Earth on a first visit, where the opening starts */
+    let firstVisit=false; try{ firstVisit=!sessionStorage.getItem("nolan-launched"); }catch(e){}
+    EXTRAS.forEach(x=>{ x.ready=false; x.prog={}; if(x.early&&firstVisit) compileExtra(x,P); });
+    laterExtras();
+  }
+  function compileExtra(x,into){
+    Object.entries(x.shaders||{}).forEach(([k,fs])=>{ const pr=x.prog[k]=compile(SPRITE_VS,HEAD+NOISE+fs); pr.extra=x; if(into) into["x_"+x.id+"_"+k]=pr; });
+  }
+  /* then one wonder at a time, in the background, each drawn as soon as it is ready */
+  let extrasGen=0;
+  function laterExtras(){
+    const gen=++extrasGen, ext=gl.getExtension("KHR_parallel_shader_compile");
+    const todo=EXTRAS.filter(x=>!x.broken&&!Object.keys(x.prog).length);
+    const step=()=>{
+      if(gen!==extrasGen||lost||dead) return;
+      if(!ok||!ready()){ setTimeout(step,250); return; }
+      const x=todo.shift(); if(!x) return;
+      compileExtra(x);
+      const prs=Object.values(x.prog), t0=performance.now();
+      const check=()=>{
+        if(gen!==extrasGen||lost) return;
+        if(ext&&performance.now()-t0<8000&&!prs.every(pr=>gl.getProgramParameter(pr.p,ext.COMPLETION_STATUS_KHR))){ setTimeout(check,40); return; }
+        try{ prs.forEach(finish); x.ready=true; need(); }
+        catch(e){ x.broken=true; console.warn("universe: wonder",x.id,"left out:",e.message); }
+        setTimeout(step,60);
+      };
+      check();
+    };
+    setTimeout(step,0);
   }
   /* the render size: css size × pixels per css px (adapts to the device) */
   function sizeTargets(){
@@ -1246,9 +1296,10 @@ void main(){
     /* only while the universe is alive: otherwise what is in the sky finishes and nothing new comes */
     if(!fancy()||!alive()){ nextMeteor=Math.max(nextMeteor,now+2); nextComet=Math.max(nextComet,now+10); return; }
     if(!nextMeteor) nextMeteor=now+2+Math.random()*3;
-    if(now>=nextMeteor&&meteors.length<6){
+    if(now>=nextMeteor&&meteors.length<8){
       newMeteor(now);
-      nextMeteor=now+(Math.random()<.18?.35+Math.random()*.6:3+Math.random()*5.5);
+      const sh=typeof Astro!=="undefined"&&Astro.shower?Astro.shower(new Date()):null;
+      nextMeteor=now+(Math.random()<.18?.35+Math.random()*.6:3+Math.random()*5.5)/(1+(sh?3.5*sh.strength:0));
     }
     if(!nextComet) nextComet=now+6+Math.random()*10;
     if(now>=nextComet&&comets.length<3){
@@ -1257,8 +1308,16 @@ void main(){
     }
   }
 
-  /* a shooting star anywhere, heading anywhere */
+  /* a shooting star anywhere, heading anywhere; during a meteor shower (Astro.shower, on its real
+     dates) many of them come from its radiant: they all fly outwards from that one point */
   function newMeteor(now){
+    const sh=typeof Astro!=="undefined"&&Astro.shower?Astro.shower(new Date()):null;
+    if(sh&&Math.random()<sh.share){
+      const rx=W*sh.rx, ry=H*sh.ry, a=Math.random()*TAU, d0=30+Math.random()*Math.min(W,H)*.5;
+      const dist=120+Math.random()*420, dur=.6+dist/800+Math.random()*.3, b=.6+Math.pow(Math.random(),2)*1.2;
+      meteors.push({x:rx+Math.cos(a)*d0,y:ry+Math.sin(a)*d0,vx:Math.cos(a)*dist/dur,vy:Math.sin(a)*dist/dur,t0:now,dur,len:(90+Math.random()*150)*(.7+b*.35),b});
+      return;
+    }
     const x0=W*(.05+Math.random()*.9), y0=H*(.05+Math.random()*.8);
     let x1=W*(.1+Math.random()*.8), y1=H*(.1+Math.random()*.8);
     if(Math.hypot(x1-x0,y1-y0)<Math.min(W,H)*.3){ x1=W-x0; y1=H-y0; }
@@ -1347,12 +1406,14 @@ void main(){
     gl.uniformMatrix4fv(u.uVP,false,VP); gl.uniformMatrix4fv(u.uVPp,false,VPp);
     gl.uniform2f(u.uCss,W,H); gl.uniform1f(u.uScale,scale); gl.uniform1f(u.uBoost,boost||0); gl.uniform1f(u.uFade,starsFade);
     gl.bindVertexArray(field.vao); gl.drawArraysInstanced(gl.TRIANGLE_STRIP,0,4,field.n);
+    extras("far",t,now);
     /* the galaxies, far to near */
     const list=Object.keys(G).map(id=>world[id]&&{id,w:world[id],e:G[id]}).filter(Boolean)
       .sort((a,b)=>(b.w.cz-cam.z)-(a.w.cz-cam.z));
     for(const it of list) drawGalaxy(it.w,it.e,VP,t);
     /* shooting stars and comets */
     drawSkyEvents(now);
+    extras("near",t,now);
     gl.bindVertexArray(null);
     /* the glow */
     gl.disable(gl.BLEND);
@@ -1378,6 +1439,33 @@ void main(){
     gl.uniform1f(u.uFpx,F*scale);
     full();
     gl.activeTexture(gl.TEXTURE0);
+  }
+
+  /* what wonders.js can use to place and draw its wonders */
+  const api={
+    get gl(){ return gl; }, get W(){ return W; }, get H(){ return H; }, get F(){ return F; }, get scale(){ return scale; },
+    get fade(){ return starsFade; }, get phone(){ return phone; }, get robot(){ return robot; }, get scene(){ return scene; },
+    get cam(){ return cam; },
+    alive:()=>alive(), onScreen:p=>onScreen(p), need:()=>need(),
+    /* a place seen from home (at: fraction of the half screen, computer d / phone m), at depth z */
+    world:(at,z)=>{ const a=W<760?at.m:at.d; return [a[0]*(W/2)/F*z, a[1]*(H/2)/F*z, z]; },
+    /* a quad on the screen, ready for the program's own settings; draw() then draws it */
+    sprite(pr,x,y,hx,hy,rot){
+      gl.useProgram(pr.p); const u=pr.u;
+      gl.uniform2f(u.uCss,W,H); gl.uniform2f(u.uC,x,y); gl.uniform2f(u.uHalf,hx,hy); gl.uniform1f(u.uRot,rot||0);
+      gl.bindVertexArray(emptyVAO); return u;
+    },
+    draw:()=>gl.drawArrays(gl.TRIANGLE_STRIP,0,4),
+    add:()=>gl.blendFunc(gl.ONE,gl.ONE), over:()=>gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA)
+  };
+  let extraFailed=false;
+  function extras(phase,t,now){
+    gl.enable(gl.BLEND);
+    for(const x of EXTRAS){
+      if(!x.draw||x.broken||!x.ready) continue;
+      try{ x.draw(api,phase,t,now); }catch(e){ if(!extraFailed){ extraFailed=true; console.warn("universe: wonder",x.id,e); } }
+    }
+    gl.blendFunc(gl.ONE,gl.ONE);
   }
 
   /* the black hole seen from the camera, in its own radii (x right, y up, z ahead), and the
@@ -1628,6 +1716,11 @@ void main(){
     ok=true;
     startBuilding();
     need();
+    /* the first opening of the app at home (once per visit): it leaves the Earth and flies out to home */
+    let first=false; try{ first=!sessionStorage.getItem("nolan-launched"); sessionStorage.setItem("nolan-launched","1"); }catch(e){}
+    if(first&&scene==="home"&&!robot&&fullMotion()&&!root.hasAttribute("data-locked")&&!covering()){
+      scene="gate"; base={...camFor("gate")}; go("home",{duration:4200});
+    }
   }
   /* no 3D after all: the plain background shows instead */
   function giveUp(e){

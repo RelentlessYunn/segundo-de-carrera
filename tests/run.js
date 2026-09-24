@@ -106,7 +106,9 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
       "Notes open from UC3M without leaving its galaxy, and Back returns to the timetable");
     await p.click("#notes .p-back-top"); await p.waitForTimeout(600);
     await p.click("header .home-btn"); await p.waitForTimeout(3200);
-    await p.click("#homeUc3m"); await p.waitForTimeout(250); await p.mouse.click(640,450); await p.waitForTimeout(350);
+    await p.click("#homeUc3m"); await p.waitForTimeout(250); await p.mouse.click(640,450);
+    /* (home fades out in 280 ms; a slow software graphics card can delay that timer, so wait for it) */
+    await p.waitForFunction(()=>document.getElementById("portal").hidden,null,{timeout:2000}).catch(()=>{});
     ok(await p.evaluate(()=>document.getElementById("portal").hidden&&location.hash==="#schedule"&&Universe.busy()&&Universe.scene()==="uc3m"),
       "a second click during the trip shows the timetable at once, while the camera flies on (the sky never jumps)");
     await p.click("header .home-btn"); await p.waitForTimeout(200);
@@ -307,7 +309,26 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     ok(painted&&await p.evaluate(()=>document.documentElement.classList.contains("gl")&&getComputedStyle(document.getElementById("sky")).display==="none"),"Quality = High: the whole sky and the five galaxies are drawn in 3D by the graphics card (the CSS sky steps aside)");
     const all=await p.waitForFunction(()=>Universe.built().length===8,null,{timeout:60000}).then(()=>true,()=>false);
     ok(all&&await p.evaluate(()=>{ Universe.seek(120); Universe.shoot(.4); return true; })&&!p.errors.length,"Andrómeda's companions are built too; time, shooting stars and a comet run without errors");
+    /* the wonders: each one compiled and drawn, a supernova shown, nothing left out */
+    await p.waitForFunction(()=>window.UNIVERSE_EXTRAS.every(x=>x.ready||x.broken),null,{timeout:60000}).catch(()=>{});
+    await p.waitForTimeout(300);
+    const wn=await p.evaluate(()=>({list:Wonders.list(),broken:window.UNIVERSE_EXTRAS.filter(x=>x.broken).map(x=>x.id),nova:Wonders.nova(-.5,-.5,10),state:Wonders.state()}));
+    ok(wn.list.join()==="orion,pillars,pleiades,ringneb,pulsar,binary,antennae,nova,earth"&&!wn.broken.length&&wn.nova&&wn.state&&wn.state.k>0&&wn.state.at&&!p.errors.length,
+      `the nine wonders compile and draw, and a supernova can flare (${JSON.stringify(wn)})`);
+    /* the opening: from the Earth and the Moon, the first time in a session */
+    ok(await p.evaluate(()=>{ Universe.go("gate",{animate:false}); return Universe.ready(); })&&!p.errors.length,"the Earth and the Moon are drawn at the opening");
+    /* tonight's sky on the weather card: the Moon as it is, the planets up tonight */
+    const night=await p.evaluate(()=>{ const n=document.querySelector("#homeWeather .w-night"); return n?n.textContent:""; });
+    ok(/Esta noche/.test(night)&&/Luna gibosa creciente/.test(night)&&/90\s*%/.test(night)&&/Marte/.test(night)&&/Júpiter/.test(night)&&/Saturno/.test(night),`tonight's sky on the weather card ("${night}")`);
     await p.context().close();
+    /* the real sky, computed without connection */
+    const ast=await (async()=>{ const a=await open(b,{time:"2026-08-12T22:00:00",hash:"schedule"});
+      const r=await a.evaluate(()=>({new0:Astro.moon(new Date(2026,7,12,12)).name,full:Astro.moon(new Date(2026,9,26,12)).name,
+        per:(Astro.shower(new Date(2026,7,12,22))||{}).id,gem:(Astro.shower(new Date(2026,11,14,22))||{}).id,none:Astro.shower(new Date(2026,2,10)),
+        pl:Astro.planets(new Date(2026,8,23,16),40.305,-3.731)}));
+      await a.context().close(); return r; })();
+    ok(ast.new0==="new"&&ast.full==="full"&&ast.per==="perseids"&&ast.gem==="geminids"&&ast.none===null&&ast.pl.join()==="mars,jupiter,saturn",
+      `the Moon's phase, the planets and the meteor showers come out right (${JSON.stringify(ast)})`);
     const q=await open(b,{settings:{quality:"low"},hash:"tasks"});
     const s=await q.evaluate(()=>({shown:getComputedStyle(document.querySelector("#sky .sky-par")).display,
       blur:getComputedStyle(document.querySelector("nav.bar")).backdropFilter,stars:document.querySelectorAll("#tasksConstellation .c-star").length}));
@@ -425,7 +446,8 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.reload({waitUntil:"load"}); await p.waitForTimeout(800);
     const still=await p.evaluate(i=>document.getElementById(i).checked,id);
     await ctx.setOffline(false); await p.evaluate(()=>window.dispatchEvent(new Event("online")));
-    await p.waitForFunction(()=>true,null,{timeout:100}); await p.waitForTimeout(3000);
+    /* (the page reloads itself when the connection comes back: wait for the save, not on the page) */
+    for(let k=0;k<40&&!writes.some(w=>(w.hechas||[]).includes(id));k++) await new Promise(r=>setTimeout(r,200));
     ok(still&&writes.some(w=>(w.hechas||[]).includes(id)),`a task ticked offline is still ticked after reopening, and is saved once online (${still}, ${writes.length} writes)`);
     await ctx.close(); srv.close();
   }
