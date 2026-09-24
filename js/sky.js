@@ -81,8 +81,6 @@
         g.fillStyle=gr; g.beginPath(); g.arc(px,py,R,0,Math.PI*2); g.fill();
         star(px,py,.9+rnd()*.5,.95,"255,255,255");
       }
-      /* in a section: its own star, large and near */
-      if(tint){ const [sx,sy]=sunOf(id); glow(g,sx,sy,Math.min(W,H)*.075,tint,1); }
       cache.set(id,f);
       while(cache.size>3) cache.delete(cache.keys().next().value);
       return f;
@@ -97,15 +95,20 @@
       g.fillStyle=gr; g.beginPath(); g.arc(px,py,R,0,Math.PI*2); g.fill();
     }
     const starR=()=>W<760?13:18;
-    /* a place's sky drawn scaled about a point (s: scale, a: opacity) */
+    /* a place's sky drawn scaled about a point (s: scale, a: opacity). Smaller than the screen it
+       repeats around itself, so the screen is never left without stars. Added light on light:
+       two skies crossing keep the same brightness all the way */
     function place(id,s,px,py,a){
       if(a<=0) return;
-      x.globalAlpha=Math.min(1,a);
+      x.globalAlpha=Math.min(1,a); x.globalCompositeOperation="lighter";
       const f=field(id);
       x.setTransform(DPR*s,0,0,DPR*s,DPR*px*(1-s),DPR*py*(1-s));
-      x.drawImage(f,0,0,W,H);
+      if(s<1){ for(let i=-1;i<=1;i++) for(let j=-1;j<=1;j++) x.drawImage(f,i*W,j*H,W,H); }
+      else x.drawImage(f,0,0,W,H);
+      /* on home, the sections' stars; in a section, its own star, large and near */
       if(id==="home") SEC.forEach(k=>{ const [qx,qy]=posOf(k); glow(x,qx,qy,starR(),COL[k],1); });
-      x.setTransform(DPR,0,0,DPR,0,0); x.globalAlpha=1;
+      else if(COL[id]){ const [sx,sy]=sunOf(id); glow(x,sx,sy,Math.min(W,H)*.075,COL[id],1); }
+      x.setTransform(DPR,0,0,DPR,0,0); x.globalAlpha=1; x.globalCompositeOperation="source-over";
     }
     const sm=(a,b,v)=>{ const t=Math.min(1,Math.max(0,(v-a)/(b-a))); return t*t*(3-2*t); };
     let scene="home", fl=null, raf=0;
@@ -118,17 +121,18 @@
       /* one smooth move, forward into the star or back out of it: both skies scale the same way,
          so it never pulls back, and nothing flares */
       const e=p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+      const k=sm(.2,.8,p);                                 /* one sky gives way to the other: together always full */
       if(fl.from==="home"&&COL[fl.to]){
         const [px,py]=posOf(fl.to);
-        place("home",1+4.5*e,px,py,1-sm(.45,.9,p));
-        place(fl.to,.45+.55*e,px,py,sm(.3,.85,p));
+        place("home",1+2.6*e,px,py,1-k);
+        place(fl.to,.62+.38*e,px,py,k);
       } else if(fl.to==="home"&&COL[fl.from]){
         const [px,py]=posOf(fl.from);
-        place(fl.from,1-.55*e,px,py,1-sm(.15,.7,p));
-        place("home",5.5-4.5*e,px,py,sm(.1,.55,p));
+        place(fl.from,1-.38*e,px,py,1-k);
+        place("home",3.6-2.6*e,px,py,k);
       } else {
-        place(fl.from,1+.2*e,W/2,H/2,1-sm(0,.6,p));
-        place(fl.to,.85+.15*e,W/2,H/2,sm(.3,1,p));
+        place(fl.from,1+.2*e,W/2,H/2,1-k);
+        place(fl.to,.85+.15*e,W/2,H/2,k);
       }
       if(!fl.reached&&p>=fl.arriveAt) arrive(fl);
       if(p>=1){ fl=null; paint(now); return; }

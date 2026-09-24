@@ -296,7 +296,7 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     ok(/24°/.test(r.w)&&/Getafe/.test(r.w)&&/20:13/.test(r.w)&&/Máx\.28°/.test(r.w)&&/Puesta de sol20:13/.test(r.w)&&!r.header,`weather and sunset on home, nothing under the UC3M clock ("${r.w}")`);
     const painted=await p.waitForFunction(()=>Universe.gl()&&Universe.painted()===5,null,{timeout:120000}).then(()=>true,()=>false);
     ok(painted&&await p.evaluate(()=>document.documentElement.classList.contains("gl")&&getComputedStyle(document.getElementById("sky")).display==="none"),"Quality = High: the whole sky and the five galaxies are drawn in 3D by the graphics card (the CSS sky steps aside)");
-    const all=await p.waitForFunction(()=>Universe.built().length===7,null,{timeout:60000}).then(()=>true,()=>false);
+    const all=await p.waitForFunction(()=>Universe.built().length===8,null,{timeout:60000}).then(()=>true,()=>false);
     ok(all&&await p.evaluate(()=>{ Universe.seek(120); Universe.shoot(.4); return true; })&&!p.errors.length,"Andrómeda's companions are built too; time, shooting stars and a comet run without errors");
     await p.context().close();
     const q=await open(b,{settings:{quality:"low"},hash:"tasks"});

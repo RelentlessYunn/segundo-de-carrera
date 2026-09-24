@@ -72,24 +72,28 @@ const Universe=(function(){
        arms pattern (minus: the arms trail)
      stars: how many of each kind (before the budget) · gain: brightness of each part */
   const GALAXIES={
-    /* home: a calm golden spiral with soft arms */
-    nolan:{kind:"spiral", r:4.6, tilt:1.10, roll:-.50, at:{d:[-.7,.62],m:[-.62,.74]}, z:58, seed:11,
-      disk:{h:.25, rc:.14, ex1:.76, ex2:.86, twist:3.4, phi0:.4, hz:.05, warp:.05, floc:.55,
-            young:{h:.34,k:1.6}, hii:{c1:1.45,c2:1.95}, dust:{h:.36,k:1.5,lag:.22}},
-      bulge:{I:.26, Rb:.07, n:2, q:[1,.95,.74]},
+    /* home: a golden barred spiral (like NGC 1300): a straight bar of old stars through the
+       middle, and two arms that sweep out from its ends (the inner orbits are long and
+       aligned, and hardly turn: that is the bar) */
+    nolan:{kind:"spiral", r:4.6, tilt:.72, roll:-.5, at:{d:[-.7,.62],m:[-.62,.74]}, z:58, seed:11,
+      disk:{h:.3, rc:.3, ex1:.3, ex2:.92, twist:1.9, phi0:.4, hz:.05, warp:.04, floc:.3,
+            young:{h:.4,k:2.2}, hii:{c1:1.5,c2:2.1}, dust:{h:.38,k:2,lag:.14}},
+      bulge:{I:.42, Rb:.13, n:1.1, q:[1,.28,.24]},        /* long and thin: the bar */
       col:{old:[1,.8,.52], young:[.74,.8,1], hii:[1,.42,.58], core:[1,.76,.48]},
       rot:{vmax:.016, ac:.06, pat:-.0055},
       stars:{old:26000, young:9000, hii:800, bulge:9000, halo:1200, gc:9},
-      gain:{disk:.62, young:.5, hii:.45, dust:2.2, bulge:1, stars:1}},
-    /* UC3M: a lively blue spiral, strong arms full of pink star-forming knots */
-    uc3m:{kind:"spiral", r:3.9, tilt:.85, roll:.55, at:{d:[.62,-.42],m:[.62,-.56]}, z:60, seed:23,
-      disk:{h:.23, rc:.13, ex1:.72, ex2:.84, twist:3.6, phi0:1.1, hz:.045, warp:.06, floc:.45,
-            young:{h:.32,k:1.8}, hii:{c1:1.6,c2:2.5}, dust:{h:.32,k:1.7,lag:.2}},
-      bulge:{I:.24, Rb:.06, n:2, q:[1,.92,.72]},
+      gain:{disk:.66, young:.6, hii:.5, dust:2.2, bulge:1, stars:1}},
+    /* UC3M: a blue "grand design" spiral seen nearly face-on (like the Whirlpool, M51): two
+       strong, tightly wound arms full of pink knots, and a small yellow companion at the
+       end of one of them (NGC 5195) */
+    uc3m:{kind:"spiral", r:3.9, tilt:.42, roll:.55, at:{d:[.62,-.42],m:[.62,-.56]}, z:60, seed:23,
+      disk:{h:.26, rc:.1, ex1:.7, ex2:.78, twist:6.4, phi0:1.1, hz:.045, warp:.05, floc:.25,
+            young:{h:.34,k:2.3}, hii:{c1:1.5,c2:2.2}, dust:{h:.34,k:2.1,lag:.2}},
+      bulge:{I:.26, Rb:.055, n:2, q:[1,.95,.8]},
       col:{old:[1,.9,.78], young:[.55,.72,1], hii:[1,.34,.6], core:[1,.86,.66]},
       rot:{vmax:.02, ac:.05, pat:-.007},
-      stars:{old:18000, young:10000, hii:1100, bulge:6000, halo:900, gc:8},
-      gain:{disk:.75, young:.95, hii:.8, dust:2.8, bulge:1, stars:1}},
+      stars:{old:18000, young:11000, hii:1200, bulge:6000, halo:900, gc:8},
+      gain:{disk:1, young:1.1, hii:.9, dust:2.8, bulge:1, stars:1}},
     /* Nolan (under construction): a big round ember, an amber elliptical */
     forge:{kind:"elliptical", r:3.1, tilt:.6, roll:-.2, at:{d:[-.66,-.5],m:[-.62,-.74]}, z:75, seed:37,
       bulge:{I:.3, Rb:.26, n:3, q:[1,.86,.72]},
@@ -97,15 +101,16 @@ const Universe=(function(){
       rot:{vmax:.008, ac:.2, pat:0},
       stars:{bulge:22000, halo:1500, gc:18},
       gain:{bulge:1, stars:1}},
-    /* Andrómeda: a wide violet spiral seen steeply, with two small companions */
-    andromeda:{kind:"spiral", r:4.4, tilt:1.2, roll:-.9, at:{d:[.74,.42],m:[.62,.6]}, z:110, seed:41,
-      disk:{h:.27, rc:.14, ex1:.78, ex2:.88, twist:4.2, phi0:2.0, hz:.045, warp:.04, floc:.5,
-            young:{h:.38,k:1.7}, hii:{c1:1.4,c2:1.9}, dust:{h:.4,k:1.6,lag:.25}},
-      bulge:{I:.26, Rb:.07, n:2, q:[1,.95,.75]},
-      col:{old:[1,.87,.74], young:[.7,.68,1], hii:[1,.45,.76], core:[1,.86,.7]},
-      rot:{vmax:.014, ac:.06, pat:-.005},
-      stars:{old:20000, young:7000, hii:600, bulge:7000, halo:900, gc:8},
-      gain:{disk:.7, young:.65, hii:.55, dust:2.6, bulge:1, stars:1}},
+    /* Andrómeda: a ring galaxy (like Hoag's Object): a round yellow core, a dark gap, and a
+       nearly perfect ring of young blue stars around it; two small companions nearby */
+    andromeda:{kind:"ring", r:4.4, tilt:.5, roll:-.9, at:{d:[.74,.42],m:[.62,.6]}, z:110, seed:41,
+      disk:{h:.07, rc:.2, ex1:1, ex2:1, twist:0, phi0:0, hz:.03, warp:.015, floc:.55,
+            young:{h:.5,k:1}, hii:{c1:9,c2:10}, dust:{h:.6,k:1,lag:0}, ring:{a:.66,w:.075,light:1.4,dust:.3,stars:6000}},
+      bulge:{I:.5, Rb:.1, n:2.5, q:[1,1,.95]},
+      col:{old:[.6,.72,1], young:[.62,.75,1], hii:[1,.5,.75], core:[1,.84,.55]},
+      rot:{vmax:.012, ac:.08, pat:0},
+      stars:{old:3000, bulge:9000, halo:900, gc:6},
+      gain:{disk:.9, young:0, hii:0, dust:1, bulge:1, stars:1}},
     /* Sombrero: seen edge-on, a big bright bulge and a dark ring of dust */
     sombrero:{kind:"ring", r:3.6, tilt:1.52, roll:.18, at:{d:[-.44,-.8],m:[.05,-.86]}, z:130, seed:53,
       disk:{h:.34, rc:.2, ex1:1, ex2:1, twist:0, phi0:0, hz:.028, warp:.02, floc:.4,
@@ -120,6 +125,8 @@ const Universe=(function(){
   const COMPANIONS=[
     {id:"m32", host:"andromeda", off:[.3,.22,.08], size:.1, tilt:.4, roll:.9, seed:61,
       bulge:{I:.25,Rb:.3,n:2.5,q:[1,.84,.8]}, col:{old:[1,.86,.66],core:[1,.88,.7]}, rot:{vmax:.01,ac:.2,pat:0}, stars:{bulge:2200}, gain:{bulge:1,stars:1}},
+    {id:"ngc5195", host:"uc3m", off:[.8,.6,.08], size:.2, tilt:.35, roll:.4, seed:71,
+      bulge:{I:.3,Rb:.3,n:2.2,q:[1,.85,.75]}, col:{old:[1,.82,.58],core:[1,.84,.62]}, rot:{vmax:.008,ac:.2,pat:0}, stars:{bulge:2600}, gain:{bulge:1,stars:1}},
     {id:"m110", host:"andromeda", off:[-.62,-.55,.1], size:.2, tilt:1.0, roll:-.4, seed:67,
       bulge:{I:.12,Rb:.45,n:1.6,q:[1,.6,.55]}, col:{old:[1,.9,.76],core:[1,.9,.78]}, rot:{vmax:.006,ac:.3,pat:0}, stars:{bulge:2600}, gain:{bulge:.8,stars:1}}
   ];
@@ -799,7 +806,6 @@ void main(){
       vec3 dir=rd;
       if(b<RI){
         vec3 n=normalize(uBHn.xyz), e1=normalize(abs(n.y)<.9?cross(n,vec3(0,1,0)):cross(n,vec3(1,0,0))), e2=cross(n,e1);
-        vec3 n2=normalize(n*cos(.5)+e2*sin(.5));          /* the tilted ring's plane */
         float D=length(ro);
         vec3 p=D>RI?ro+rd*(tc-sqrt(RI*RI-b*b)):ro, v=rd;
         float h2=dot(cross(p,v),cross(p,v));
@@ -840,9 +846,6 @@ void main(){
               T*=1.-al;
             }
           }
-          /* a thin ring of light on a tilted orbit, bent around the hole with everything else */
-          float q0=dot(p,n2), q1=dot(pn,n2);
-          if(q0*q1<0.){ float rq=length(mix(p,pn,q0/(q0-q1))); add+=T*vec3(1.,.9,1.)*exp(-pow((rq-8.)/.045,2.))*1.5; }
           p=pn;
           if(T.g<.01) break;
         }
@@ -1067,8 +1070,9 @@ void main(){
     const r=rng(g.seed*977+13), st=g.stars, d=g.disk;
     const cnt={old:Math.round((st.old||0)*k), young:Math.round((st.young||0)*k), hii:Math.round((st.hii||0)*Math.max(k,.25)),
                cloud:d?Math.round((st.young||0)*.12*Math.max(k,.3)):0,
-               bulge:Math.round((st.bulge||0)*k), halo:Math.round((st.halo||0)*k), gc:Math.max(0,Math.round((st.gc||0)*Math.max(k,.4)))};
-    const total=cnt.old+cnt.young+cnt.cloud+cnt.hii+cnt.bulge+cnt.halo+cnt.gc*gcMembers;
+               bulge:Math.round((st.bulge||0)*k), halo:Math.round((st.halo||0)*k), gc:Math.max(0,Math.round((st.gc||0)*Math.max(k,.4))),
+               ring:d&&d.ring&&d.ring.stars?Math.round(d.ring.stars*Math.max(k,.3)):0};
+    const total=cnt.old+cnt.young+cnt.cloud+cnt.hii+cnt.bulge+cnt.halo+cnt.ring+cnt.gc*gcMembers;
     const A=new Float32Array(total*4), B=new Float32Array(total*4), O=new Float32Array(total*3), C=new Uint8Array(total*4);
     let i=0;
     const put=(a,th,z,kind,lum,spd,inc,node,col,ox,oy,oz)=>{
@@ -1092,6 +1096,11 @@ void main(){
       for(let n=0;n<cnt.cloud;n++){
         const a=radius(d.young.h,d.rc);
         put(a,r()*TAU,gauss(r)*d.hz*.9,1,(.25+r()*.6)*g.gain.young,1,0,0,tint(kelvin(12000+r()*12000),g.col.young,.5),.008+Math.pow(r(),2)*.022);
+      }
+      /* a ring galaxy: young blue stars crowded in the ring, a few of them bright */
+      for(let n=0;n<cnt.ring;n++){
+        const a=Math.max(.05,d.ring.a+gauss(r)*d.ring.w*.6);
+        put(a,r()*TAU,gauss(r)*d.hz*.5,0,.2+Math.pow(r(),3)*1.8,1,0,0,tint(kelvin(11000+r()*15000),g.col.young,.35));
       }
       for(let n=0;n<cnt.hii;n++){
         const a=radius(d.young.h,d.rc);
@@ -1290,7 +1299,12 @@ void main(){
     /* a far sun the tails point away from, off the screen ahead of it and to one side: as the comet
        goes by, its tails swing slowly round, the way a real one's do */
     const sun=[W/2+dx*W*(1.4+Math.random())-dy*H*(Math.random()-.5)*1.6, y+dy*W+(Math.random()-.5)*H*1.4];
-    comets.push({kind,t0:now-dur*at,dur,x0,y0:y,x1,y1:y+dy*dist,sun,L,seed:Math.random()*50,b:fast?.9:.8});
+    /* it lives in space, not on the glass: its path, its sun and its size are set at a depth nearer
+       than the galaxies, so when the camera flies it grows, slides and passes by like the rest */
+    const D=36+Math.random()*30, R=camR;
+    const toW=(sx,sy)=>{ const a=[(sx-W/2)/F*D,(sy-H/2)/F*D,D];
+      return [cam.x+R[0]*a[0]+R[3]*a[1]+R[6]*a[2], cam.y+R[1]*a[0]+R[4]*a[1]+R[7]*a[2], cam.z+R[2]*a[0]+R[5]*a[1]+R[8]*a[2]]; };
+    comets.push({kind,t0:now-dur*at,dur,w0:toW(x0,y),w1:toW(x1,y+dy*dist),sun:toW(sun[0],sun[1]),Lw:L*D/F,seed:Math.random()*50,b:fast?.9:.8});
   }
 
   /* ---------- drawing one frame ---------- */
@@ -1485,12 +1499,17 @@ void main(){
       for(const c of comets){
         /* full brightness all the way: they start and end off the screen, so they come in over an edge */
         const k=(now-c.t0)/c.dur, K=COMET_KINDS[c.kind];
-        const hx=c.x0+(c.x1-c.x0)*k, hy=c.y0+(c.y1-c.y0)*k;
-        /* tails away from its sun; bigger and brighter mid-way, as it passes closest */
-        let tx=hx-c.sun[0], ty=hy-c.sun[1]; const tl=Math.hypot(tx,ty)||1; tx/=tl; ty/=tl;
-        const near=Math.sin(Math.PI*Math.min(1,Math.max(0,k))), L=c.L*(.78+.34*near);
-        gl.uniform2f(u.uHead,hx,hy); gl.uniform2f(u.uDir,tx,ty);
-        gl.uniform2f(u.uSize,L,L*.5); gl.uniform1f(u.uA,c.b*(.75+.25*near)*starsFade); gl.uniform1f(u.uSeed,c.seed);
+        /* where it is in space, and its tail pointing away from its sun, seen from the camera now */
+        const hw=[0,1,2].map(i=>c.w0[i]+(c.w1[i]-c.w0[i])*k);
+        const near=Math.sin(Math.PI*Math.min(1,Math.max(0,k))), Lw=c.Lw*(.78+.34*near);
+        const tw=unit([hw[0]-c.sun[0],hw[1]-c.sun[1],hw[2]-c.sun[2]]);
+        const a=onScreen(hw), b=onScreen([hw[0]+tw[0]*Lw,hw[1]+tw[1]*Lw,hw[2]+tw[2]*Lw]);
+        if(!a||!b||a[2]<3) continue;
+        let tx=b[0]-a[0], ty=b[1]-a[1]; const hl=Math.hypot(tx,ty)||1; tx/=hl; ty/=hl;
+        const L=Math.min(hl,Math.min(W,H)*4);
+        const close=Math.min(1,(a[2]-3)/6);                  /* fades as the camera flies right through it */
+        gl.uniform2f(u.uHead,a[0],a[1]); gl.uniform2f(u.uDir,tx,ty);
+        gl.uniform2f(u.uSize,L,L*.5); gl.uniform1f(u.uA,c.b*(.75+.25*near)*close*starsFade); gl.uniform1f(u.uSeed,c.seed);
         gl.uniform1f(u.uAge,now-c.t0);
         gl.uniform3fv(u.uComa,K.coma); gl.uniform3fv(u.uDustC,K.dust); gl.uniform3fv(u.uIonC,K.ion);
         gl.uniform4fv(u.uK,K.k); gl.uniform4fv(u.uK2,K.k2);
