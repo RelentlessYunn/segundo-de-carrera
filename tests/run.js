@@ -118,6 +118,18 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     ok(await p.evaluate(()=>!document.getElementById("portal").hidden&&!document.getElementById("settings").hidden&&location.hash==="#settings"),"Settings open inside home (old links too)");
     await p.context().close();
   }
+  {
+    /* on a phone home's content spans the whole width: it must not cover Notes and Settings */
+    const p=await open(b,{hash:"soon/sombrero",mobile:true});
+    const onTop=await p.evaluate(()=>[...document.querySelectorAll("#portal .p-tool")].every(a=>{
+      const r=a.getBoundingClientRect(), hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
+      return r.width>0&&a.contains(hit);
+    }));
+    await p.tap("#portal .p-tool.gear-btn"); await p.waitForTimeout(400);
+    ok(onTop&&await p.evaluate(()=>location.hash==="#settings"&&!document.getElementById("settings").hidden),
+      "mobile: inside a galaxy, Notes and Settings can be tapped");
+    await p.context().close();
+  }
 
   section("Tabs");
   {

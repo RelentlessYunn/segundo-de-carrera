@@ -235,7 +235,7 @@ Settings are not in the cloud: they are per device (`localStorage`, key `setting
 node tests/run.js
 ```
 
-Needs Node and Playwright. 63 checks in a real browser:
+Needs Node and Playwright. 75 checks in a real browser:
 
 - the page loads without errors;
 - the PIN screen (wrong PIN, the flight into the galaxy, remembered device, PIN not in the page, Log out), starting at home, the camera flights between galaxies (UC3M, back home, a galaxy to explore), and Notes and Settings inside home;

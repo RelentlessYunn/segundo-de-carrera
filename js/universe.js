@@ -1292,8 +1292,8 @@ void main(){
     const every=robot?(anim?60:100):anim?0:phone?31:13;
     if(busy||dirty||now-lastDraw>=every){
       dirty=false;
+      adapt(now);                /* before drawing: a new size wipes the canvas, so this frame must be drawn after it */
       render(boost);
-      adapt(now);
       lastDraw=now;
     }
     if(busy||live) raf=requestAnimationFrame(loop);
@@ -1392,7 +1392,12 @@ void main(){
     /* only a real change of size */
     let rz=0; window.addEventListener("resize",()=>{ clearTimeout(rz); rz=setTimeout(()=>{
       if(!ok) return;
-      if(Math.abs(cv.clientWidth-W)>2||Math.abs(cv.clientHeight-H)>2){ layout(); if(!anim) base={...camFor(scene)}; sizeTargets(); need(); }
+      if(Math.abs(cv.clientWidth-W)>2||Math.abs(cv.clientHeight-H)>2){
+        layout(); if(!anim) base={...camFor(scene)}; sizeTargets();
+        /* the new size wiped the canvas: draw now, or the screen shows it black until the next frame */
+        if(!lost) render(0);
+        need();
+      }
     },200); });
   }
   if(!gl) root.classList.add("nogl");

@@ -163,6 +163,9 @@ body.arriving>div.wrap{animation-delay:.2s}
 
 /* ---------- the universe (universe.js) ---------- */
 #universe{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+/* phones: as tall as the screen with the address bar hidden, so the bar coming and going while
+   you scroll never resizes the canvas (a resize wipes it and costs a rebuild of its pictures) */
+@supports (height:100lvh){#universe{bottom:auto;height:100lvh}}
 /* flying into a section: home has faded, nothing in it can be clicked meanwhile */
 .portal.entering .p-in,.portal.entering .p-bar{pointer-events:none}
 [data-quality=low] #universe,[data-quality=medium] #universe{display:none}
@@ -170,7 +173,9 @@ body.arriving>div.wrap{animation-delay:.2s}
 html.gl #sky{display:none}
 /* during the flight after the PIN, the far stars fade in around you */
 html.flying #sky{opacity:1;transition:opacity 4.5s ease}
-.p-in,.p-bar{z-index:2}
+/* the bar stays above home's content: on a phone .p-in spans the whole width and would cover it */
+.p-in{z-index:2}
+.p-bar{z-index:4}
 
 /* cards of the galaxies still to explore */
 .p-cards{grid-template-columns:repeat(2,1fr)}

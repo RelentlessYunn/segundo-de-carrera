@@ -15,9 +15,12 @@
 @media (hover:hover){.seg button:hover{color:var(--ink)}}
 .seg button:active{transform:scale(.95)}
 .seg button[aria-checked=true]{background:var(--ink);color:var(--on-ink);box-shadow:0 2px 8px rgba(0,0,0,.25)}
-/* the gear turns a little when hovered */
-.gear-btn svg{transition:transform .5s var(--spring)}
-@media (hover:hover){.gear-btn:hover svg{transform:rotate(60deg)}}
+/* the gear turns a little when hovered, and when tapped (phones have no hover) */
+.gear-btn svg{transition:transform .6s var(--spring);stroke-width:1.5}
+.gear-btn svg circle{fill:currentColor;fill-opacity:.35}
+@media (hover:hover){.gear-btn:hover svg{transform:rotate(45deg)}}
+.gear-btn:active svg{transform:rotate(45deg);transition-duration:.25s}
+[data-motion=none] .gear-btn svg{transition:none;transform:none}
 @media (max-width:620px){
   .set-row{flex-direction:column;align-items:stretch;padding:16px 14px}
   .seg{display:flex}
