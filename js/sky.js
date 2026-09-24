@@ -25,9 +25,8 @@
      Much lighter than the 3D universe: each place is one still picture of stars (small ones in
      real colours, a few brighter ones, a faint band of the Milky Way and faint clouds of gas),
      painted once. On home, each section is a bright coloured star where its galaxy would be.
-     Opening a section flies into its star (the stars rush past, the star swells into a glow)
-     and comes out in that section's own sky, with its star shining large; going home pulls
-     back out of it. universe.js hands its flights here when there is no 3D universe. */
+     Opening a section moves smoothly forward into its star, into that section's own sky, where
+     its star shines large; going home moves back out of it. One smooth move, no flare. universe.js hands its flights here when there is no 3D universe. */
   function simple(){
     const c=document.createElement("canvas"); c.className="sky-simple";
     sky.insertBefore(c,sky.firstChild);
@@ -108,7 +107,7 @@
       if(id==="home") SEC.forEach(k=>{ const [qx,qy]=posOf(k); glow(x,qx,qy,starR(),COL[k],1); });
       x.setTransform(DPR,0,0,DPR,0,0); x.globalAlpha=1;
     }
-    const easeIn=p=>p*p*p, easeOut=p=>1-Math.pow(1-p,3), sm=(a,b,v)=>{ const t=Math.min(1,Math.max(0,(v-a)/(b-a))); return t*t*(3-2*t); };
+    const sm=(a,b,v)=>{ const t=Math.min(1,Math.max(0,(v-a)/(b-a))); return t*t*(3-2*t); };
     let scene="home", fl=null, raf=0;
     function paint(now){
       raf=0;
@@ -116,23 +115,20 @@
       x.fillStyle="#030407"; x.fillRect(0,0,W,H);
       if(!fl){ place(scene,1,W/2,H/2,1); return; }
       const p=Math.min(1,(now-fl.t0)/fl.ms);
+      /* one smooth move, forward into the star or back out of it: both skies scale the same way,
+         so it never pulls back, and nothing flares */
+      const e=p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
       if(fl.from==="home"&&COL[fl.to]){
-        /* into a star: home rushes past towards it, the star swells into a glow, and its own sky opens */
-        const [px,py]=posOf(fl.to), e=easeIn(Math.min(1,p/.62));
-        place("home",1+9*e,px,py,1-sm(.42,.7,p));
-        const R=starR()*(1+26*e*e);
-        glow(x,px,py,R,COL[fl.to],1-sm(.6,.9,p));
-        const k=sm(.52,1,p), [sx,sy]=sunOf(fl.to);
-        place(fl.to,2.6-1.6*easeOut(k),sx,sy,k);
+        const [px,py]=posOf(fl.to);
+        place("home",1+4.5*e,px,py,1-sm(.45,.9,p));
+        place(fl.to,.45+.55*e,px,py,sm(.3,.85,p));
       } else if(fl.to==="home"&&COL[fl.from]){
-        /* back out of the star: its sky shrinks into it, and home opens around */
-        const [px,py]=posOf(fl.from), [sx,sy]=sunOf(fl.from), e=easeIn(Math.min(1,p/.6));
-        place(fl.from,1-.62*e,sx,sy,1-sm(.3,.62,p));
-        const k=sm(.35,1,p);
-        place("home",4-3*easeOut(k),px,py,k);
+        const [px,py]=posOf(fl.from);
+        place(fl.from,1-.55*e,px,py,1-sm(.15,.7,p));
+        place("home",5.5-4.5*e,px,py,sm(.1,.55,p));
       } else {
-        place(fl.from,1+.25*p,W/2,H/2,1-sm(0,.6,p));
-        place(fl.to,1.25-.25*easeOut(p),W/2,H/2,sm(.3,1,p));
+        place(fl.from,1+.2*e,W/2,H/2,1-sm(0,.6,p));
+        place(fl.to,.85+.15*e,W/2,H/2,sm(.3,1,p));
       }
       if(!fl.reached&&p>=fl.arriveAt) arrive(fl);
       if(p>=1){ fl=null; paint(now); return; }
@@ -158,7 +154,8 @@
         if(from==="gate"){ kick(); if(onArrive) setTimeout(onArrive,900); return true; }
         if(!animate||!fullMotion()||src===to){ kick(); if(onArrive) onArrive(); return true; }
         /* quicker than the 3D flights */
-        fl={from:src,to,t0:performance.now(),ms:to==="home"?1100:1250,arriveAt:.72,reached:false,also:onArrive?[onArrive]:[],cancels:onCancel?[onCancel]:[]};
+        field(to); field(src);                           /* painted before the move starts, not in the middle of it */
+        fl={from:src,to,t0:performance.now(),ms:1050,arriveAt:.7,reached:false,also:onArrive?[onArrive]:[],cancels:onCancel?[onCancel]:[]};
         kick(); return true;
       },
       /* a click during the flight: what waits for it shows now, the flight goes on */
