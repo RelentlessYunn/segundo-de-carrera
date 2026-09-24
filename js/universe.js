@@ -37,7 +37,7 @@
      is hidden, and life pauses after a while without touching anything.
    · Universe.go(scene, {animate, duration, onArrive, onCancel}) moves the
      camera. Without animations it simply jumps and everything stands still.
-     Universe.skip() ends a flight at once; Universe.ready() says whether
+     Universe.skip() shows at once what waits for a flight, which flies on; Universe.ready() says whether
      everything is built and on the screen (the passage of shift.js waits).
    · Only with Quality = High. Without WebGL2 (or with Medium or Low) there is
      no universe: sky.js draws a simpler sky instead (or none).
@@ -190,7 +190,7 @@ const Universe=(function(){
     if(s==="gate") return {x:0,y:0,z:-430};
     if(s==="blackhole"&&SIGHTS.bh.p){
       /* straight in front of it, so it sits in the middle of the screen (the text sits below) */
-      const b=SIGHTS.bh, d=b.R*(W<760?6.5:8.5);
+      const b=SIGHTS.bh, d=b.R*(W<760?11:13);
       return {x:b.p[0], y:b.p[1], z:b.p[2]-d};
     }
     if(s==="home"||!GALAXIES[s]||!world[s]) return {x:0,y:0,z:0};
@@ -729,9 +729,10 @@ void main(){ o=texture(uTex,gl_FragCoord.xy*uK); }`;
      pixel shows: the hole (black), the thin disk of hot gas each time the ray crosses it, or
      the sky it finally escapes to. The shadow, the thin ring of light that went round it, the
      disk bent over the top and under the bottom, and the Einstein ring of the stars behind all
-     come out of that by themselves. The gas glows like a black body: hotter inside (the thin
-     disk's law), bluer and brighter on the side coming at us, redder on the side going away,
-     and dimmer and redder deep in the hole's pull (Doppler and gravitational redshift).
+     come out of that by themselves. The gas is hotter inside (the thin disk's law), brighter
+     and whiter on the side coming at us, dimmer and deeper on the side going away and deep
+     in the hole's pull (Doppler and gravitational redshift); its colours run from pale pink
+     through rose and magenta to violet, with bright pink knots in the outer disk.
      Units: the hole's own radius (the event horizon) is 1. */
   const COMP_FS=HEAD+NOISE+`in vec2 vUv; out vec4 o;
 uniform sampler2D uHdr, uBloom; uniform float uExp, uBloomK, uTime, uOutK; uniform vec2 uRes;
@@ -758,7 +759,7 @@ vec3 bb(float K){
 float gas(float r,vec2 xy){
   float ph=atan(xy.y,xy.x), t=uBHn.w, n=0., wsum=0.;
   for(int k=0;k<3;k++){
-    float rk=k==0?3.6:k==1?6.:9.5, w=exp(-pow((r-rk)/(k==0?1.6:2.4),2.));
+    float rk=k==0?3.6:k==1?7.:13., w=exp(-pow((r-rk)/(k==0?1.8:k==1?3.:4.5),2.));
     float a=ph-t*.9*pow(3./rk,1.5);                      /* Keplerian: faster inside */
     vec3 q=vec3(r*3.4,cos(a)*1.6,sin(a)*1.6)+float(k)*7.3;
     n+=w*(fbm3(q)*.65+fbm3(vec3(r*11.,cos(a)*.9,sin(a)*.9)+float(k)*3.1)*.35);   /* clumps, and fine streaks along the orbits */
@@ -767,13 +768,27 @@ float gas(float r,vec2 xy){
   n/=max(wsum,1e-3);
   return .25+1.6*n*n;
 }
+/* its colours: pale pink-white where it is hottest, then rose and magenta, and deep violet at
+   the cool outer edge; the side coming at us (hotter to our eyes) turns almost white */
+vec3 palette(float x){
+  vec3 c=mix(vec3(.3,.06,.78),vec3(.86,.12,.82),smoothstep(.12,.42,x));
+  c=mix(c,vec3(1.,.3,.62),smoothstep(.38,.66,x));
+  c=mix(c,vec3(1.,.8,.9),smoothstep(.66,.98,x));
+  return mix(c,vec3(.96,.95,1.),smoothstep(1.,1.5,x));
+}
+/* bright pink knots scattered through the outer disk, turning with it */
+float knots(float r,vec2 xy){
+  float a=atan(xy.y,xy.x)-uBHn.w*.9*pow(3./max(r,3.),1.5);
+  float n=vn3(vec3(r*2.3,cos(a)*9.,sin(a)*9.));
+  return pow(max(n-.62,0.)/.38,3.)*smoothstep(6.,11.,r);
+}
 void main(){
   vec2 uv=vUv; vec3 add=vec3(0.); float hole=0., bgT=1.;
   if(uBH.w>0.){
     vec3 rd=normalize(vec3((gl_FragCoord.xy-uRes*.5)/uFpx,1.));
     vec3 Q=uBH.xyz, ro=-Q;                                 /* the camera, seen from the hole */
     float tc=dot(Q,rd), b=length(cross(Q,rd));             /* how close the straight ray passes */
-    const float RI=14.;                                     /* inside this sphere the path is traced */
+    const float RI=21.;                                     /* inside this sphere the path is traced (the disk reaches 19) */
     if(tc>0.&&b<RI*3.){
       vec3 dir=rd;
       if(b>=RI){
@@ -801,17 +816,18 @@ void main(){
           float s0=dot(p,n), s1=dot(pn,n);
           if(s0*s1<0.){
             vec3 x=mix(p,pn,s0/(s0-s1)); float rr=length(x);
-            if(rr>3.&&rr<11.5){
+            if(rr>3.&&rr<19.){
               /* the thin disk's temperature (inner edge at the last stable orbit, 3 radii) */
-              float Tn=pow(3./rr,.75)*pow(max(1.-sqrt(3./rr),0.),.25)/.214;
+              float Tn=pow(3./rr,.75)*pow(max(1.-sqrt(3./rr),0.),.25)/.488;   /* 1 at its hottest (4.1 radii) */
               /* it orbits: towards us or away (Doppler), and deep in the pull (gravitational) */
               vec3 uo=normalize(cross(n,x)); float be=min(sqrt(.5/(rr-1.)),.7), ga=inversesqrt(1.-be*be);
               float opz=ga*(1.+be*dot(uo,normalize(v)))/sqrt(1.-1./rr);
               float g=1./max(opz,.1), Tobs=Tn*g;
               float gz=gas(rr,vec2(dot(x,e1),dot(x,e2)));
-              float edge=smoothstep(3.,3.35,rr)*(1.-smoothstep(6.5,10.,rr));
-              float I=pow(Tobs,4.)*gz*edge*.06;
-              vec3 em=pow(bb(clamp(2900.*Tobs,900.,30000.)),vec3(1.7))*min(I,6.)*1.3;   /* (deepened: the picture's curve washes colours out) */
+              float edge=smoothstep(3.,3.35,rr)*(1.-smoothstep(10.,19.,rr));
+              float I=pow(Tobs,3.)*gz*edge*1.6;               /* (softer than T⁴, so the long outer disk still shows) */
+              vec3 em=palette(Tobs)*min(I,6.)*1.3
+                     +vec3(1.,.36,.82)*knots(rr,vec2(dot(x,e1),dot(x,e2)))*edge*2.2;
               float al=clamp((.72+.25*gz)*edge,0.,.97);     /* thick gas: what lies behind it hardly shows (thinner at the edges) */
               add+=T*em;
               T*=1.-al;
@@ -1530,7 +1546,11 @@ void main(){
     const from=scene, sameScene=to===scene;
     scene=to;
     if(replaced) replaced.cancels.forEach(fn=>fn());
-    if(!ok){ if(onArrive) onArrive(); return; }          /* no universe drawn (Quality = Low, no WebGL2) */
+    if(!ok){
+      /* no 3D universe: with Quality = Medium the sky of stars flies instead (Stars, in sky.js) */
+      if(window.Stars&&Stars.go(to,{animate,from,onArrive,onCancel})) return;
+      if(onArrive) onArrive(); return;                 /* nothing drawn (Quality = Low, no WebGL2) */
+    }
     const start={...base};
     if(!animate||!fancy()||sameScene){ base={...camFor(to)}; prevCam=null; if(from==="gate") starsFade=1; need(); if(onArrive) onArrive(); return; }
     if(from==="gate"){ flightFromGate=performance.now(); starsFade=0; }
@@ -1545,13 +1565,12 @@ void main(){
       /* while flying, the scattered stars shine more: that is where the sense of speed comes from */
       return Math.sin(Math.PI*p)*.9;
     },
-    /* there at once (a second click during the trip) */
-    finish(){
-      if(anim!==me) return;
-      base={...camFor(to)}; prevCam=null; anim=null;
-      if(from==="gate"){ starsFade=1; flightFromGate=0; }
-      if(!reached){ reached=true; me.also.forEach(fn=>fn()); }
-      need();
+    /* a second click during the trip: what waits for the arrival shows now, while the camera
+       flies on to the end (the sky never jumps) */
+    early(){
+      if(anim!==me||reached) return false;
+      reached=true; me.also.forEach(fn=>fn());
+      return true;
     }};
     anim=me; kick();
   }
@@ -1607,14 +1626,14 @@ void main(){
   if(!gl) root.classList.add("nogl");
   if(!scene) scene=startScene();
   /* seek(seconds): jump life forward (tests and debugging) */
-  /* skip(): the flight under way ends now, as if it had arrived (true if there was one) */
-  const skip=()=>{ if(!anim) return false; anim.finish(); return true; };
+  /* skip(): what waits for the flight under way shows now; the flight itself goes on (true if it did something) */
+  const skip=()=>ok?!!anim&&anim.early():!!(window.Stars&&Stars.skip());
   /* ready(): everything is built and on the screen (or there is no universe to wait for) */
   const ready=()=>!gl||lost||dead||root.hasAttribute("data-locked")||settled>=1;
-  return {go, skip, ready, seek:v=>{ life=v; need(); }, scene:()=>scene, busy:()=>!!anim, camera:()=>({...base}),
+  return {go, skip, ready, seek:v=>{ life=v; need(); }, scene:()=>scene, busy:()=>ok?!!anim:!!(window.Stars&&Stars.busy()), camera:()=>({...base}),
     painted:()=>IDS.filter(id=>G[id]).length, gl:()=>ok, built:()=>Object.keys(G),
     /* hole(): whether the black hole is on the screen now (tests) */
     hole:()=>ok&&!!blackHole(),
     /* shoot(): a shooting star and a comet right now (tests) */
-    shoot:at=>{ newMeteor(clock()); newComet(clock(),at||0); need(); }, GALAXIES};
+    shoot:at=>{ newMeteor(clock()); newComet(clock(),at||0); need(); }, GALAXIES, SIGHTS};
 })();

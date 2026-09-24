@@ -106,8 +106,8 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.click("#notes .p-back-top"); await p.waitForTimeout(600);
     await p.click("header .home-btn"); await p.waitForTimeout(3200);
     await p.click("#homeUc3m"); await p.waitForTimeout(250); await p.mouse.click(640,450); await p.waitForTimeout(350);
-    ok(await p.evaluate(()=>document.getElementById("portal").hidden&&location.hash==="#schedule"&&!Universe.busy()&&Universe.scene()==="uc3m"),
-      "a second click during the trip skips it: the timetable shows at once");
+    ok(await p.evaluate(()=>document.getElementById("portal").hidden&&location.hash==="#schedule"&&Universe.busy()&&Universe.scene()==="uc3m"),
+      "a second click during the trip shows the timetable at once, while the camera flies on (the sky never jumps)");
     await p.click("header .home-btn"); await p.waitForTimeout(200);
     ok(await p.evaluate(()=>Universe.scene()==="home"&&!!document.querySelector("header .home-btn .logo-mark")),"the logo takes you home, flying back to the home galaxy");
     await p.waitForTimeout(2800);
@@ -314,10 +314,17 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
         uni:getComputedStyle(document.getElementById("universe")).display,glass:getComputedStyle(document.querySelector("nav.bar")).backdropFilter}; });
     ok(!mr.gl&&!mr.cls&&mr.canvas&&mr.layers==="none"&&mr.sky!=="none"&&mr.uni==="none"&&mr.glass&&mr.glass!=="none"&&!md.errors.length,
       `Quality = Medium: no galaxies, a still sky of simple stars, the glass look kept (${JSON.stringify(mr)})`);
-    ok(await md.evaluate(()=>document.querySelectorAll('.seg[data-key="look"] button').length===4
-      &&document.querySelector('.seg[data-key="look"] button[aria-checked=true]').dataset.value==="light"
-      &&LOOKS.full.motion==="full"&&LOOKS.full.quality==="high"&&LOOKS.off.motion==="none"&&LOOKS.off.quality==="low"),
-      "Effects offers four levels (Full, Calm, Light, Minimal), each setting animations and quality together; a Medium device shows Light");
+    ok(await md.evaluate(()=>document.querySelectorAll('.seg[data-key="look"] button').length===3
+      &&document.querySelector('.seg[data-key="look"] button[aria-checked=true]').dataset.value==="medium"
+      &&LOOKS.high.motion==="full"&&LOOKS.high.quality==="high"&&LOOKS.medium.quality==="medium"&&LOOKS.low.motion==="none"&&LOOKS.low.quality==="low"),
+      "Effects offers three levels (High, Medium, Minimal), each setting animations and quality together");
+    /* Medium: each section is a star; opening one flies into it, quicker than the 3D flight */
+    await md.goto(PAGE+"#home"); await md.waitForTimeout(3500);
+    await md.click("#homeUc3m"); await md.waitForTimeout(300);
+    const fly=await md.evaluate(()=>({busy:Universe.busy(),stars:!!window.Stars,scene:Stars.scene()}));
+    await md.waitForFunction(()=>location.hash==="#schedule"&&!Universe.busy(),null,{timeout:5000}).catch(()=>{});
+    ok(fly.busy&&fly.stars&&fly.scene==="uc3m"&&await md.evaluate(()=>document.getElementById("portal").hidden&&Stars.scene()==="uc3m"),
+      `Quality = Medium: opening UC3M flies into its star and lands in its own sky (${JSON.stringify(fly)})`);
     await md.context().close();
   }
 

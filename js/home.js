@@ -97,7 +97,8 @@ const Home=(function(){
   function enter(card,go){
     if(entering) return;
     const id=card.dataset.galaxy||"uc3m";
-    if(!fancy()){ Universe.go(id,{animate:false}); go(); return; }
+    /* a flight: through the 3D universe, or into a star of the sky of stars (Quality = Medium) */
+    if(!fancy()&&!(fullMotion()&&window.Stars)){ Universe.go(id,{animate:false}); go(); return; }
     entering=true;
     const inner=$("#portal .p-in"), bar=$("#portal .p-bar"), from=location.hash;
     const fade=[{opacity:1,transform:"none"},{opacity:0,transform:"translateY(-10px)"}];

@@ -22,13 +22,11 @@ const highQuality=()=>SETTINGS.quality==="high";
 const fancy=()=>fullMotion()&&highQuality();
 
 /* Effects: one choice in Settings, which sets both how much moves and how heavy the look is */
-const LOOKS={full:{motion:"full",quality:"high"}, calm:{motion:"basic",quality:"high"},
-             light:{motion:"basic",quality:"medium"}, off:{motion:"none",quality:"low"}};
-/* the level the saved settings amount to (older devices may have any pair: the nearest) */
-function currentLook(){
-  const q=SETTINGS.quality, m=SETTINGS.motion;
-  return q==="low"?"off":q==="medium"?"light":m==="full"?"full":"calm";
-}
+/* High: the living 3D universe. Medium: a sky of stars, where each section is a bright star the
+   camera flies into (Stars, in sky.js). Minimal: a plain background, nothing moves */
+const LOOKS={high:{motion:"full",quality:"high"}, medium:{motion:"full",quality:"medium"}, low:{motion:"none",quality:"low"}};
+/* the level the saved settings amount to (older devices may have any pair: by the quality) */
+const currentLook=()=>LOOKS[SETTINGS.quality]?SETTINGS.quality:"high";
 
 /* saves one setting. Language re-renders everything, so the page reloads. */
 function saveSetting(key,value){

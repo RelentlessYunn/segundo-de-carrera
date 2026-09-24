@@ -26,7 +26,8 @@ The whole app is one universe in real 3D, drawn by the graphics card (WebGL2) on
 
 - **Home is the Nolan galaxy.** After the PIN the camera flies from deep space into it (five seconds, the far stars fading in around you) and stays there: home's background *is* that galaxy, low on the left.
 - **Each section is a galaxy you can see from home**: UC3M, Nolan (under construction), and two kept for future sections, Andrómeda and Sombrero (cards "Por explorar" on home, route `#soon/<id>`).
-- **Opening a section** flies the camera into its galaxy (`Home.enter` → `Universe.go(id)`), and the section appears inside it: UC3M's timetable has UC3M's galaxy glowing over the header. **A second click** (or Enter / Space) during the trip skips it and shows the section at once (`Universe.skip()`). **Going home** flies back out.
+- **Opening a section** flies the camera into its galaxy (`Home.enter` → `Universe.go(id)`), and the section appears inside it: UC3M's timetable has UC3M's galaxy glowing over the header. **A second click** (or Enter / Space) during the trip shows the section at once while the camera flies on to the end, so the sky never jumps (`Universe.skip()`). **Going home** flies back out.
+- **Effects = Medium: a sky of stars you can fly through** (`window.Stars`, in `sky.js`). No 3D: each place is one still picture of stars, painted once. On home each section is a bright coloured star where its galaxy would be; opening it dives into that star (home rushes past, the star swells into a glow) and comes out in the section's own sky, its star shining where it was — in about 1.2 s, quicker than the 3D flight. Going home pulls back out. `Universe.go` hands its flights to `Stars` when there is no 3D universe.
 - **Nothing is recalculated frame by frame on the processor.** Every moving thing is an exact formula of time evaluated by the graphics card; each frame the page only passes the time and the camera. Galaxy stars and maps are built once, one galaxy at a time (home's first), in small steps so the page never stutters: the stars are worked out in a background worker, and each disk's map is painted on the graphics card in strips of about 512×512 pixels, one per turn (one big paint used to hold the graphics card for ~40 ms).
 - **Spiral galaxies follow the density-wave model** (Lin & Shu, as in Ingo Berg's *Galaxy Renderer*): every star moves on an ellipse, each ellipse a little flatter and a little more turned the further out it is. The arms are where the ellipses crowd together, so they stay while the stars flow through them, and inner stars turn faster than outer ones. The whole pattern turns slowly too.
   - **Pink star-forming regions** only light up while they cross an arm (where neighbouring orbits squeeze together) and fade as they leave it; young blue stars and clouds of them live in the arms and fade between them.
@@ -46,7 +47,7 @@ The whole app is one universe in real 3D, drawn by the graphics card (WebGL2) on
 - **The logo is the home button** (top left in UC3M).
 - The opening of home (the N drawing itself, NOLAN appearing) plays after the PIN and when the app starts.
 - **Log out** (Settings, red button): `Gate.lock()` forgets the device, puts the camera back in deep space and returns to home, so the next PIN lands at home.
-- With Animations = Basic or None there are no flights (the camera jumps) and the universe stands still. Quality = Medium has no universe: a still sky of simple stars (drawn once by `js/sky.js`, with a faint Milky Way band and faint clouds of gas). Quality = Low has no universe at all: a plain dark background.
+- With Animations = Basic or None there are no flights (the camera jumps) and the universe stands still. Quality = Medium has no 3D universe: the sky of stars of `js/sky.js` (see above). Quality = Low has no universe at all: a plain dark background.
 
 ## The astral theme
 
@@ -59,7 +60,7 @@ The whole site lives in the night sky:
 - **Your constellation** (Tasks): one star per task, lit and joined when done.
 - **Ticks light up** like stars, the red "now" line ends in a glowing point.
 
-How much of it runs depends on the Effects setting (Full = Animations All + Quality High; Calm = Basic + High; Light = Basic + Medium; Minimal = None + Low; the table shows every pair, which the code still handles):
+How much of it runs depends on the Effects setting (High = Animations All + Quality High; Medium = All + Medium; Minimal = None + Low; the table shows every pair, which the code still handles):
 
 | | Quality High | Quality Medium | Quality Low |
 |---|---|---|---|
@@ -84,7 +85,7 @@ The site is called **Nolan**. The logo is an astral N: four identical four-point
 | **Tasks** (`#tasks`) | Tasks per subject and general ones. Ticks are saved to the cloud. |
 | **Faculty** (`#faculty`) | Table with email and office. |
 | **Notes for Claude** (`#notes`, inside home) | Free text saved to the cloud. **Claude cannot read JSONBin**: to pass them on, press *Copy notes* and paste into the chat. |
-| **Settings** (`#settings`, inside home) | Language (Spanish / English) and **Effects**, one choice for animations and quality together (`LOOKS` in `prefs.js`): Full (the living 3D universe: animations all, quality high), Calm (the same universe, still: basic, high), Light (a simple still starry sky: basic, medium) and Minimal (plain and still: none, low). Saved on each device. There is only the dark look (the light theme was removed in v0.52). Changing any of them reloads the page through a passage: the screen fades softly (≈0.4 s) to the colour of the empty night sky, not a flat black, the page reloads behind it and the new look fades in (`js/shift.js`). The fades run on the compositor, so the busy start of the page behind cannot make them stutter; while the passage covers the screen completely (`html.shift-dark`) the universe draws nothing but the one frame the passage waits for. The passage opens when the page is ready — the universe built and drawn, the saved data read, the font in — but never waits more than 2.5 s: a galaxy still being built then fades in by itself. |
+| **Settings** (`#settings`, inside home) | Language (Spanish / English) and **Effects**, one choice for animations and quality together (`LOOKS` in `prefs.js`): High (the living 3D universe: animations all, quality high), Medium (a sky of stars you can fly through: all, medium) and Minimal (a plain background, nothing moves: none, low). Saved on each device. There is only the dark look (the light theme was removed in v0.52). Changing any of them reloads the page through a passage: the screen fades softly (≈0.4 s) to the colour of the empty night sky, not a flat black, the page reloads behind it and the new look fades in (`js/shift.js`). The fades run on the compositor, so the busy start of the page behind cannot make them stutter; while the passage covers the screen completely (`html.shift-dark`) the universe draws nothing but the one frame the passage waits for. The passage opens when the page is ready — the universe built and drawn, the saved data read, the font in — but never waits more than 2.5 s: a galaxy still being built then fades in by itself. |
 | **Nolan** (`#nolan`) | Under construction. |
 
 On mobile the tabs sit at the bottom and you can swipe between them.

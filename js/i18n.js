@@ -124,8 +124,8 @@ es:{
   "s.settings.lead":"Se guarda en este dispositivo.",
   "s.set.lang":"Idioma", "s.set.langHelp":"Toda la interfaz. Los textos de las asignaturas (evaluación, consejos, temario) siguen en español.",
   "s.set.look":"Efectos",
-  "s.set.lookHelp":"Completo: el universo en 3D vivo, con galaxias, cometas y estrellas fugaces. Tranquilo: el mismo universo, quieto. Ligero: un cielo de estrellas sencillo y quieto, mucho más ligero. Mínimo: fondo liso y nada se mueve, para móviles lentos o ahorrar batería. Si tu sistema pide reducir el movimiento, no se anima nada.",
-  "s.set.look.full":"Completo", "s.set.look.calm":"Tranquilo", "s.set.look.light":"Ligero", "s.set.look.off":"Mínimo",
+  "s.set.lookHelp":"Alto: el universo en 3D vivo, con galaxias, un agujero negro, cometas y estrellas fugaces. Medio: un cielo de estrellas, mucho más ligero, donde cada sección es una estrella brillante hacia la que vuela la cámara. Mínimo: fondo liso y nada se mueve, para móviles lentos o ahorrar batería. Si tu sistema pide reducir el movimiento, no se anima nada.",
+  "s.set.look.high":"Alto", "s.set.look.medium":"Medio", "s.set.look.low":"Mínimo",
   "s.set.reload":"Cambiar el idioma o los efectos recarga la página."
 },
 en:{
@@ -221,8 +221,8 @@ en:{
   "s.settings.lead":"Saved on this device.",
   "s.set.lang":"Language", "s.set.langHelp":"The whole interface. Subject texts (grading, advice, syllabus) stay in Spanish.",
   "s.set.look":"Effects",
-  "s.set.lookHelp":"Full: the living 3D universe, with galaxies, comets and shooting stars. Calm: the same universe, standing still. Light: a simple, still starry sky, much lighter. Minimal: a plain background and nothing moves, for slow phones or to save battery. If your system asks for reduced motion, nothing animates.",
-  "s.set.look.full":"Full", "s.set.look.calm":"Calm", "s.set.look.light":"Light", "s.set.look.off":"Minimal",
+  "s.set.lookHelp":"High: the living 3D universe, with galaxies, a black hole, comets and shooting stars. Medium: a sky of stars, much lighter, where each section is a bright star the camera flies to. Minimal: a plain background and nothing moves, for slow phones or to save battery. If your system asks for reduced motion, nothing animates.",
+  "s.set.look.high":"High", "s.set.look.medium":"Medium", "s.set.look.low":"Minimal",
   "s.set.reload":"Changing the language or the effects reloads the page."
 }};
 
