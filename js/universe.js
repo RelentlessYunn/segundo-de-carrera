@@ -31,8 +31,9 @@
      changing angles and near things move against far ones: the depth shows.
    · Light is added up like in a camera (high dynamic range) and then
      developed with a soft curve and a faint glow around bright things.
-   · Budget: fewer stars and a lower resolution on phones; the resolution
-     also adapts if the device struggles. Nothing is drawn while the tab
+   · Budget: fewer stars and a lower resolution on phones; the galaxies' volumes
+     (soft light and dust) at half the resolution; the resolution also adapts if
+     the device struggles. Nothing is drawn behind the passage of shift.js. Nothing is drawn while the tab
      is hidden, and life pauses after a while without touching anything.
    · Universe.go(scene, {animate, duration, onArrive, onCancel}) moves the
      camera. Without animations it simply jumps and everything stands still.
@@ -51,9 +52,9 @@ const Universe=(function(){
      robot: automated tests (a software GPU); ?tier=phone or ?tier=desk forces one */
   const phone=matchMedia("(max-width:760px),(pointer:coarse)").matches;
   const TIERS={
-    robot:{k:.07,map:256,scale:.4,maxScale:.5,steps:[4,8],far:1500,field:500,bloom:false,neb:256,gc:20},
-    phone:{k:.36,map:1024,scale:.8,maxScale:1.5,steps:[8,20],far:5000,field:900,bloom:true,neb:640,gc:60},
-    desk:{k:1,map:2048,scale:1,maxScale:1.5,steps:[12,30],far:9000,field:1400,bloom:true,neb:1024,gc:130}};
+    robot:{k:.07,map:256,scale:.4,maxScale:.5,steps:[4,8],far:1500,field:500,bloom:false,neb:256,gc:20,vol:1},
+    phone:{k:.36,map:1024,scale:.8,maxScale:1.5,steps:[8,20],far:5000,field:900,bloom:true,neb:640,gc:60,vol:.5},
+    desk:{k:1,map:2048,scale:1,maxScale:1.5,steps:[12,30],far:9000,field:1400,bloom:true,neb:1024,gc:130,vol:.5}};
   const asked=(location.search.match(/[?&]tier=(robot|phone|desk)\b/)||[])[1];
   const robot=!asked&&!!navigator.webdriver;
   const TIER=TIERS[asked||(robot?"robot":phone?"phone":"desk")];
@@ -190,9 +191,11 @@ const Universe=(function(){
   /* ---------- life: time that only runs while the universe is alive ---------- */
   let life=0;
   let scrolledAt=0;
+  /* the passage of shift.js covers the whole screen (fully opaque): nothing here can be seen */
+  const hidden=()=>root.classList.contains("shift-dark");
   window.addEventListener("scroll",()=>{ scrolledAt=performance.now(); },{passive:true,capture:true});
   /* (automated tests: no life, so their fake clocks never have to draw thousands of frames) */
-  const alive=()=>!robot&&fancy()&&!document.hidden&&!document.body.classList.contains("idle")&&performance.now()-scrolledAt>250;
+  const alive=()=>!robot&&fancy()&&!document.hidden&&!hidden()&&!document.body.classList.contains("idle")&&performance.now()-scrolledAt>250;
   /* the camera turns slowly around what it looks at, so the galaxies are seen from
      changing angles and their depth shows (home: around a point among them; a section:
      around its galaxy, which stays in the same place on the screen). With a mouse it
@@ -250,7 +253,7 @@ const Universe=(function(){
   let gl=null, lost=false, ok=false;
   let P={};                          /* shader programs */
   let RW=1,RH=1, scale=1, maxScale=1;/* render size (device px) and px per css px */
-  let hdr=null, bloomA=null, bloomB=null, half=false, checkedHalf=false;
+  let hdr=null, bloomA=null, bloomB=null, volT=null, half=false, checkedHalf=false;
   let pointMax=64;
   const G={};                        /* per galaxy: buffers, map, ready time */
   let far=null, field=null, deepBuf=null, nebTex=null, meteorBuf=null, noiseTex=null;
@@ -676,6 +679,9 @@ void main(){ vec3 c=texture(uTex,vUv).rgb*.227;
   c+=(texture(uTex,vUv+uStep*1.385).rgb+texture(uTex,vUv-uStep*1.385).rgb)*.316;
   c+=(texture(uTex,vUv+uStep*3.231).rgb+texture(uTex,vUv-uStep*3.231).rgb)*.07;
   o=vec4(c,1.); }`;
+  /* a galaxy's volume, drawn at a lower resolution, spread over the full picture (it is soft light and dust) */
+  const UP_FS=HEAD+`out vec4 o; uniform sampler2D uTex; uniform vec2 uK;
+void main(){ o=texture(uTex,gl_FragCoord.xy*uK); }`;
   const COMP_FS=HEAD+`in vec2 vUv; out vec4 o;
 uniform sampler2D uHdr, uBloom; uniform float uExp, uBloomK, uTime, uOutK; uniform vec2 uRes;
 float h(vec2 p){ vec3 p3=fract(vec3(p.xyx)*.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
@@ -766,13 +772,14 @@ void main(){
     P.bright=compile(FULL_VS,BRIGHT_FS);
     P.blur=compile(FULL_VS,BLUR_FS);
     P.comp=compile(FULL_VS,COMP_FS);
+    P.up=compile(FULL_VS,UP_FS);
   }
   /* the render size: css size × pixels per css px (adapts to the device) */
   function sizeTargets(){
     const nw=Math.max(1,Math.round(W*scale)), nh=Math.max(1,Math.round(H*scale));
     if(hdr&&nw===RW&&nh===RH) return;
     RW=nw; RH=nh; cv.width=RW; cv.height=RH;
-    drop(hdr); drop(bloomA); drop(bloomB);
+    drop(hdr); drop(bloomA); drop(bloomB); drop(volT); volT=null;
     if(half&&!checkedHalf){
       /* the first time: can this device draw into half-float pictures? if not, 8 bits */
       try{ drop(target(4,4,"half",true)); }catch(e){ half=false; }
@@ -782,6 +789,7 @@ void main(){
     hdr=target(RW,RH,fmt);
     const bw=Math.max(1,RW>>2), bh=Math.max(1,RH>>2);
     bloomA=target(bw,bh,fmt); bloomB=target(bw,bh,fmt);
+    if(TIER.vol<1) volT=target(Math.ceil(RW*TIER.vol),Math.ceil(RH*TIER.vol),fmt);
   }
 
   /* ---------- 3D clouds: smooth noise that repeats, made once ----------
@@ -870,13 +878,16 @@ void main(){
     nebTex=tg.t; gl.deleteFramebuffer(tg.f);
   }
 
-  /* ---------- a galaxy: its stars and its map, built when its turn comes ---------- */
-  function buildGalaxy(id,g){
-    const k=TIER.k, r=rng(g.seed*977+13), st=g.stars, d=g.disk;
+  /* ---------- a galaxy: its stars and its map, built when its turn comes ----------
+     The stars are worked out in a background worker (tens of thousands of them: on the
+     page that would freeze it for a moment), then handed to the graphics card; the map
+     is painted in strips, a little each turn, so neither the page nor the graphics card
+     ever stalls for long (a flight, or the passage of shift.js, keeps moving). */
+  function starData(g,k,gcMembers){
+    const r=rng(g.seed*977+13), st=g.stars, d=g.disk;
     const cnt={old:Math.round((st.old||0)*k), young:Math.round((st.young||0)*k), hii:Math.round((st.hii||0)*Math.max(k,.25)),
                cloud:d?Math.round((st.young||0)*.12*Math.max(k,.3)):0,
                bulge:Math.round((st.bulge||0)*k), halo:Math.round((st.halo||0)*k), gc:Math.max(0,Math.round((st.gc||0)*Math.max(k,.4)))};
-    const gcMembers=TIER.gc;
     const total=cnt.old+cnt.young+cnt.cloud+cnt.hii+cnt.bulge+cnt.halo+cnt.gc*gcMembers;
     const A=new Float32Array(total*4), B=new Float32Array(total*4), O=new Float32Array(total*3), C=new Uint8Array(total*4);
     let i=0;
@@ -925,55 +936,101 @@ void main(){
         put(a,th,1,4,.08+Math.pow(r(),3)*.7,spd,inc,node,kelvin(3500+r()*2800),rr*s*Math.cos(ph),rr*s*Math.sin(ph),rr*u);
       }
     }
-    const e={n:i,vao:gl.createVertexArray(),bufs:[buffer(A),buffer(B),buffer(O),buffer(C)]};
-    gl.bindVertexArray(e.vao);
-    attrib(0,e.bufs[0],4,gl.FLOAT,false,0,0); attrib(1,e.bufs[1],4,gl.FLOAT,false,0,0);
-    attrib(2,e.bufs[2],3,gl.FLOAT,false,0,0); attrib(3,e.bufs[3],4,gl.UNSIGNED_BYTE,true,0,0);
-    gl.bindVertexArray(null);
-    /* the disk's map, painted once on the graphics card */
-    if(d){
-      /* as sharp as this screen needs (and no more: less memory on smaller screens) */
-      const need=Math.ceil(Math.max(W,H)*Math.min(devicePixelRatio||1,1.5)*1.25/256)*256;
-      const big=Math.max(512,Math.min(TIER.map,need));
-      const S=id==="nolan"||id==="uc3m"?big:Math.max(256,big>>1);
-      const tg=target(S,S,"rgba8");
-      gl.viewport(0,0,S,S); gl.disable(gl.BLEND);
-      const u=P.map.u; gl.useProgram(P.map.p);
-      gl.uniform1f(u.uB,1.35);
-      gl.uniform4f(u.uEll,d.rc,d.ex1,d.ex2,d.twist); gl.uniform1f(u.uPhi0,d.phi0);
-      gl.uniform4f(u.uDisk,d.h,d.young.h,d.dust.h,d.warp);
-      gl.uniform4f(u.uArm,d.young.k,d.hii.c1,d.hii.c2,d.dust.k);
-      gl.uniform4f(u.uMisc,d.floc,d.dust.lag,0,g.seed*1.37);
-      const ring=d.ring||{a:0,w:0,light:0,dust:0};
-      gl.uniform4f(u.uRing,ring.a,ring.w,ring.light,ring.dust);
-      gl.uniform4f(u.uMax,4,10,10,5);
-      full();
-      gl.bindTexture(gl.TEXTURE_2D,tg.t);
-      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
-      gl.generateMipmap(gl.TEXTURE_2D);
-      e.map=tg.t; e.mapSize=S; gl.deleteFramebuffer(tg.f);
-    }
-    e.at=fancy()&&!robot&&!covering()?performance.now():-1e9;   /* fades in, unless nobody is looking yet */
-    G[id]=e;
+    return {n:i,A,B,O,C};
   }
-  /* one galaxy per turn, so the page never stutters: home's first */
-  let queue=[];
+  /* the worker: these same functions, sent as text (if there is no worker, on the page) */
+  const stars=(function(){
+    let w=null, seq=0; const waiting={};
+    try{
+      const src=`const TAU=Math.PI*2; ${rng.toString()} const gauss=${gauss.toString()}; ${kelvin.toString()} ${starData.toString()}
+        onmessage=e=>{ const o=starData(e.data.g,e.data.k,e.data.m); postMessage({id:e.data.id,o},[o.A.buffer,o.B.buffer,o.O.buffer,o.C.buffer]); };`;
+      w=new Worker(URL.createObjectURL(new Blob([src],{type:"text/javascript"})));
+      w.onmessage=e=>{ const j=waiting[e.data.id]; delete waiting[e.data.id]; if(j) j.res(e.data.o); };
+      /* a worker that fails: what it had is done on the page, and so is everything after */
+      w.onerror=()=>{ w=null; Object.keys(waiting).forEach(id=>{ const j=waiting[id]; delete waiting[id]; j.res(starData(j.g,j.k,j.m)); }); };
+    }catch(e){ w=null; }
+    return (g,k,m)=>{
+      if(!w) return Promise.resolve(starData(g,k,m));
+      const id=++seq;
+      return new Promise(res=>{ waiting[id]={res,g,k,m}; w.postMessage({id,g,k,m}); });
+    };
+  })();
+  function mapUniforms(d,g){
+    const u=P.map.u; gl.useProgram(P.map.p);
+    gl.uniform1f(u.uB,1.35);
+    gl.uniform4f(u.uEll,d.rc,d.ex1,d.ex2,d.twist); gl.uniform1f(u.uPhi0,d.phi0);
+    gl.uniform4f(u.uDisk,d.h,d.young.h,d.dust.h,d.warp);
+    gl.uniform4f(u.uArm,d.young.k,d.hii.c1,d.hii.c2,d.dust.k);
+    gl.uniform4f(u.uMisc,d.floc,d.dust.lag,0,g.seed*1.37);
+    const ring=d.ring||{a:0,w:0,light:0,dust:0};
+    gl.uniform4f(u.uRing,ring.a,ring.w,ring.light,ring.dust);
+    gl.uniform4f(u.uMax,4,10,10,5);
+  }
+  /* the steps that build one galaxy: each one small (a step may return a promise, and
+     gets the queue, so it can put more steps at its front) */
+  function buildGalaxy(id,g){
+    const d=g.disk, e={};
+    const steps=[()=>stars(g,TIER.k,TIER.gc).then(o=>{
+      if(!gl||lost) return;
+      e.n=o.n; e.vao=gl.createVertexArray(); e.bufs=[buffer(o.A),buffer(o.B),buffer(o.O),buffer(o.C)];
+      gl.bindVertexArray(e.vao);
+      attrib(0,e.bufs[0],4,gl.FLOAT,false,0,0); attrib(1,e.bufs[1],4,gl.FLOAT,false,0,0);
+      attrib(2,e.bufs[2],3,gl.FLOAT,false,0,0); attrib(3,e.bufs[3],4,gl.UNSIGNED_BYTE,true,0,0);
+      gl.bindVertexArray(null);
+    })];
+    /* the disk's map, painted on the graphics card in strips of about 512×512 pixels */
+    if(d){
+      let S=0, tg=null;
+      steps.push(q=>{
+        /* as sharp as this screen needs (and no more: less memory on smaller screens) */
+        const need=Math.ceil(Math.max(W,H)*Math.min(devicePixelRatio||1,1.5)*1.25/256)*256;
+        const big=Math.max(512,Math.min(TIER.map,need));
+        S=id==="nolan"||id==="uc3m"?big:Math.max(256,big>>1);
+        tg=target(S,S,"rgba8");
+        const rows=Math.max(64,Math.floor(262144/S)), strips=[];
+        for(let y0=0;y0<S;y0+=rows){
+          const h=Math.min(rows,S-y0);
+          strips.push(()=>{
+            gl.bindFramebuffer(gl.FRAMEBUFFER,tg.f); gl.viewport(0,0,S,S); gl.disable(gl.BLEND);
+            mapUniforms(d,g);
+            gl.enable(gl.SCISSOR_TEST); gl.scissor(0,y0,S,h); full(); gl.disable(gl.SCISSOR_TEST);
+          });
+        }
+        q.unshift(...strips);
+      });
+      steps.push(()=>{
+        gl.bindTexture(gl.TEXTURE_2D,tg.t);
+        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+        gl.generateMipmap(gl.TEXTURE_2D);
+        e.map=tg.t; e.mapSize=S; gl.deleteFramebuffer(tg.f);
+      });
+    }
+    steps.push(q=>{
+      e.at=fancy()&&!robot&&!covering()?performance.now():-1e9;   /* fades in, unless nobody is looking yet */
+      G[id]=e;
+      if(!robot||!q.length) need();                       /* (automated tests: one frame at the end) */
+    });
+    return steps;
+  }
+  /* one small step per turn, so the page never stutters: home's galaxy first */
+  let queue=[], building=0;
   /* behind the passage of shift.js (a setting just changed) nobody sees the page yet: build
      at full speed, so everything is there, still, when the passage opens */
   const covering=()=>root.classList.contains("shift-arriving");
-  const idle=fn=>covering()?setTimeout(fn,16):window.requestIdleCallback?requestIdleCallback(fn,{timeout:700}):setTimeout(fn,60);
+  const idle=fn=>covering()?setTimeout(fn,0):window.requestIdleCallback?requestIdleCallback(fn,{timeout:700}):setTimeout(fn,60);
   function buildNext(){
     if(!gl||lost) return;
     const job=queue.shift(); if(!job) return;
-    try{ job(); }catch(e){ console.warn("universe:",e); }
-    if(!robot||!queue.length) need();                   /* (automated tests: one frame at the end) */
-    if(queue.length) idle(buildNext);
+    const round=building, next=()=>{ if(round===building&&queue.length) idle(buildNext); };
+    let r=null;
+    try{ r=job(queue); }catch(e){ console.warn("universe:",e); }
+    if(r&&r.then) r.then(next,e=>{ console.warn("universe:",e); next(); }); else next();
   }
   /* when the page has settled: never in the middle of the first clicks */
   function startBuilding(){
-    queue=[];
-    ["nolan","uc3m","forge","andromeda","sombrero"].forEach(id=>queue.push(()=>buildGalaxy(id,GALAXIES[id])));
-    COMPANIONS.forEach(c=>queue.push(()=>buildGalaxy(c.id,c)));
+    queue=[]; building++;
+    ["nolan","uc3m","forge","andromeda","sombrero"].forEach(id=>queue.push(q=>{ q.unshift(...buildGalaxy(id,GALAXIES[id])); }));
+    COMPANIONS.forEach(c=>queue.push(q=>{ q.unshift(...buildGalaxy(c.id,c)); }));
     let started=false; const go=()=>{ if(!started){ started=true; idle(buildNext); } };
     if(document.readyState==="complete"||covering()) go(); else { window.addEventListener("load",go,{once:true}); setTimeout(go,1500); }
   }
@@ -1117,12 +1174,27 @@ void main(){
       gl.uniform4f(pu.uLook,F*scale,Math.min(pointMax,96),1.1*(g.gain.stars||1),0);
       gl.bindVertexArray(e.vao); gl.drawArrays(gl.POINTS,0,e.n);
     };
+    /* the volume is soft (diffuse light and dust), and walking its rays is most of a frame:
+       with volT it is drawn at a fraction of the resolution (TIER.vol), then spread over the
+       full picture with the same blending. The stars stay sharp. */
+    const k=volT?TIER.vol:1;
+    const lbox=volT&&[Math.max(0,Math.floor(box[0]*k)-2),Math.max(0,Math.floor(box[1]*k)-2)];
+    if(lbox){ lbox.push(Math.min(volT.w,Math.ceil((box[0]+box[2])*k)+2)-lbox[0], Math.min(volT.h,Math.ceil((box[1]+box[3])*k)+2)-lbox[1]); }
     const drawVolume=side=>{
-      gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
-      gl.enable(gl.SCISSOR_TEST); gl.scissor(box[0],box[1],box[2],box[3]);
+      gl.enable(gl.SCISSOR_TEST);
+      if(volT){
+        gl.bindFramebuffer(gl.FRAMEBUFFER,volT.f); gl.viewport(0,0,volT.w,volT.h);
+        gl.scissor(lbox[0],lbox[1],lbox[2],lbox[3]);
+        gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.disable(gl.BLEND);
+        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,null);   /* never the picture being drawn into */
+      } else {
+        gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+        gl.scissor(box[0],box[1],box[2],box[3]);
+      }
       const u=P.vol.u; gl.useProgram(P.vol.p);
       gl.uniform3f(u.uCamL,camL[0],camL[1],camL[2]); gl.uniformMatrix3fv(u.uRot,false,mat3(w.Rot,camR));
-      gl.uniform2f(u.uCss,W,H); gl.uniform2f(u.uRes,RW,RH); gl.uniform1f(u.uScale,scale); gl.uniform1f(u.uF,F);
+      gl.uniform2f(u.uCss,W,H); gl.uniform2f(u.uRes,RW*k,RH*k); gl.uniform1f(u.uScale,scale*k); gl.uniform1f(u.uF,F);
       gl.uniform1f(u.uPat,pat); gl.uniform1f(u.uSide,side); gl.uniform1f(u.uFade,fade); gl.uniform1f(u.uFrame,frameNo%64);
       gl.uniform2f(u.uSteps,TIER.steps[0],TIER.steps[1]); gl.uniform1f(u.uSeed,(g.seed||1)*.173%1*9.);
       const hl=g.halo||{I:d?.07:.04,R:d?.34:.4}; gl.uniform2f(u.uHalo,hl.I,hl.R);
@@ -1140,6 +1212,15 @@ void main(){
         gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,e.map); gl.uniform1i(u.uMap,0);
       } else gl.uniform4f(u.uZ,.03,0,0,0);
       full();
+      if(volT){
+        gl.bindFramebuffer(gl.FRAMEBUFFER,hdr.f); gl.viewport(0,0,RW,RH);
+        gl.scissor(box[0],box[1],box[2],box[3]);
+        gl.enable(gl.BLEND); gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+        const v=P.up.u; gl.useProgram(P.up.p);
+        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,volT.t); gl.uniform1i(v.uTex,0);
+        gl.uniform2f(v.uK,k/volT.w,k/volT.h);
+        full();
+      }
       gl.disable(gl.SCISSOR_TEST);
     };
     drawStars(-1); drawVolume(-1); drawVolume(1); drawStars(1);
@@ -1194,6 +1275,9 @@ void main(){
     const dt=Math.min(.1,Math.max(0,(now-lastT)/1000)); lastT=now;
     /* behind the PIN screen nothing is visible: nothing is drawn (the flight starts it) */
     if(root.hasAttribute("data-locked")&&!anim){ dirty=false; return; }
+    /* behind the passage: only the one frame that shows everything is built (ready() waits
+       for it); drawing more would only take the graphics card from the passage's stars */
+    if(hidden()){ if(dirty&&!queue.length&&!settled){ dirty=false; render(0); } return; }
     const live=alive();
     if(live) life+=dt;
     steer(dt);
@@ -1219,16 +1303,17 @@ void main(){
     if(!alive()&&!anim){ gaps.length=0; return; }
     if(gaps.last) gaps.push(now-gaps.last);
     gaps.last=now;
-    if(gaps.length<40||now-lastAdapt<3000) return;
-    const s=gaps.slice(-40).sort((a,b)=>a-b), med=s[20];
+    if(gaps.length<24||now-lastAdapt<1500) return;
+    const s=gaps.slice(-24).sort((a,b)=>a-b), med=s[12];
     let ns=scale;
-    if(med>(phone?40:24)&&scale>.5) ns=Math.max(.5,scale*.85);
+    if(med>(phone?40:24)&&scale>.5) ns=Math.max(.5,scale*Math.max(.7,Math.sqrt((phone?34:18)/med)));   /* far behind: a bigger step */
     else if(med<(phone?34:18)&&scale<maxScale) ns=Math.min(maxScale,scale*1.08);
     if(Math.abs(ns-scale)>.01){ scale=ns; sizeTargets(); }
     lastAdapt=now; gaps.length=0;
   }
   document.addEventListener("visibilitychange",kick);
   new MutationObserver(kick).observe(document.body,{attributes:true,attributeFilter:["class"]});
+  new MutationObserver(need).observe(root,{attributes:true,attributeFilter:["class"]});
 
   /* ---------- moving the camera ---------- */
   const easeInOut=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
@@ -1299,7 +1384,7 @@ void main(){
     if(gl){
       cv.addEventListener("webglcontextlost",e=>{ e.preventDefault(); lost=true; ok=false; });
       cv.addEventListener("webglcontextrestored",()=>{
-        lost=false; P={}; hdr=bloomA=bloomB=null; RW=RH=1;
+        lost=false; P={}; hdr=bloomA=bloomB=volT=null; RW=RH=1;
         Object.keys(G).forEach(k=>delete G[k]);
         try{ if(initGL()){ compileAll(); whenCompiled(()=>{ hdr=null; sizeTargets(); buildSky(); ok=true; startBuilding(); need(); },giveUp); } }catch(e){ giveUp(e); }
       });
