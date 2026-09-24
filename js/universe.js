@@ -92,7 +92,7 @@ const Universe=(function(){
             young:{h:.34,k:2.3}, hii:{c1:1.5,c2:2.2}, dust:{h:.34,k:2.1,lag:.2}},
       bulge:{I:.26, Rb:.055, n:2, q:[1,.95,.8]},
       col:{old:[1,.9,.78], young:[.55,.72,1], hii:[1,.34,.6], core:[1,.86,.66]},
-      rot:{vmax:.02, ac:.05, pat:-.007},
+      rot:{vmax:.05, ac:.05, pat:-.018},             /* it turns visibly: the liveliest of them */
       stars:{old:18000, young:11000, hii:1200, bulge:6000, halo:900, gc:8},
       gain:{disk:1, young:1.1, hii:.9, dust:2.8, bulge:1, stars:1}},
     /* Nolan (under construction): a big round ember, an amber elliptical */
@@ -698,22 +698,22 @@ vec3 one(vec2 q,float L,float sd){
   float coma=(exp(-r*r/(rc*rc*.025))*2.4+exp(-r*r/(rc*rc*1.3))*.75*fl+exp(-r/(rc*3.))*.3*(1.-smoothstep(L*.12,L*.24,r)));
   float end=1.-smoothstep(.5,1.,un), grow=smoothstep(0.,.05,u/L);
   /* dust tail: curved, brighter on its outer edge, with faint rays */
-  float bend=uK.z*L*un*un, wd=L*(.018+uK.w*un);
+  float bend=uK.z*L*un*un, wd=L*(.012+uK.w*1.5*un*(1.+.8*un));
   float x=(v-bend)/wd;
   float fan=exp(-x*x)*(.75+.35*smoothstep(-1.,1.,x));
-  float rays=.72+.28*fbm(vec2(v/max(u,L*.02)*9.+sd,un*2.-uNow*.02),3);
-  float bands=.86+.14*sin(un*38.-x*2.+sd*5.+uAge*.25);     /* faint striations across the dust */
-  float dustT=fan*mix(1.,rays,smoothstep(.05,.3,un))*bands*exp(-un*2.2)*grow*end;
+  float rays=.82+.18*fbm(vec2(v/max(u,L*.02)*7.+sd,un*2.-uNow*.02),3);
+  float bands=.94+.06*sin(un*30.-x*1.5+sd*5.+uAge*.2);     /* very faint striations across the dust */
+  /* the dust spreads as it goes, so it dims faster than it fades: brightest just behind the head */
+  float dustT=fan*mix(1.,rays,smoothstep(.05,.3,un))*bands*exp(-un*2.6)*sqrt(L*.02/wd)*grow*end;
   /* ion tail: narrow, straight, streaming away; some kinds split it into streamers */
   float wi=L*(.005+.018*un);
-  /* the solar wind shakes it: waves run out along the ion tail, growing as they go */
-  v+=sin(un*10.-uAge*1.6+sd)*wi*2.2*un+sin(un*23.-uAge*2.7+sd*3.)*wi*.8*un;
-  float streak=.55+.45*fbm(vec2(un*12.-uAge*.35,v/wi*.5+sd),3);
-  float strands=mix(1.,.25+1.5*pow(.5+.5*sin(v/wi*2.6+fbm(vec2(un*3.-uNow*.05,sd),2)*5.),6.),uK2.w);
-  float ionT=(exp(-v*v/(wi*wi*(1.+uK2.w*5.)))*.85+exp(-v*v/(wi*wi*9.))*.22)*exp(-un*1.3)*streak*strands*grow*end;
+  /* soft knots drift out along it (the solar wind), and some kinds show faint parallel streamers */
+  float streak=.7+.3*fbm(vec2(un*7.-uAge*.25,v/wi*.35+sd),3);
+  float strands=mix(1.,.6+.6*fbm(vec2(v/wi*.9+sd,un*1.5-uNow*.02),3),uK2.w);
+  float ionT=(exp(-v*v/(wi*wi*(1.+uK2.w*3.)))*.75+exp(-v*v/(wi*wi*10.))*.2)*exp(-un*1.6)*streak*strands*grow*end;
   /* anti-tail: a thin spike of dust seen edge-on, pointing ahead */
   float ua=max(-u,0.)/L;
-  float anti=exp(-v*v/(L*L*.00003))*exp(-ua*6.)*smoothstep(0.,.02,ua);
+  float anti=exp(-v*v/(L*L*.00003))*exp(-ua*6.)*smoothstep(0.,.02,ua)*0.;   /* (read as a tail going the wrong way: off) */
   return uComa*coma+uDustC*(dustT*uK.x+anti*uK2.x)+uIonC*ionT*uK.y;
 }
 void main(){
@@ -779,12 +779,17 @@ float gas(float r,vec2 xy){
   float ph=atan(xy.y,xy.x), t=uBHn.w, n=0., wsum=0.;
   for(int k=0;k<3;k++){
     float rk=k==0?3.6:k==1?7.:13., w=exp(-pow((r-rk)/(k==0?1.8:k==1?3.:4.5),2.));
-    float a=ph-t*.9*pow(3./rk,1.5);                      /* Keplerian: faster inside */
+    float a=ph-t*1.6*pow(3./rk,1.5);                     /* Keplerian: faster inside */
     vec3 q=vec3(r*3.4,cos(a)*1.6,sin(a)*1.6)+float(k)*7.3;
-    n+=w*(fbm3(q)*.65+fbm3(vec3(r*11.,cos(a)*.9,sin(a)*.9)+float(k)*3.1)*.35);   /* clumps, and fine streaks along the orbits */
+    float fl=1.+.14*sin(t*(1.3-.3*float(k))+ph*2.+float(k)*2.1);                  /* the clumps flicker as they go */
+    n+=w*fl*(fbm3(q)*.65+fbm3(vec3(r*11.,cos(a)*.9,sin(a)*.9)+float(k)*3.1)*.35);   /* clumps, and fine streaks along the orbits */
     wsum+=w;
   }
   n/=max(wsum,1e-3);
+  /* a hot spot orbiting close in, flaring now and then (like the flares of our galaxy's own hole) */
+  float hs=ph-t*1.6*pow(3./4.6,1.5), dr=r-4.6, da=atan(sin(hs),cos(hs));
+  float flare=.5+.5*pow(.5+.5*sin(t*.23),6.);
+  n+=exp(-dr*dr*1.4-da*da*9.)*.55*flare;
   return .25+1.6*n*n;
 }
 /* its colours: pale pink-white where it is hottest, then rose and magenta, and deep violet at
@@ -798,7 +803,7 @@ vec3 palette(float x){
 }
 /* bright pink knots scattered through the outer disk, turning with it */
 float knots(float r,vec2 xy){
-  float a=atan(xy.y,xy.x)-uBHn.w*.9*pow(3./max(r,3.),1.5);
+  float a=atan(xy.y,xy.x)-uBHn.w*1.6*pow(3./max(r,3.),1.5);
   float n=vn3(vec3(r*2.3,cos(a)*9.,sin(a)*9.));
   return pow(max(n-.62,0.)/.38,3.)*smoothstep(6.,11.,r);
 }
@@ -1330,17 +1335,17 @@ void main(){
      length (share of the screen) */
   const COMET_KINDS=[
     /* a great comet: a broad curved dust tail and a straight blue ion tail (Hale-Bopp) */
-    {coma:[.78,.96,.9], dust:[1,.9,.76], ion:[.45,.62,1], k:[1.15,.8,.24,.15], k2:[0,1,1,.15], L:[.36,.5]},
+    {coma:[.78,.96,.9], dust:[1,.9,.76], ion:[.45,.62,1], k:[1.1,.75,.12,.13], k2:[0,1,1,.15], L:[.36,.5]},
     /* an ion comet: a long straight blue tail split into streamers, hardly any dust */
-    {coma:[.7,.9,1], dust:[.82,.86,1], ion:[.38,.6,1], k:[.12,1.5,.05,.06], k2:[0,1,.8,1], L:[.4,.55]},
+    {coma:[.7,.9,1], dust:[.82,.86,1], ion:[.38,.6,1], k:[.15,1.3,.03,.05], k2:[0,1,.8,.8], L:[.4,.55]},
     /* a dusty comet: a golden head and a wide, strongly curved fan of dust */
-    {coma:[1,.86,.6], dust:[1,.8,.5], ion:[.5,.6,1], k:[1.6,.08,.42,.26], k2:[0,1,1.3,0], L:[.28,.4]},
-    /* a small green comet with a thin anti-tail pointing ahead (like C/2022 E3) */
-    {coma:[.6,.95,.7], dust:[.86,.94,.84], ion:[.45,.78,.92], k:[.45,.55,.12,.08], k2:[1.1,1,.75,.3], L:[.16,.24]},
+    {coma:[1,.86,.6], dust:[1,.8,.5], ion:[.5,.6,1], k:[1.5,.08,.18,.2], k2:[0,1,1.3,0], L:[.28,.4]},
+    /* a small green comet (its coma glows green with carbon gas, like C/2022 E3), short faint tails */
+    {coma:[.6,.95,.7], dust:[.86,.94,.84], ion:[.45,.78,.92], k:[.5,.55,.06,.08], k2:[0,1,.8,.3], L:[.16,.24]},
     /* a comet breaking up into pieces, each with its own small tails */
-    {coma:[.85,.95,1], dust:[1,.92,.8], ion:[.5,.66,1], k:[.9,.45,.18,.12], k2:[0,3,.85,.2], L:[.22,.3]},
+    {coma:[.85,.95,1], dust:[1,.92,.8], ion:[.5,.66,1], k:[.9,.45,.08,.1], k2:[0,3,.85,.2], L:[.22,.3]},
     /* a sungrazer: a very long, bright, curved white tail */
-    {coma:[1,.97,.9], dust:[1,.94,.84], ion:[.5,.66,1], k:[1.45,.5,.5,.1], k2:[0,1,1.5,.1], L:[.5,.66]}];
+    {coma:[1,.97,.9], dust:[1,.94,.84], ion:[.5,.66,1], k:[1.4,.5,.16,.09], k2:[0,1,1.5,.1], L:[.5,.66]}];
   /* a comet crossing the screen from one side to the other, nearly level: it comes in from
      beyond one edge (tail and all) and leaves beyond the other, bright all the way. Most drift
      across in about a minute; some shoot across in ten or fifteen seconds. No two of the same
@@ -1351,20 +1356,23 @@ void main(){
     const L=Math.min(W,H)*(K.L[0]+Math.random()*(K.L[1]-K.L[0]))*(W<760?1.4:1);
     const right=Math.random()<.5, tilt=(Math.random()-.5)*.2;                 /* at most about 6 degrees */
     const th=(right?0:Math.PI)+tilt, dx=Math.cos(th), dy=Math.sin(th);
-    const y=H*(.1+Math.random()*.55), ahead=L*(.08+.4*K.k2[0])+30, behind=L*1.05+30;
+    const y=H*(.1+Math.random()*.55), ahead=L*.1+30, behind=L*1.05+30;
     /* from just beyond one edge (nothing of it on the screen yet) to just beyond the other */
     const x0=right?-ahead:W+ahead, x1=right?W+behind:-behind;
     const dist=Math.abs(x1-x0)/Math.abs(dx);
     const fast=Math.random()<.35, dur=(fast?10+Math.random()*6:40+Math.random()*30)*Math.max(.6,Math.min(1.3,dist/1600));
-    /* a far sun the tails point away from, off the screen ahead of it and to one side: as the comet
-       goes by, its tails swing slowly round, the way a real one's do */
-    const sun=[W/2+dx*W*(1.4+Math.random())-dy*H*(Math.random()-.5)*1.6, y+dy*W+(Math.random()-.5)*H*1.4];
+    /* its tails trail behind it along its path, turned a few degrees at most (and to the side its
+       dust tail curves), so they always read as following the comet */
+    const lean=(Math.random()<.5?-1:1)*(.03+Math.random()*.07);
     /* it lives in space, not on the glass: its path, its sun and its size are set at a depth nearer
        than the galaxies, so when the camera flies it grows, slides and passes by like the rest */
     const D=36+Math.random()*30, R=camR;
     const toW=(sx,sy)=>{ const a=[(sx-W/2)/F*D,(sy-H/2)/F*D,D];
       return [cam.x+R[0]*a[0]+R[3]*a[1]+R[6]*a[2], cam.y+R[1]*a[0]+R[4]*a[1]+R[7]*a[2], cam.z+R[2]*a[0]+R[5]*a[1]+R[8]*a[2]]; };
-    comets.push({kind,t0:now-dur*at,dur,w0:toW(x0,y),w1:toW(x1,y+dy*dist),sun:toW(sun[0],sun[1]),Lw:L*D/F,seed:Math.random()*50,b:fast?.9:.8});
+    const w0=toW(x0,y), w1=toW(x1,y+dy*dist), m=unit([w1[0]-w0[0],w1[1]-w0[1],w1[2]-w0[2]]);
+    const side=[R[0]*-dy+R[3]*dx, R[1]*-dy+R[4]*dx, R[2]*-dy+R[5]*dx];           /* across the path, on the screen */
+    const tw=unit([-m[0]+side[0]*lean,-m[1]+side[1]*lean,-m[2]+side[2]*lean]);
+    comets.push({kind,t0:now-dur*at,dur,w0,w1,tw,Lw:L*D/F,seed:Math.random()*50,b:fast?.9:.8,bend:lean<0?1:-1});
   }
 
   /* ---------- drawing one frame ---------- */
@@ -1591,7 +1599,7 @@ void main(){
         /* where it is in space, and its tail pointing away from its sun, seen from the camera now */
         const hw=[0,1,2].map(i=>c.w0[i]+(c.w1[i]-c.w0[i])*k);
         const near=Math.sin(Math.PI*Math.min(1,Math.max(0,k))), Lw=c.Lw*(.78+.34*near);
-        const tw=unit([hw[0]-c.sun[0],hw[1]-c.sun[1],hw[2]-c.sun[2]]);
+        const tw=c.tw;
         const a=onScreen(hw), b=onScreen([hw[0]+tw[0]*Lw,hw[1]+tw[1]*Lw,hw[2]+tw[2]*Lw]);
         if(!a||!b||a[2]<3) continue;
         let tx=b[0]-a[0], ty=b[1]-a[1]; const hl=Math.hypot(tx,ty)||1; tx/=hl; ty/=hl;
@@ -1601,7 +1609,7 @@ void main(){
         gl.uniform2f(u.uSize,L,L*.5); gl.uniform1f(u.uA,c.b*(.75+.25*near)*close*starsFade); gl.uniform1f(u.uSeed,c.seed);
         gl.uniform1f(u.uAge,now-c.t0);
         gl.uniform3fv(u.uComa,K.coma); gl.uniform3fv(u.uDustC,K.dust); gl.uniform3fv(u.uIonC,K.ion);
-        gl.uniform4fv(u.uK,K.k); gl.uniform4fv(u.uK2,K.k2);
+        gl.uniform4f(u.uK,K.k[0],K.k[1],K.k[2]*c.bend,K.k[3]); gl.uniform4fv(u.uK2,K.k2);
         gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
       }
     }

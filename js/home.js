@@ -38,7 +38,7 @@ const Home=(function(){
     /* only known galaxies: anything else in the address is just "a galaxy to explore" */
     const ic=SOON_NAMES[id]&&Object.prototype.hasOwnProperty.call(SOON_NAMES,id)?$(`.p-card[data-galaxy="${id}"] .p-ic`):null;
     $("#soonView").innerHTML=`<span class="p-ic big" style="--ac:#9FB3FF">${ic?ic.innerHTML:""}</span>`+
-      `<h2>${esc(SOON_NAMES[id]||id)}</h2><p>${esc(t("soon.text"))}</p><a class="p-back" href="#home">${esc(t("nolan.back"))}</a>`;
+      `<h2>${esc(SOON_NAMES[id]||id)}</h2><p>${esc(t("soon.text"))}</p>${backLink("#home","nolan.backAria")}`;
   }
   let opened=false;
   function open(view,subroute,backTo){

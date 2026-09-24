@@ -153,7 +153,7 @@ body.arriving>div.wrap{animation-delay:.2s}
 .portal[data-view=notes] .p-top,.portal[data-view=settings] .p-top{display:none}
 .portal[data-view=notes] .p-in,.portal[data-view=settings] .p-in{justify-content:flex-start;padding-top:calc(70px + env(safe-area-inset-top,0px))}
 .p-page{width:100%;max-width:820px;color:var(--ink);text-align:left}
-.p-back-top{margin:0 0 18px;padding:8px 14px;font-size:.82rem}
+.p-back-top{margin:0 0 18px}
 .p-page #notesText{min-height:50vh}
 /* switching between the pages of home: a soft cross-fade */
 .p-view:not([hidden]){animation:view-in .55s var(--ease) backwards}

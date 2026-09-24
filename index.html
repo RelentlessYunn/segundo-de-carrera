@@ -338,17 +338,17 @@
     <div class="p-view p-hole" data-view="blackhole" id="holeView" hidden>
       <h2 data-i18n="s.hole">Agujero negro</h2>
       <p data-i18n="hole.text">Aquí la luz se curva: el arco que ves sobre la sombra es la parte de atrás del disco, doblada hacia ti. El lado que gira hacia ti brilla más.</p>
-      <a class="p-back" href="#home" data-i18n="nolan.back">← Volver al inicio</a>
+      <a class="p-back p-back-logo" href="#home" aria-label="Volver al inicio" title="Volver al inicio" data-i18n-aria="nolan.backAria" data-i18n-title="nolan.backAria"><svg class="logo-mark" viewBox="0 0 64 64" aria-hidden="true"><path class="lm-line" d="M17 47V17L47 47V17"/><circle cx="17" cy="47" r="3.2"/><circle cx="17" cy="17" r="3.2"/><circle cx="47" cy="47" r="3.2"/><circle cx="47" cy="17" r="3.2"/></svg></a>
     </div>
     <div class="p-view p-page" data-view="notes" id="notes" hidden>
-      <a class="p-back p-back-top" href="#home" data-i18n="s.back">← Volver</a>
+      <a class="p-back p-back-logo p-back-top" href="#home" aria-label="Volver" title="Volver" data-i18n-aria="s.backAria" data-i18n-title="s.backAria"><svg class="logo-mark" viewBox="0 0 64 64" aria-hidden="true"><path class="lm-line" d="M17 47V17L47 47V17"/><circle cx="17" cy="47" r="3.2"/><circle cx="17" cy="17" r="3.2"/><circle cx="47" cy="47" r="3.2"/><circle cx="47" cy="17" r="3.2"/></svg></a>
       <div class="shead"><h2 data-i18n="s.notes.title">Notas para Claude</h2><p data-i18n-html="s.notes.lead">Texto plano que se guarda solo. Claude no puede abrir la nube por su cuenta: cuando quieras que aplique algo, pulsa <b>Copiar notas</b> y pégaselas en el chat.</p></div>
       <label class="sr-only" for="notesText" data-i18n="s.notes.title">Notas para Claude</label>
       <textarea id="notesText" spellcheck="false" data-i18n-placeholder="s.notes.placeholder" placeholder="Ejemplo:&#10;- El parcial de IS es el 8 de octubre a las 12:30 en el aula 4.0.E04&#10;- Cambiar el aula del viernes de ED a 2.2.C05"></textarea>
       <div class="notes-foot"><span class="notes-status" id="notesStatus"></span><button type="button" class="mailcopy" id="copyNotes" data-i18n="notes.copy">Copiar notas</button></div>
     </div>
     <div class="p-view p-page" data-view="settings" id="settings" hidden>
-      <a class="p-back p-back-top" href="#home" data-i18n="s.back">← Volver</a>
+      <a class="p-back p-back-logo p-back-top" href="#home" aria-label="Volver" title="Volver" data-i18n-aria="s.backAria" data-i18n-title="s.backAria"><svg class="logo-mark" viewBox="0 0 64 64" aria-hidden="true"><path class="lm-line" d="M17 47V17L47 47V17"/><circle cx="17" cy="47" r="3.2"/><circle cx="17" cy="17" r="3.2"/><circle cx="47" cy="47" r="3.2"/><circle cx="47" cy="17" r="3.2"/></svg></a>
       <div class="shead"><h2 data-i18n="s.settings">Configuración</h2><p data-i18n="s.settings.lead">Se guarda en este dispositivo.</p></div>
       <div class="settings" id="settingsList"></div>
     </div>

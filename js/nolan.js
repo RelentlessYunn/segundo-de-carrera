@@ -18,6 +18,6 @@ const Nolan={
     box.innerHTML=`<span class="p-ic big" style="--ac:#FFA640">${this.icon}</span>`+
       `<h2>${esc(this.title)}</h2>`+
       `<p>${esc(t("nolan.wip"))}</p>`+
-      `<a class="p-back" href="#home">${esc(t("nolan.back"))}</a>`;
+      `${backLink("#home","nolan.backAria")}`;
   }
 };
