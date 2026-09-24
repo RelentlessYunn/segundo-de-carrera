@@ -326,8 +326,8 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.waitForFunction(()=>window.UNIVERSE_EXTRAS.every(x=>x.ready||x.broken),null,{timeout:60000}).catch(()=>{});
     await p.waitForTimeout(300);
     const wn=await p.evaluate(()=>({list:Wonders.list(),broken:window.UNIVERSE_EXTRAS.filter(x=>x.broken).map(x=>x.id),nova:Wonders.nova(-.5,-.5,10),state:Wonders.state()}));
-    ok(wn.list.join()==="orion,pillars,pleiades,ringneb,binary,antennae,nova,earth"&&!wn.broken.length&&wn.nova&&wn.state&&wn.state.k>0&&wn.state.at&&!p.errors.length,
-      `the eight wonders compile and draw, and a supernova can flare (${JSON.stringify(wn)})`);
+    ok(wn.list.join()==="orion,pleiades,ringneb,binary,antennae,nova,earth"&&!wn.broken.length&&wn.nova&&wn.state&&wn.state.k>0&&wn.state.at&&!p.errors.length,
+      `the seven wonders compile and draw, and a supernova can flare (${JSON.stringify(wn)})`);
     /* the band of our galaxy is painted, and its dust is drawn */
     ok(await p.evaluate(()=>Universe.band())&&!p.errors.length,"the band of our galaxy crosses the sky, painted once");
     /* the opening: from the Earth and the Moon, the first time in a session */

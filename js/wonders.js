@@ -5,8 +5,6 @@
    and slow turns move it like everything else, and bright parts glow.
    · The Orion Nebula: a glowing cloud of hydrogen (pink-red), lit from
      inside by four hot young stars (the Trapezium), with dark lanes of dust.
-   · The Pillars of Creation (in the Eagle Nebula): three dark columns of
-     gas and dust, their edges lit gold, against glowing teal gas.
    · The Pleiades: a young cluster of hot blue stars wrapped in the blue
      haze of dust they light up (a reflection nebula).
    · The Ring Nebula: a dying star's shell of gas, blue-green inside and
@@ -94,33 +92,6 @@ void main(){
   vec3 C=col*(1.-dust*.85)+vec3(.85,.9,1.)*(st+sp*env*1.3);
   float e=edgeFade();
   o=vec4(C*uA*e,clamp(dust*.75,0.,.8)*uA*e);
-}`});
-
-  /* ---------- the Pillars of Creation ---------- */
-  skyWonder("pillars",{at:{d:[.3,-.8],m:[.22,-.62]},z:150,R:11,blend:"over",shader:COMMON+`
-/* a pillar: a column narrowing upwards, its edges ragged */
-float pillar(vec2 p,float x0,float top,float w0,float lean,float sd){
-  float y=clamp(p.y,top,1.4), w=w0*(.55+.45*smoothstep(top,1.,y));
-  float cx=x0+lean*(y-1.)+.05*(fbm(vec2(y*4.,sd),3)-.5);
-  vec2 d=vec2(p.x-cx,p.y-y);
-  return length(d)-w+.035*(fbm(p*9.+sd,4)-.5);
-}
-void main(){
-  vec2 p=vQ; float rr=length(p);
-  /* a round cloud with ragged edges, not a box */
-  float env=smoothstep(1.,.25,rr+.25*(fbm(p*2.5+uS+4.,4)-.5))*exp(-rr*rr*.8);
-  /* glowing gas behind: teal (oxygen and hydrogen), gold where the light is strongest */
-  float n=fbm(p*2.1+uS+vec2(0.,uT*.003),5), n2=fbm(p*6.+uS*2.,4);
-  vec3 bg=mix(vec3(.08,.36,.36),vec3(.92,.66,.3),smoothstep(.45,.85,n+.3*(-p.y)))*pow(n,1.4)*env*1.6;
-  float d=min(pillar(p,-.4,-.25,.12,.1,1.),min(pillar(p,.03,-.5,.1,-.03,2.),pillar(p,.42,-.05,.09,.12,3.)));
-  float inside=smoothstep(.012,-.012,d)*smoothstep(1.05,.55,rr);   /* the columns melt into the cloud at its edge */
-  /* their edges, lit by the young stars above: brightest at the tips */
-  float rim=exp(-abs(d)*42.)*(1.-.6*smoothstep(-.6,.8,p.y));
-  vec3 C=bg*(1.-inside)+vec3(1.,.78,.5)*rim*env*1.2+vec3(.24,.15,.1)*inside*n2*.45*env;
-  vec2 g=floor(p*20.); float hs=h12(g+uS); vec2 f=fract(p*20.)-.5;
-  C+=vec3(.9,.95,1.)*step(.93,hs)*exp(-dot(f,f)*80.)*(1.-inside)*.9;
-  float e=edgeFade();
-  o=vec4(C*uA*e,inside*.9*uA*e);
 }`});
 
   /* ---------- the Pleiades ---------- */
