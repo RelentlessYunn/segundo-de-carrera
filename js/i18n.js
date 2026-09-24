@@ -127,7 +127,7 @@ es:{
   "s.set.motion.full":"Todas", "s.set.motion.basic":"Básicas", "s.set.motion.none":"Ninguna",
   "s.set.quality":"Calidad", "s.set.quality.high":"Alta", "s.set.quality.low":"Baja",
   "s.set.qualityHelp":"Alta: mar de estrellas, cristal y brillos. Baja: fondo liso y todo sencillo, para móviles lentos o ahorrar batería. Con Animaciones en Ninguna y Calidad baja queda todo apagado.",
-  "s.set.reload":"Cambiar el idioma, las animaciones o la calidad recarga la página.", "s.set.back":"← Volver"
+  "s.set.reload":"Cambiar el idioma, las animaciones o la calidad recarga la página."
 },
 en:{
   "and":"and", "close":"Close", "copied.f":"Copied",
@@ -225,7 +225,7 @@ en:{
   "s.set.motion.full":"All", "s.set.motion.basic":"Basic", "s.set.motion.none":"None",
   "s.set.quality":"Quality", "s.set.quality.high":"High", "s.set.quality.low":"Low",
   "s.set.qualityHelp":"High: sea of stars, glass and glows. Low: plain background and everything simple, for slow phones or to save battery. With Animations on None and Quality on Low, everything is off.",
-  "s.set.reload":"Changing the language, the animations or the quality reloads the page.", "s.set.back":"← Back"
+  "s.set.reload":"Changing the language, the animations or the quality reloads the page."
 }};
 
 /* ---------- lookup ---------- */

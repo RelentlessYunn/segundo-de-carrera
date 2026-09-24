@@ -22,29 +22,35 @@ The site opens behind a PIN screen (`js/gate.js`, styles in `css/cinema.css`).
 
 ## The universe
 
-The whole app is one universe, drawn in 3D on a canvas behind everything (`js/universe.js`).
+The whole app is one universe in real 3D, drawn by the graphics card (WebGL2) on a canvas behind everything (`js/universe.js`).
 
 - **Home is the Nolan galaxy.** After the PIN the camera flies from deep space into it (five seconds, the far stars fading in around you) and stays there: home's background *is* that galaxy, low on the left.
 - **Each section is a galaxy you can see from home**: UC3M, Nolan (under construction), and two kept for future sections, Andrómeda and Sombrero (cards "Por explorar" on home, route `#soon/<id>`).
 - **Opening a section** flies the camera into its galaxy (`Home.enter` → `Universe.go(id)`), and the section appears inside it: UC3M's timetable has UC3M's galaxy glowing over the header. **Going home** flies back out.
-- **Galaxies look like photographs** (`js/cosmos.js`). Each one is painted pixel by pixel the way Hubble and JWST pictures look: a small, very bright core that falls off steeply (a Sérsic profile), an exponential disk whose arms break into clumps and spurs, blue arms with pink star-forming knots, dark dust lanes on the inner edge of the arms, fine grain made of countless faint stars, and a camera-like tone curve. The picture is see-through where it is dark, so it sits over the starry sky with no box or glow cloud around it. Each picture is painted at the size the screen needs to stay sharp (up to 2048 px), by several background workers: a quick small version first, then the full one, fading in; until then a galaxy is drawn from its own stars. Finished pictures are saved on the device (IndexedDB, a few MB), so from the second visit they appear at once; pictures not used for two weeks are removed. When a galaxy is small on screen a reduced copy is drawn, which is sharper than shrinking the big one.
-- **The universe is alive** (Animations = All and Quality = High): spiral disks turn slowly around their core (a turn every 9–15 minutes; the bulge is a separate layer, so only the disk turns), the camera floats gently so near galaxies drift against far ones, and some stars breathe slowly. It draws at about 30 frames a second, fewer on a slow device, and pauses when the tab is hidden or after 45 s without touching anything. `Universe.seek(seconds)` jumps that time forward (tests).
-- Every galaxy has its own personality, set in its `tex` parameters in `GALAXIES`: Nolan (home) a calm golden spiral with soft arms; UC3M a lively blue spiral full of pink knots; Nolan-in-construction an amber elliptical; Andrómeda a violet spiral seen steeply; Sombrero edge-on, a bright bulge cut by a dark band of dust.
-- A few thousand real stars sit on top of each picture (seeded: always the same): when you fly into a galaxy the picture fades and you pass between its stars.
-- **Deep field**: dozens of tiny galaxies far behind everything, like the Hubble Deep Field.
-- The scene is only redrawn while the camera moves, a picture fades in, or the window changes size.
+- **Nothing is recalculated frame by frame on the processor.** Every moving thing is an exact formula of time evaluated by the graphics card; each frame the page only passes the time and the camera. Galaxy stars and maps are built once, one galaxy at a time (home's first) so the page never stutters.
+- **Spiral galaxies follow the density-wave model** (Lin & Shu, as in Ingo Berg's *Galaxy Renderer*): every star moves on an ellipse, each ellipse a little flatter and a little more turned the further out it is. The arms are where the ellipses crowd together, so they stay while the stars flow through them, and inner stars turn faster than outer ones. The whole pattern turns slowly too.
+  - **Pink star-forming regions** only light up while they cross an arm (where neighbouring orbits squeeze together) and fade as they leave it; young blue stars shine brighter inside the arms.
+  - **Bulges** are swarms of stars on orbits in every direction; **globular clusters** (tight balls of old stars) circle each galaxy on their own tilted orbits; Andrómeda has two small companions.
+- **Soft light and dust are a thin 3D layer.** Each disk's light (old stars, young stars, pink regions) and its dust are painted once as a map on the graphics card, from the same orbits (plus patchiness and dust filaments). The page then looks *through* that layer with real perspective: seen steeply it is one look-up per pixel, seen at a grazing angle it is walked through. The dust darkens only what lies behind it, so dust lanes cross the near side of a bulge and the edge-on Sombrero shows its dark band. Bulges and the elliptical are real 3D glows (brightest at the centre, sampled densely there).
+- **The far sky**: thousands of stars fixed on the sky (a few twinkle slowly), a faint nebula painted once, dozens of tiny far galaxies (each drawn from a formula), and stars scattered through space that stretch into streaks while the camera flies. Galaxies away from the centre of the screen are turned to face home's camera, so they look as intended from home and reveal their depth when you fly to them.
+- **Shooting stars and comets**: a shooting star every few seconds (now and then two together), starting anywhere and crossing in any direction; every minute or two a slow comet drifts across for about a minute, with a greenish head, a curved dust tail and a straight blue ion tail. Only with Animations = All.
+- **Like a camera**: light is added up in high dynamic range and developed with a soft curve, a faint glow around bright things (bloom), a vignette and a fine dither against banding.
+- **The universe is alive** (Animations = All and Quality = High): stars orbit, arms turn, the camera floats gently so near galaxies drift against far ones. It pauses while you scroll, when the tab is hidden and after 45 s without touching anything; then nothing is drawn at all. `Universe.seek(seconds)` jumps that time forward and `Universe.shoot()` sends a shooting star and a comet (tests).
+- **Budget**: phones draw about a third of the stars, smaller maps and at about 30 frames a second; computers every frame. The render size adapts if the device cannot keep up. Automated tests use a tiny budget (`?tier=phone` or `?tier=desk` forces one).
+- Every galaxy has its own personality in `GALAXIES`: Nolan (home) a calm golden spiral with soft arms; UC3M a lively blue spiral full of pink knots; Nolan-in-construction an amber elliptical; Andrómeda a violet spiral seen steeply; Sombrero edge-on, a big bright bulge cut by its dark ring of dust.
+- Without WebGL2 there is no 3D universe: `js/sky.js` draws a simpler sky with CSS layers instead.
 - **To add a section**: add a galaxy to `GALAXIES` in `universe.js` (kind, size, angle, colours, where it sits seen from home), a card with `data-galaxy="<id>"` in home, and its view.
 - **Notes and Settings belong to every section**: their buttons are in UC3M's header and on home, they open where you are without moving the camera, and "← Volver" takes you back there.
 - **The logo is the home button** (top left in UC3M).
 - The opening of home (the N drawing itself, NOLAN appearing) plays after the PIN and when the app starts.
 - **Log out** (Settings, red button): `Gate.lock()` forgets the device, puts the camera back in deep space and returns to home, so the next PIN lands at home.
-- With Animations = None or Quality = Low there are no flights: the camera jumps. Quality = Low hides the universe.
+- With Animations = Basic or None there are no flights (the camera jumps) and the universe stands still. Quality = Low has no universe at all: a plain dark background.
 
 ## The astral theme
 
 The whole site lives in the night sky:
 
-- **Sea of stars** (`js/sky.js`, `css/sky.css`): a fixed `#sky` behind the page, almost black, with a faint torn nebula of gas and dust (painted once by `cosmos.js`, drifting very slowly), four layers of stars in real star colours (drawn once on canvas and used as tiles), film grain and a vignette; slow drift, twinkling, scroll parallax and a rare shooting star, which starts anywhere and crosses the sky in any direction. Only transforms and opacity move, so it is cheap.
+- **Sea of stars**: drawn by the 3D universe (see above). Only without WebGL2, `js/sky.js` and `css/sky.css` draw a fixed `#sky` instead: four layers of stars in real star colours (drawn once on canvas and used as tiles), film grain and a vignette, slow drift, twinkling, scroll parallax and shooting stars.
 - **Glass** (`css/astral.css`): cards, tab bar and buttons are dark translucent glass with starlight borders and glows; section titles end in a four-point star.
 - **Effects** (`js/effects.js`): soft points of light where you tap, sparks and a ring of light when a task is ticked. Stars in the interface are round points of light, never geometric shapes.
 - **The sky outside** (`js/weather.js`, on home): weather now, today's high and low, chance of rain and the next sunrise or sunset. The place is where the device is (the browser asks once); if not allowed, Getafe. Weather from Open-Meteo, place names from BigDataCloud, both free and without keys, saved for 20 minutes. Without connection the sun is still computed offline (`js/astro.js`).
@@ -118,9 +124,8 @@ Each file does one thing. To change something you usually only need one or two.
 | `core.js` | Shared helpers: dates, weeks, term in force, classes on a day (`classesOn`), event labels (`eventLabel`, `whenLabel`), detail panel, error banner. |
 | `shift.js` | The passage (a tunnel of stars) when a setting reloads the page. |
 | `gate.js` | The PIN screen and Log out. |
-| `cosmos.js` | Paints photographic galaxies and the nebula, pixel by pixel, in background workers, and keeps them on the device. |
-| `sky.js` | The sea of stars behind the page. |
-| `universe.js` | The universe: home's galaxy and one galaxy per section, the deep field, the camera flights between them, and its slow life. |
+| `universe.js` | The 3D universe (WebGL2): galaxies on exact orbits, their dust and light, the far sky, shooting stars and comets, the camera flights, and its slow life. |
+| `sky.js` | A simpler CSS sky, only for devices without WebGL2. |
 | `validate.js` | Checks `data.js` and `eval.js` before rendering. Whatever would break the page is left out and reported at the top; odd things go to the console and `#debug`. |
 | `derived.js` | Computed data: clashes between classes (added to `EVENTS`) and the timetable grid layout. |
 | `cloud.js` | Saving to JSONBin, by changes, queued and without overwriting anything (see *The cloud*). |

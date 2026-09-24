@@ -62,11 +62,13 @@ const Gate=(function(){
   function open(){
     box.classList.add("granted");
     const done=()=>{ root.removeAttribute("data-locked"); box.hidden=true; box.classList.remove("granted","leaving"); listeners.forEach(fn=>fn()); };
-    if(lowMotion()){ setTimeout(done,300); return; }
+    /* where the camera belongs: home's galaxy, or UC3M if a tab of the app was asked for */
+    const to=Home.scene();
+    if(!fancy()){ setTimeout(()=>{ Universe.go(to,{animate:false}); done(); },lowMotion()?300:450); return; }
     /* the digits, dots and logo float away one after another (css: .gate.leaving) */
-    setTimeout(()=>box.classList.add("leaving"),350);
+    setTimeout(()=>{ if(!box.hidden) box.classList.add("leaving"); },350);
     root.classList.add("flying");                       /* the far stars fade in during the flight (css) */
-    Universe.go("home",{duration:5600,arriveAt:.8,onArrive:()=>{ done(); setTimeout(()=>root.classList.remove("flying"),1500); }});
+    Universe.go(to,{duration:5600,arriveAt:.8,onArrive:()=>{ done(); setTimeout(()=>root.classList.remove("flying"),1500); }});
   }
 
   /* ---------- log out: forget this device and show the PIN again ---------- */

@@ -2,53 +2,12 @@
 header.top{
   position:relative;overflow:hidden;color:#fff;isolation:isolate;
   padding:calc(22px + env(safe-area-inset-top,0px)) 0 26px;
-  background:linear-gradient(165deg,#151A23 0%,#182029 48%,#111620 100%);
 }
 /* glowing bottom seam */
 header.top::after{
   content:"";position:absolute;left:0;right:0;bottom:0;height:1px;z-index:3;
   background:linear-gradient(90deg,transparent,rgba(120,170,255,.45),rgba(63,217,164,.35),transparent);
 }
-/* starry sky (header and home) */
-header.top::before,.p-sky{
-  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
-  background-image:
-    radial-gradient(1.2px 1.2px at 8% 24%,#fff,transparent 70%),
-    radial-gradient(1px 1px at 21% 72%,#cfe0ff,transparent 70%),
-    radial-gradient(1.4px 1.4px at 34% 16%,#fff,transparent 70%),
-    radial-gradient(1px 1px at 46% 58%,#bfffe8,transparent 70%),
-    radial-gradient(1.2px 1.2px at 57% 30%,#fff,transparent 70%),
-    radial-gradient(1px 1px at 66% 82%,#d9ccff,transparent 70%),
-    radial-gradient(1.3px 1.3px at 74% 12%,#fff,transparent 70%),
-    radial-gradient(1px 1px at 83% 64%,#cfe0ff,transparent 70%),
-    radial-gradient(1.2px 1.2px at 91% 38%,#fff,transparent 70%),
-    radial-gradient(1px 1px at 28% 44%,#fff,transparent 70%),
-    radial-gradient(1px 1px at 61% 8%,#fff,transparent 70%),
-    radial-gradient(1px 1px at 96% 86%,#fff,transparent 70%);
-  opacity:.5;animation:twinkle 16s ease-in-out infinite alternate;will-change:opacity;
-}
-@keyframes twinkle{from{opacity:.35}to{opacity:.6}}
-/* aurora: three breathing blobs */
-.aurora{position:absolute;inset:-40% -15%;z-index:0;pointer-events:none;opacity:.75}
-.aurora i{position:absolute;display:block;border-radius:50%;will-change:transform}
-.aurora i:nth-child(1){
-  width:60vw;height:60vw;max-width:640px;max-height:640px;left:-10%;top:-26%;
-  background:radial-gradient(circle,rgba(76,124,198,.42) 0%,rgba(76,124,198,.16) 38%,transparent 70%);
-  animation:aur1 19s ease-in-out infinite alternate;
-}
-.aurora i:nth-child(2){
-  width:48vw;height:48vw;max-width:520px;max-height:520px;right:-6%;top:-14%;
-  background:radial-gradient(circle,rgba(63,217,164,.26) 0%,rgba(63,217,164,.1) 38%,transparent 70%);
-  animation:aur2 23s ease-in-out infinite alternate;
-}
-.aurora i:nth-child(3){
-  width:44vw;height:44vw;max-width:460px;max-height:460px;left:38%;bottom:-48%;
-  background:radial-gradient(circle,rgba(169,135,255,.24) 0%,rgba(169,135,255,.09) 38%,transparent 70%);
-  animation:aur3 27s ease-in-out infinite alternate;
-}
-@keyframes aur1{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(9%,7%,0) scale(1.16)}}
-@keyframes aur2{from{transform:translate3d(0,0,0) scale(1.1)}to{transform:translate3d(-11%,9%,0) scale(.92)}}
-@keyframes aur3{from{transform:translate3d(0,0,0) scale(.95)}to{transform:translate3d(-8%,-12%,0) scale(1.2)}}
 .hdr-grid{position:relative;z-index:2;display:flex;flex-direction:column;gap:20px}
 .hdr-top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:36px}
 .hdr-left{display:flex;align-items:center;gap:12px;min-width:0}
@@ -165,7 +124,6 @@ svg .f2{fill:currentColor;fill-opacity:.28}
   .week-badge b{font-size:.82rem}
   .week-badge span{font-size:.64rem}
   .stats{display:none}
-  .aurora{opacity:.6}
 }
 @media (max-width:560px){
   .brand{display:none}
@@ -194,7 +152,8 @@ body.compact .mini{opacity:1;pointer-events:auto;transform:translate(0,-50%)}
 .mini-ag svg{stroke-width:1.6}
 /* narrower computers: while compact, the tabs keep only their icons so everything fits */
 @media (min-width:821px) and (max-width:1180px){
-  body.compact nav.bar a[data-tab] .tab-label{display:none}
+  /* hidden to the eye only: screen readers still read the tab's name */
+  body.compact nav.bar a[data-tab] .tab-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
   body.compact nav.bar a[data-tab]{padding:7px 10px}
 }
 /* the header's own small clock is only for the phone */

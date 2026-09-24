@@ -1,6 +1,6 @@
 /* ---------- 0 · the sky: a sea of stars behind everything ----------
    #sky is fixed and sits under the page. Stars come from sky.js as
-   background tiles; the nebula is painted once by cosmos.js. Every moving part
+   background tiles. It is only used when the 3D universe (universe.js) cannot run. Every moving part
    here is a transform or an opacity, which the browser animates cheaply. */
 html{background:var(--space,#050810)}
 #sky{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;
@@ -11,15 +11,6 @@ html{background:var(--space,#050810)}
 /* cinematic finish: darker edges and a fine film grain (sky.js draws the grain) */
 #sky::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 120% 90% at 50% 45%,transparent 50%,rgba(0,0,0,.6) 100%)}
 .sky-grain{position:absolute;inset:0;opacity:.045;background-size:160px 160px}
-/* nebulae: faint, torn clouds of gas and dust like the galactic cirrus in
-   long-exposure photographs; sky.js paints them once (cosmos.js). They drift
-   very slowly with Animations = All. */
-.sky-nebula{position:absolute;inset:-6%;will-change:transform}
-.sky-nebula canvas{display:block;width:100%;height:100%;opacity:0;transition:opacity 3s ease}
-.sky-nebula canvas.ready{opacity:.6}
-[data-motion=full] .sky-nebula{animation:neb-drift 160s ease-in-out infinite alternate}
-@keyframes neb-drift{to{transform:translate3d(-2.5%,1.5%,0)}}
-
 /* parallax wrappers (moved by sky.js) and the layers inside them */
 .sky-par{position:absolute;left:0;right:0;top:0;height:100%;will-change:transform}
 .sky-layer{

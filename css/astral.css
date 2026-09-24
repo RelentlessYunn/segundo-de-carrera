@@ -6,7 +6,6 @@
 
 /* header and home float on the sky (their own small skies are not needed) */
 header.top{background:transparent}
-header.top::before,header.top .aurora,.portal .aurora,.p-sky{display:none}
 .portal{background:transparent}
 header.top::after{background:linear-gradient(90deg,transparent,rgba(230,232,242,.28),transparent)}
 
@@ -113,7 +112,7 @@ html{scrollbar-color:rgba(255,255,255,.18) transparent}
 .tab-pill{background-image:radial-gradient(1px 1px at 22% 30%,rgba(255,255,255,.7),transparent),radial-gradient(1px 1px at 78% 65%,rgba(255,255,255,.5),transparent),radial-gradient(1.2px 1.2px at 55% 20%,rgba(255,255,255,.6),transparent)}
 
 /* ---------- Quality: Low — plain and light, nothing heavy ---------- */
-[data-quality=low] .sky-nebula,[data-quality=low] .sky-par,[data-quality=low] .sky-meteors,[data-quality=low] .sky-grain,[data-quality=low] #sky::after{display:none}
+[data-quality=low] .sky-par,[data-quality=low] .sky-meteors,[data-quality=low] .sky-grain,[data-quality=low] #sky::after{display:none}
 [data-quality=low]{--card:#0A0B11;--card-2:#13141C;--rule:#1E2029;--rule-2:#16171F}
 [data-quality=low] nav.bar{background:#05060A;backdrop-filter:none;-webkit-backdrop-filter:none}
 [data-quality=low] .today,[data-quality=low] .n7,[data-quality=low] .statusbar,[data-quality=low] .calbox,[data-quality=low] .month,

@@ -162,8 +162,12 @@ body.arriving>div.wrap{animation-delay:.2s}
 @media (max-width:620px){.p-bar{top:calc(10px + env(safe-area-inset-top,0px));right:10px}.p-tool{width:38px;height:38px}}
 
 /* ---------- the universe (universe.js) ---------- */
-#universe{position:fixed;inset:0;width:100vw;height:100vh;z-index:-1;pointer-events:none}
+#universe{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+/* flying into a section: home has faded, nothing in it can be clicked meanwhile */
+.portal.entering .p-in,.portal.entering .p-bar{pointer-events:none}
 [data-quality=low] #universe{display:none}
+/* the 3D universe draws the whole sky: the CSS sky (for devices without WebGL2) steps aside */
+html.gl #sky{display:none}
 /* during the flight after the PIN, the far stars fade in around you */
 html.flying #sky{opacity:1;transition:opacity 4.5s ease}
 .p-in,.p-bar{z-index:2}

@@ -39,7 +39,10 @@
     if(phone.matches){
       const y=scroller?scroller.scrollTop:0;
       /* a gap between on and off, so it does not flicker at the edge */
-      if(y>56) setCompact(true); else if(y<8) setCompact(false);
+      /* only when there is enough to scroll: shrinking the header makes room, and on a
+         short page that would pull the scroll back to the top and undo it */
+      const room=scroller?scroller.scrollHeight-scroller.clientHeight:0;
+      if(y>56&&room>180) setCompact(true); else if(y<8) setCompact(false);
     } else {
       const h=$("header.top"); if(!h) return;
       setCompact(h.getBoundingClientRect().bottom<=0);

@@ -32,12 +32,12 @@
     b.parentNode.querySelectorAll("button").forEach(x=>x.setAttribute("aria-checked",String(x===b)));
     saveSetting(key,b.dataset.value);
   });
-  /* arrow keys move within a group, like native radio buttons */
+  /* arrow keys move within a group; Enter or Space chooses (choosing reloads the page,
+     so moving alone must not choose) */
   box.addEventListener("keydown",ev=>{
     const b=ev.target.closest(".seg button"); if(!b||!["ArrowLeft","ArrowRight"].includes(ev.key)) return;
     const all=[...b.parentNode.querySelectorAll("button")], i=all.indexOf(b);
-    const next=all[(i+(ev.key==="ArrowRight"?1:all.length-1))%all.length];
-    next.focus(); next.click(); ev.preventDefault();
+    all[(i+(ev.key==="ArrowRight"?1:all.length-1))%all.length].focus(); ev.preventDefault();
   });
   render();
 })();

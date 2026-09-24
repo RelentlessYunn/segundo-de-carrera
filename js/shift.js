@@ -79,7 +79,10 @@ const Shift=(function(){
   function label(key){ msg.textContent=t("shift."+key); }
 
   /* leaving: dive into the tunnel, then reload */
+  let leaving=false;
   function leave(key){
+    if(leaving) return;                                /* one passage at a time */
+    leaving=true;
     still=()=>root.dataset.motion==="none"||systemReduced();
     try{ sessionStorage.setItem(KEY,key); }catch(e){}
     label(key);
@@ -101,7 +104,9 @@ const Shift=(function(){
     const go=()=>setTimeout(()=>fade(1,0,still()?320:900,()=>{
       el.classList.remove("on"); cancelAnimationFrame(raf); raf=0;
     }),still()?60:520);
-    if(document.readyState==="complete") go(); else window.addEventListener("load",go,{once:true});
+    /* when the page has loaded, but never waiting more than 1.2 s (a slow font server, say) */
+    let started=false; const once=()=>{ if(!started){ started=true; go(); } };
+    if(document.readyState==="complete") once(); else { window.addEventListener("load",once,{once:true}); setTimeout(once,1200); }
   }
   arrive();
   return {leave};

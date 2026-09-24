@@ -13,7 +13,7 @@ Object.keys(SETTINGS_OPTIONS).forEach(k=>{ if(!SETTINGS_OPTIONS[k].includes(SETT
 const systemReduced=()=>matchMedia("(prefers-reduced-motion:reduce)").matches;
 /* nothing moves: "none" in Settings or reduced motion in the system */
 const lowMotion=()=>SETTINGS.motion==="none"||systemReduced();
-/* decorations too (aurora, stars, confetti, counters): only with "full" */
+/* decorations too (stars, stardust, counters): only with "full" */
 const fullMotion=()=>SETTINGS.motion==="full"&&!systemReduced();
 /* high quality: the sea of stars, glass, glows. Low: plain background and nothing heavy */
 const highQuality=()=>SETTINGS.quality==="high";

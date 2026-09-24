@@ -29,11 +29,15 @@ const Home=(function(){
   /* which galaxy each view of home lives in */
   /* Notes and Settings belong to every section: they open where you are, without moving the camera */
   const PAGES=["notes","settings"];
-  const sceneOf=(view,sub)=>PAGES.includes(view)?Universe.scene()||"home":view==="nolan"?"forge":view==="soon"?(Universe.GALAXIES[sub]?sub:"home"):"home";
+  const SOON_NAMES={andromeda:"Andrómeda",sombrero:"Sombrero"};   /* the galaxies kept for what comes next */
+  const here=()=>{ const s=Universe.scene(); return !s||s==="gate"?"home":s; };
+  const sceneOf=(view,sub)=>PAGES.includes(view)?here():view==="nolan"?"forge":view==="soon"?(Object.prototype.hasOwnProperty.call(SOON_NAMES,sub)?sub:"home"):"home";
+  let current="home";                                  /* the scene of what home shows now */
   let lastView="home";                                 /* the last view of home that is not Notes or Settings */
-  const SOON_NAMES={andromeda:"Andrómeda",sombrero:"Sombrero"};
   function renderSoon(id){
-    $("#soonView").innerHTML=`<span class="p-ic big" style="--ac:#9FB3FF">${$(`.p-card[data-galaxy="${id}"] .p-ic`)?$(`.p-card[data-galaxy="${id}"] .p-ic`).innerHTML:""}</span>`+
+    /* only known galaxies: anything else in the address is just "a galaxy to explore" */
+    const ic=SOON_NAMES[id]&&Object.prototype.hasOwnProperty.call(SOON_NAMES,id)?$(`.p-card[data-galaxy="${id}"] .p-ic`):null;
+    $("#soonView").innerHTML=`<span class="p-ic big" style="--ac:#9FB3FF">${ic?ic.innerHTML:""}</span>`+
       `<h2>${esc(SOON_NAMES[id]||id)}</h2><p>${esc(t("soon.text"))}</p><a class="p-back" href="#home">${esc(t("nolan.back"))}</a>`;
   }
   let opened=false;
@@ -41,7 +45,8 @@ const Home=(function(){
     draw();
     /* the camera goes to this view's galaxy; the first time, no flight (it is already there) */
     /* (behind the PIN the camera stays in deep space, ready for the flight) */
-    if(!Gate.locked()){ Universe.go(sceneOf(view,subroute),{animate:opened,duration:2400}); opened=true; }
+    current=sceneOf(view,subroute);
+    if(!Gate.locked()){ Universe.go(current,{animate:opened,duration:2400}); opened=true; }
     if(view==="soon") renderSoon(subroute);
     /* "← Back" in Notes and Settings returns to where you came from: a tab of the app, or a view of home */
     if(PAGES.includes(view)){
@@ -92,12 +97,16 @@ const Home=(function(){
     const id=card.dataset.galaxy||"uc3m";
     if(!fancy()){ Universe.go(id,{animate:false}); go(); return; }
     entering=true;
-    const inner=$("#portal .p-in"), bar=$("#portal .p-bar");
+    const inner=$("#portal .p-in"), bar=$("#portal .p-bar"), from=location.hash;
     const fade=[{opacity:1,transform:"none"},{opacity:0,transform:"translateY(-10px)"}];
     inner.animate(fade,{duration:500,easing:"ease-in",fill:"forwards"});
     if(bar) bar.animate(fade,{duration:400,easing:"ease-in",fill:"forwards"});
-    const reset=()=>{ inner.getAnimations().forEach(a=>a.cancel()); if(bar) bar.getAnimations().forEach(a=>a.cancel()); };
-    Universe.go(id,{duration:2800,arriveAt:.82,onArrive:()=>{
+    P.classList.add("entering");                        /* nothing faded can be clicked meanwhile (css) */
+    const reset=()=>{ inner.getAnimations().forEach(a=>a.cancel()); if(bar) bar.getAnimations().forEach(a=>a.cancel()); P.classList.remove("entering"); };
+    /* the trip was interrupted (Escape, Back, another page): home comes back as it was */
+    const abort=()=>{ reset(); entering=false; };
+    Universe.go(id,{duration:2800,arriveAt:.82,onCancel:abort,onArrive:()=>{
+      if(location.hash!==from){ abort(); return; }      /* you went somewhere else meanwhile */
       go();
       if(id==="uc3m"){ document.body.classList.add("arriving"); setTimeout(reset,400); } else reset();
       setTimeout(()=>{ document.body.classList.remove("arriving"); entering=false; },1200);
@@ -110,5 +119,6 @@ const Home=(function(){
       enter(card,()=>{ history.replaceState(null,"","#"+h); const [v,...rest]=h.split("/"); open(v,rest.join("/")); }); });
   });
 
-  return {open, close, enter, intro, isOpen:()=>!P.hidden&&!P.classList.contains("leaving")};
+  /* scene(): where the camera belongs for what is on screen (the app lives in UC3M) */
+  return {open, close, enter, intro, scene:()=>P.hidden||P.classList.contains("leaving")?"uc3m":current, isOpen:()=>!P.hidden&&!P.classList.contains("leaving")};
 })();

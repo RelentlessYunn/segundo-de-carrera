@@ -2,8 +2,10 @@
    sky.js — the sea of stars behind the whole page (#sky in index.html).
    · The stars are drawn once on canvases and used as background tiles,
      so the browser only moves images around: no drawing every frame.
-   · Layers: far dust, two sets of stars that twinkle out of step, a few
-     bright stars with a soft bloom, and a faint torn nebula (cosmos.js).
+   · Only used when the 3D universe (universe.js) cannot run (no WebGL2):
+     then it draws the sky with CSS layers instead.
+   · Layers: far dust, two sets of stars that twinkle out of step and a few
+     bright stars with a soft bloom.
    · A film grain and a vignette give it a cinematic look.
    · With Animations = All: slow drift, twinkling, scroll parallax and a
      shooting star now and then. Basic and None leave the sky still, and
@@ -12,6 +14,9 @@
 (function(){
   const sky=$("#sky"); if(!sky) return;
   if(!highQuality()) return;               /* low quality: a plain gradient, nothing to draw */
+  /* the 3D universe (universe.js) draws the whole sky itself: this one is only
+     for devices without WebGL2 */
+  if(document.documentElement.classList.contains("gl")) return;
   start();
   function start(){
   const DPR=Math.min(window.devicePixelRatio||1,2);
@@ -67,63 +72,6 @@
     c.toBlob(b=>{ grain.style.backgroundImage=`url(${URL.createObjectURL(b)})`; });
   }
 
-  /* ---------- the nebula: painted once, small, and stretched (gas is soft anyway) ---------- */
-  const neb=sky.querySelector(".sky-nebula");
-  if(neb&&typeof Cosmos!=="undefined"){
-    /* about half the screen's real pixels: gas is soft, so that is already sharp */
-    const long=Math.min(1280,Math.round(Math.max(innerWidth,innerHeight)*1.12*DPR*.55)), short=Math.round(long*.62);
-    const wide=innerWidth>=innerHeight, w=wide?long:short, h=wide?short:long;
-    Cosmos.nebula({w,h,seed:7,c1:"70,40,95",c2:"120,45,60",c3:"160,140,120"}).then(c=>{
-      neb.appendChild(c); requestAnimationFrame(()=>c.classList.add("ready"));
-    });
-  }
-
-  /* ---------- the Milky Way: a band across the screen, drawn at screen size ---------- */
-  const milky=sky.querySelector(".sky-milky");   /* optional: no longer in index.html (universe.js draws the galaxies) */
-  let drawnW=0, drawnH=0;
-  function drawMilky(){
-    if(!milky) return;
-    const W=innerWidth, H=innerHeight+160;             /* a little taller, for the parallax */
-    if(Math.abs(W-drawnW)<2&&Math.abs(H-drawnH)<140) return;   /* the phone's address bar is not a resize */
-    drawnW=W; drawnH=H; seed=424242;
-    milky.width=Math.round(W*DPR); milky.height=Math.round(H*DPR);
-    milky.style.width=W+"px"; milky.style.height=H+"px";
-    const x=milky.getContext("2d"); x.setTransform(DPR,0,0,DPR,0,0); x.clearRect(0,0,W,H);
-    const D=Math.hypot(W,H);
-    x.translate(W*.5,H*.42); x.rotate(-.42);
-    /* soft glow along the band */
-    [["215,215,230",.09,.34],["160,140,200",.06,.22],["110,150,165",.035,.14],["235,200,175",.045,.1]].forEach(([c,a,thick])=>{
-      for(let i=0;i<9;i++){
-        const px=(i/8-.5)*D*1.1+(rnd()-.5)*80, py=(rnd()-.5)*D*.05, r=D*thick*(.7+rnd()*.5);
-        const g=x.createRadialGradient(px,py,0,px,py,r);
-        g.addColorStop(0,`rgba(${c},${a})`); g.addColorStop(1,`rgba(${c},0)`);
-        x.save(); x.translate(px,py); x.scale(1,.32); x.translate(-px,-py);
-        x.fillStyle=g; x.beginPath(); x.arc(px,py,r,0,Math.PI*2); x.fill(); x.restore();
-      }
-    });
-    /* thousands of faint stars packed around the middle of the band */
-    const n=Math.round(Math.min(2600,D*1.3));
-    for(let i=0;i<n;i++){
-      const g=(rnd()+rnd()+rnd()-1.5)/1.5;            /* roughly bell-shaped */
-      const px=(rnd()-.5)*D*1.1, py=g*D*.09, r=.25+Math.pow(rnd(),3)*1.1, a=.2+rnd()*.6;
-      x.fillStyle=`rgba(${pick(TINTS)},${a})`; x.beginPath(); x.arc(px,py,r,0,Math.PI*2); x.fill();
-    }
-    /* a darker dust lane down the middle */
-    x.globalCompositeOperation="destination-out";
-    for(let i=0;i<14;i++){
-      const px=(i/13-.5)*D*1.05, py=(rnd()-.5)*D*.02, r=D*(.04+rnd()*.05);
-      const g=x.createRadialGradient(px,py,0,px,py,r);
-      g.addColorStop(0,"rgba(0,0,0,.45)"); g.addColorStop(1,"rgba(0,0,0,0)");
-      x.save(); x.translate(px,py); x.scale(1,.28); x.translate(-px,-py);
-      x.fillStyle=g; x.beginPath(); x.arc(px,py,r,0,Math.PI*2); x.fill(); x.restore();
-    }
-    x.globalCompositeOperation="source-over";
-    milky.classList.add("ready");
-  }
-  let rz=0;
-  window.addEventListener("resize",()=>{ clearTimeout(rz); rz=setTimeout(drawMilky,250); });
-  drawMilky();
-
   /* ---------- parallax: deeper layers move less when you scroll ---------- */
   const pars=$$("#sky [data-depth]");
   const canvas=$("body > div.wrap");
@@ -166,7 +114,7 @@
       m.addEventListener("animationend",()=>m.remove());
       meteors.appendChild(m);
     }
-    setTimeout(meteor,12000+Math.random()*18000);   /* rare, so they stay special */
+    setTimeout(meteor,5000+Math.random()*9000);
   }
   setTimeout(meteor,4000);
   }
