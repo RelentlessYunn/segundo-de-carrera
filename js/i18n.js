@@ -99,6 +99,7 @@ es:{
   "cloud.retrying":"Sin conexión con la nube. Reintento en {s} s; lo que cambies se guardará al conectar.",
   "cloud.saving":"Guardando…", "cloud.saved":"Guardado.", "cloud.saveFailed":"No se pudo guardar. Se reintentará.",
   "cloud.waiting":"Sin conexión: se guardará al conectar.",
+  "cloud.offline":"Sin conexión: se guarda en este dispositivo y se subirá al volver la conexión.",
 
   /* ---- static texts of index.html ---- */
   "s.home":"Inicio", "s.brand":"Nolan · UC3M · ", "s.aulaGlobalAria":"Aula Global (se abre en otra pestaña)",
@@ -199,6 +200,7 @@ en:{
   "cloud.retrying":"No connection to the cloud. Retrying in {s} s; your changes will be saved once connected.",
   "cloud.saving":"Saving…", "cloud.saved":"Saved.", "cloud.saveFailed":"Could not save. It will retry.",
   "cloud.waiting":"Offline: it will save once connected.",
+  "cloud.offline":"Offline: kept on this device, uploaded when the connection is back.",
 
   "s.home":"Home", "s.brand":"Nolan · UC3M · ", "s.aulaGlobalAria":"Aula Global (opens in a new tab)",
   "s.notes":"Notes", "s.settings":"Settings", "s.sections":"Sections",

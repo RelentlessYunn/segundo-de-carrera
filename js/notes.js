@@ -18,7 +18,7 @@
   box.addEventListener("input",()=>{
     if(!loaded) return;
     const text=box.value;
-    Cloud.change("notes",rec=>{ rec.notas=text; });
+    Cloud.change("notes",{op:"notes",args:{text}});
   });
   document.addEventListener("cloud",e=>{ status.textContent=e.detail.text; });
 

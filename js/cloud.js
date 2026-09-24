@@ -7,10 +7,16 @@
      so nothing you didn't touch — or another device changed — is overwritten.
    · Writes go one after another.
    · Pending changes are flushed when the app is hidden or closed.
+   · Offline: the last copy read is kept on this device (localStorage), so the
+     page shows your ticks, grades and notes without a connection; changes
+     made meanwhile are kept on the device too (as small descriptions, OPS
+     below) and go up when the connection comes back, even after closing.
    Stored keys ("hechas", "grades", "notas") are kept as they were so old data still loads.
    Usage from other files:
      Cloud.onLoad(rec=>…)            called with the data (and again if refreshed)
-     Cloud.change("key", rec=>…)     queues a change; the last one with the same key wins
+     Cloud.change("key", {op,args})  queues a change kept on the device until saved
+     Cloud.change("key", rec=>…)     the same, only in memory (one-off migrations)
+     (the last change with the same key wins)
    Status: "cloud" event with {kind, text}.
    ========================================================== */
 const Cloud=(function(){
@@ -24,6 +30,21 @@ const Cloud=(function(){
   const copy=o=>JSON.parse(JSON.stringify(o||{}));
   const status=(kind,text)=>emit("cloud",{kind,text});
   const headers={"X-Access-Key":KEY};
+  /* the changes that can be kept on the device: described, not as code */
+  const OPS={
+    done:(rec,a)=>{ const s=new Set(rec.hechas||[]); if(a.done) s.add(a.id); else s.delete(a.id); rec.hechas=[...s]; },
+    grade:(rec,a)=>{ rec.grades=rec.grades||{}; if(a.text==="") delete rec.grades[a.id]; else rec.grades[a.id]=a.text; },
+    notes:(rec,a)=>{ rec.notas=a.text; }
+  };
+  const REC_KEY="nolan-cloud", PEND_KEY="nolan-pending";
+  const kept=new Map();             /* key → {op,args}: pending changes also on the device */
+  const store=(k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
+  const stored=k=>{ try{ return JSON.parse(localStorage.getItem(k)||"null"); }catch(e){ return null; } };
+  const keep=()=>store(PEND_KEY,[...kept]);
+  const remember=rec=>store(REC_KEY,rec);
+  /* what was left pending last time (the app closed offline): back in the queue */
+  (stored(PEND_KEY)||[]).forEach(([k,c])=>{ if(c&&OPS[c.op]){ kept.set(k,c); pending.set(k,rec=>OPS[c.op](rec,c.args)); } });
+  let shownCopy=false, loadTimer=0;
 
   async function read(){
     const r=await fetch(URL_BIN+"/latest",{headers,cache:"no-store"});
@@ -40,19 +61,23 @@ const Cloud=(function(){
   function load(){
     if(!enabled){ status("off",t("cloud.off")); return; }
     status("loading",t("cloud.loading"));
+    clearTimeout(loadTimer);
     read().then(rec=>{
-      record=rec; ready=true; retry=2000;
+      record=rec; ready=true; retry=2000; remember(rec);
       hand(rec);
       status("ok",t("cloud.synced"));
       if(pending.size) schedule();
     }).catch(()=>{
-      status("error",t("cloud.retrying",{s:Math.round(retry/1000)}));
-      setTimeout(load,retry); retry=Math.min(retry*2,60000);
+      /* no connection: show the copy kept on this device meanwhile */
+      const copyRec=stored(REC_KEY);
+      if(copyRec&&!shownCopy){ shownCopy=true; hand(copyRec); }
+      status("error",navigator.onLine===false?t("cloud.offline"):t("cloud.retrying",{s:Math.round(retry/1000)}));
+      loadTimer=setTimeout(load,retry); retry=Math.min(retry*2,60000);
     });
   }
   /* back in the app after a while: re-read in case another device changed something */
   function refresh(){
-    read().then(rec=>{ if(pending.size) return; record=rec; hand(rec); }).catch(()=>{});
+    read().then(rec=>{ if(pending.size) return; record=rec; remember(rec); hand(rec); }).catch(()=>{});
   }
 
   function schedule(){ clearTimeout(timer); timer=setTimeout(write,800); }
@@ -65,12 +90,13 @@ const Cloud=(function(){
         batch.forEach(fn=>fn(rec));
         const r=await fetch(URL_BIN,{method:"PUT",headers:{...headers,"Content-Type":"application/json"},body:JSON.stringify(rec)});
         if(!r.ok) throw new Error("HTTP "+r.status);
-        record=rec;
+        record=rec; remember(rec);
+        batch.forEach((fn,k)=>{ if(!pending.has(k)) kept.delete(k); }); keep();
         status(pending.size?"saving":"ok",pending.size?t("cloud.saving"):t("cloud.saved"));
       }catch(e){
         /* back to the queue, without overwriting a newer change with the same key */
         batch.forEach((fn,k)=>{ if(!pending.has(k)) pending.set(k,fn); });
-        status("error",t("cloud.saveFailed"));
+        status("error",navigator.onLine===false?t("cloud.offline"):t("cloud.saveFailed"));
         setTimeout(schedule,5000);
       }
     });
@@ -89,6 +115,8 @@ const Cloud=(function(){
     else if(ready&&Date.now()-hiddenSince>60000) refresh();
   });
   window.addEventListener("pagehide",flushOnExit);
+  /* the connection is back: read (or save) now, not at the next retry */
+  window.addEventListener("online",()=>{ if(!enabled) return; if(!ready){ retry=2000; load(); } else if(pending.size) schedule(); });
 
   /* read once every file has loaded and everyone is listening */
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",load); else setTimeout(load,0);
@@ -97,6 +125,8 @@ const Cloud=(function(){
     ready:()=>ready,
     onLoad(fn){ listeners.push(fn); if(ready&&record) fn(view(record)); },
     change(key,fn){
+      if(fn&&typeof fn==="object"){ const c=fn; if(!OPS[c.op]) return; fn=rec=>OPS[c.op](rec,c.args); kept.set(key,c); keep(); }
+      else if(kept.delete(key)) keep();
       pending.set(key,fn);
       if(!enabled) return;
       if(!ready){ status("waiting",t("cloud.waiting")); return; }

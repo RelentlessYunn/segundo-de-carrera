@@ -20,11 +20,7 @@
     const inp=e.target;
     if(!inp.matches("#subjectTasks input, #generalTasks input")) return;
     const id=inp.id, done=inp.checked;
-    Cloud.change("done:"+id,rec=>{
-      const s=new Set(rec.hechas||[]);
-      if(done) s.add(id); else s.delete(id);
-      rec.hechas=[...s];
-    });
+    Cloud.change("done:"+id,{op:"done",args:{id,done}});
   });
 
   /* ticks saved in the old format (by position) are translated once */

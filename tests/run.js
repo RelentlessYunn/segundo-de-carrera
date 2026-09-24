@@ -387,6 +387,49 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.context().close();
   }
 
+  section("Offline");
+  {
+    /* the offline copy needs the site served over http: a tiny local server */
+    const http=require("http"), fs=require("fs");
+    const TYPES={".html":"text/html",".js":"text/javascript",".css":"text/css",".png":"image/png",".svg":"image/svg+xml",".ico":"image/x-icon",".webmanifest":"application/manifest+json"};
+    const root=path.resolve(__dirname,"..");
+    const srv=http.createServer((q,s)=>{
+      const f=path.join(root,decodeURIComponent(q.url.split("?")[0]).replace(/\/$/,"/index.html"));
+      if(!f.startsWith(root)||!fs.existsSync(f)){ s.writeHead(404); s.end(); return; }
+      s.writeHead(200,{"Content-Type":TYPES[path.extname(f)]||"application/octet-stream"}); fs.createReadStream(f).pipe(s);
+    });
+    await new Promise(r=>srv.listen(0,"127.0.0.1",r));
+    const URL0=`http://127.0.0.1:${srv.address().port}/`;
+    const ctx=await b.newContext({viewport:{width:1280,height:900}});
+    const writes=[];
+    await ctx.route(/fonts\.(googleapis|gstatic)\.com|open-meteo|bigdatacloud/,r=>r.abort());
+    await ctx.route("https://api.jsonbin.io/**",async r=>{
+      if(r.request().method()==="PUT"){ writes.push(JSON.parse(r.request().postData())); return r.fulfill({status:200,body:"{}",contentType:"application/json"}); }
+      return r.fulfill({status:200,contentType:"application/json",body:JSON.stringify({record:writes.length?writes[writes.length-1]:{hechas:[]}})});
+    });
+    await ctx.addInitScript(k=>localStorage.setItem("nolan-device",k),DEVICE);
+    await ctx.addInitScript(FAKE_CONFIG);
+    const p=await ctx.newPage(); p.errors=[]; p.on("pageerror",e=>p.errors.push(e.message));
+    await p.goto(URL0+"#tasks",{waitUntil:"load"});
+    await p.evaluate(()=>navigator.serviceWorker.ready.then(()=>true));
+    await p.waitForTimeout(2500);                        /* the copy is being kept */
+    const kept=await p.evaluate(async()=>{ const c=await caches.open("nolan"); return (await c.keys()).length; });
+    await ctx.setOffline(true);
+    await p.reload({waitUntil:"load"}); await p.waitForTimeout(800);
+    const off=await p.evaluate(()=>({ok:typeof Universe!=="undefined"&&typeof Cloud!=="undefined"&&typeof Router!=="undefined",
+      version:document.querySelector("footer .version").textContent,tasks:document.querySelectorAll("#generalTasks input").length}));
+    ok(kept>20&&off.ok&&/^v\d/.test(off.version)&&off.tasks>0&&!p.errors.length,`without a connection the site still opens, from the copy on the device (${kept} files kept) ${p.errors.join(" | ")}`);
+    /* a task ticked offline survives closing the app, and goes up when the connection is back */
+    const id=await p.evaluate(()=>document.querySelector("#generalTasks input").id);
+    await p.locator("#generalTasks input").nth(0).check(); await p.waitForTimeout(300);
+    await p.reload({waitUntil:"load"}); await p.waitForTimeout(800);
+    const still=await p.evaluate(i=>document.getElementById(i).checked,id);
+    await ctx.setOffline(false); await p.evaluate(()=>window.dispatchEvent(new Event("online")));
+    await p.waitForFunction(()=>true,null,{timeout:100}); await p.waitForTimeout(3000);
+    ok(still&&writes.some(w=>(w.hechas||[]).includes(id)),`a task ticked offline is still ticked after reopening, and is saved once online (${still}, ${writes.length} writes)`);
+    await ctx.close(); srv.close();
+  }
+
   await b.close();
   console.log(failures?`\n${failures} checks failed.`:"\nAll good.");
   process.exit(failures?1:0);

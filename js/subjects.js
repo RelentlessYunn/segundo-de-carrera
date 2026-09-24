@@ -158,7 +158,7 @@ function recalc(subj,scope){
     if(!inp.matches('.g-input[data-scope="main"]')) return;
     const v=readGrade(inp), id=inp.id;
     const text=v===null||Number.isNaN(v)?"":String(v);
-    Cloud.change("grade:"+id,rec=>{ rec.grades=rec.grades||{}; if(text==="") delete rec.grades[id]; else rec.grades[id]=text; });
+    Cloud.change("grade:"+id,{op:"grade",args:{id,text}});
   });
 
   /* loading from the cloud: grades saved in the old format (by position)

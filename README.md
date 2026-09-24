@@ -148,6 +148,7 @@ Each file does one thing. To change something you usually only need one or two.
 | `home.js` | The home window (UC3M / Nolan). |
 | `router.js` | Routes (`#schedule`, `#home`, `#nolan/…`), tabs, the swipe gesture and the Escape key. |
 | `view.js` | Just the sky: hides the interface to enjoy the universe. |
+| `sw.js` (root) | The offline copy: a service worker (see *Offline*). |
 | `debug.js` | `#debug` panel with screen measurements, data warnings and missing translations. |
 | `effects.js` | Ripple and stardust on tap, star burst on ticking a task, warp on changing tab, and *idle* (decorations pause after 45 s without touching anything). |
 
@@ -221,6 +222,17 @@ From 26 January the site shows those subjects by itself; syllabus progress, the 
 - **Dates** are `"YYYY-MM-DD"` strings. To work with them use `fromISO` (noon, safe from daylight-saving changes) and `addDays`.
 - **Style**: English, comments that explain *why*, nothing written by hand if it can be computed from the data.
 
+## Offline
+
+The site works without a connection (`sw.js`, a service worker, registered at the end of `index.html` when the site is served over the web):
+
+- **The page** comes from the network first, so a new version is seen as soon as there is signal; without signal, from the copy kept on the device.
+- **Its files** (css, js, data, icons) carry the version in their address (`?v=…`), so the kept copy is always right and they load instantly.
+- **What to keep is read from `index.html` itself** (every `href` and `src`, plus the manifest's icons): nothing to list by hand. Each fresh `index.html` drops the files of older versions and fetches the new ones, so only one version is ever kept. Publishing a version needs nothing extra.
+- **Your data**: `cloud.js` keeps the last copy read on the device, so ticks, grades and notes show offline; changes made offline are kept on the device too and go up when the connection is back, even after closing the app.
+- The weather keeps its last reading, and sunrise and sunset are computed offline.
+- Installable: add it to the home screen (`manifest.webmanifest`) and it opens like an app, with or without signal.
+
 ## The cloud
 
 `cloud.js` saves to JSONBin the task ticks (`hechas`), the exam grades (`grades`) and the notes for Claude (`notas`). Those record keys stay in Spanish on purpose: renaming them would lose what is already saved.
@@ -243,7 +255,7 @@ Settings are not in the cloud: they are per device (`localStorage`, key `setting
 node tests/run.js
 ```
 
-Needs Node and Playwright. 84 checks in a real browser:
+Needs Node and Playwright. 86 checks in a real browser:
 
 - the page loads without errors;
 - the PIN screen (wrong PIN, the flight into the galaxy, remembered device, PIN not in the page, Log out), starting at home, the camera flights between galaxies (UC3M, back home, a galaxy to explore), and Notes and Settings inside home;
@@ -256,7 +268,8 @@ Needs Node and Playwright. 84 checks in a real browser:
 - settings: no light theme, the passage when a setting reloads the page, English after reloading, every text translated in both languages, English dates, and the animation levels;
 - the astral layer: weather and sun on home, the sea of stars, Quality = Low and the tasks constellation;
 - the swipe gesture;
-- idle.
+- idle;
+- offline: the site opens without a connection, and a task ticked offline survives reopening and is saved once online.
 
 Add a test whenever you fix a bug.
 
@@ -271,7 +284,6 @@ Ordered by how much it will be noticed.
 3. **Term 2.** The structure is ready: only the data is missing (see above).
 4. **Nolan.** Decide what it is and build it in `nolan.js`.
 5. **Exams in the phone's calendar.** An "Add to my calendar" button that generates an `.ics` with all `EVENTS`, so the phone itself gives reminders.
-6. **Offline.** A *service worker* to open the site without signal and load instantly. Needs care with versions so an old copy is not kept.
-7. **Term average.** With the calculator grades and the ECTS, the weighted average and what each final needs.
-8. **Fixed Madrid time**, even when the phone is in another time zone (travel).
-9. **Tests on GitHub.** Run `tests/run.js` with GitHub Actions on every upload.
+6. **Term average.** With the calculator grades and the ECTS, the weighted average and what each final needs.
+7. **Fixed Madrid time**, even when the phone is in another time zone (travel).
+8. **Tests on GitHub.** Run `tests/run.js` with GitHub Actions on every upload.
