@@ -24,6 +24,6 @@
 @media (max-width:620px){
   .set-row{flex-direction:column;align-items:stretch;padding:16px 14px}
   .seg{display:flex}
-  .seg button{flex:1;padding:9px 6px}
+  .seg button{flex:1;min-width:0;padding:9px 2px;font-size:.8rem;letter-spacing:-.01em}
   .set-note{padding:12px 14px}
 }

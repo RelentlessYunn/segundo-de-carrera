@@ -1,6 +1,6 @@
 /* ==========================================================
    settings.js — the Settings page (#settings, gear icon in the header):
-   language, animations and quality, and Log out. Each choice is a segmented control;
+   language, Effects (animations and quality together), and Log out. Each choice is a segmented control;
    saving and applying are done by saveSetting() in prefs.js.
    ========================================================== */
 (function(){
@@ -8,16 +8,16 @@
   const ROWS=[
     {key:"lang",  label:"s.set.lang",   help:"s.set.langHelp",
      options:[["es","Español"],["en","English"]]},          /* each language in its own name */
-    {key:"motion",label:"s.set.motion", help:"s.set.motionHelp",
-     options:SETTINGS_OPTIONS.motion.map(v=>[v,t("s.set.motion."+v)])},
-    {key:"quality",label:"s.set.quality",help:"s.set.qualityHelp",
-     options:SETTINGS_OPTIONS.quality.map(v=>[v,t("s.set.quality."+v)])}
+    /* animations and quality, as one choice (LOOKS in prefs.js) */
+    {key:"look",  label:"s.set.look",   help:"s.set.lookHelp",
+     options:Object.keys(LOOKS).map(v=>[v,t("s.set.look."+v)])}
   ];
+  const current=k=>k==="look"?currentLook():SETTINGS[k];
   function render(){
     box.innerHTML=ROWS.map(r=>`<div class="set-row"><div class="set-txt"><b id="set-${r.key}">${esc(t(r.label))}</b>`+
       `<p>${esc(t(r.help))}</p></div>`+
       `<div class="seg" role="radiogroup" aria-labelledby="set-${r.key}" data-key="${r.key}">`+
-      r.options.map(o=>`<button type="button" role="radio" data-value="${o[0]}" aria-checked="${SETTINGS[r.key]===o[0]}"`+
+      r.options.map(o=>`<button type="button" role="radio" data-value="${o[0]}" aria-checked="${current(r.key)===o[0]}"`+
         `${o[0]==="es"||o[0]==="en"?` lang="${o[0]}"`:""}>${esc(o[1])}</button>`).join("")+
       `</div></div>`).join("")+
       `<p class="set-note">${esc(t("s.set.reload"))}</p>`+

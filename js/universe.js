@@ -659,34 +659,52 @@ void main(){
   vec3 c=(tc*core*1.6+gc*glow)*inTail+vec3(.82,1.,.9)*head;
   o=vec4(c*vI,0.);
 }`;
+  /* a comet: its kind (see COMET_KINDS) comes in as colours and strengths. One head, or a few
+     pieces of a comet breaking up, each with its coma and tails; some kinds also show a thin
+     anti-tail pointing ahead */
   const COMET_VS=HEAD+`uniform vec2 uCss; uniform vec2 uHead, uDir; uniform vec2 uSize; out vec2 vQ;
 void main(){
   vec2 c=vec2(float(gl_VertexID&1),float(gl_VertexID>>1));
   vec2 nrm=vec2(-uDir.y,uDir.x);
-  float u=mix(-.2,1.,c.x)*uSize.x, v=(c.y*2.-1.)*uSize.y;
+  float u=mix(-.4,1.,c.x)*uSize.x, v=(c.y*2.-1.)*uSize.y;
   vec2 p=uHead+uDir*u+nrm*v;
   gl_Position=vec4(p.x/uCss.x*2.-1.,1.-p.y/uCss.y*2.,0.,1.);
   vQ=vec2(u,v);
 }`;
   const COMET_FS=HEAD+NOISE+`in vec2 vQ; out vec4 o; uniform vec2 uSize; uniform float uA, uSeed, uNow;
-void main(){
-  float L=uSize.x, u=vQ.x, v=vQ.y, un=max(u,0.)/L, r=length(vQ);
-  /* the head: a tiny bright nucleus inside a green-cyan coma and a wide faint halo */
-  float rc=L*.022;
+uniform vec3 uComa, uDustC, uIonC;
+uniform vec4 uK;          /* dust tail, ion tail, how much the dust tail curves, how wide it fans */
+uniform vec4 uK2;         /* anti-tail, pieces (1-3), coma size, ion streamers */
+vec3 one(vec2 q,float L,float sd){
+  float u=q.x, v=q.y, un=max(u,0.)/L, r=length(q);
+  /* the head: a tiny bright nucleus inside its coma and a wide faint halo */
+  float rc=L*.022*uK2.z;
   float coma=exp(-r*r/(rc*rc*.06))*3.2+exp(-r*r/(rc*rc))*1.1+exp(-r/(rc*2.2))*.4*(1.-smoothstep(L*.1,L*.19,r));
-  float end=1.-smoothstep(.5,1.,un);                  /* both tails fade out before the end */
-  float grow=smoothstep(0.,.05,u/L);
-  /* dust tail: broad, curved, warm white, brighter on its outer edge, with faint rays */
-  float bend=.24*L*un*un, wd=L*(.018+.15*un);
+  float end=1.-smoothstep(.5,1.,un), grow=smoothstep(0.,.05,u/L);
+  /* dust tail: curved, brighter on its outer edge, with faint rays */
+  float bend=uK.z*L*un*un, wd=L*(.018+uK.w*un);
   float x=(v-bend)/wd;
   float fan=exp(-x*x)*(.75+.35*smoothstep(-1.,1.,x));
-  float rays=.72+.28*fbm(vec2(v/max(u,L*.02)*9.+uSeed,un*2.-uNow*.02),3);
+  float rays=.72+.28*fbm(vec2(v/max(u,L*.02)*9.+sd,un*2.-uNow*.02),3);
   float dustT=fan*mix(1.,rays,smoothstep(.05,.3,un))*exp(-un*2.2)*grow*end;
-  /* ion tail: narrow, straight, blue, streaming away from the head */
+  /* ion tail: narrow, straight, streaming away; some kinds split it into streamers */
   float wi=L*(.005+.018*un);
-  float streak=.55+.45*fbm(vec2(un*12.-uNow*.1,v/wi*.5+uSeed),3);
-  float ionT=(exp(-v*v/(wi*wi))*.85+exp(-v*v/(wi*wi*9.))*.22)*exp(-un*1.3)*streak*grow*end;
-  vec3 c=vec3(.66,1.,.86)*coma+vec3(1.,.9,.74)*dustT*1.15+vec3(.42,.62,1.)*ionT*.8;
+  float streak=.55+.45*fbm(vec2(un*12.-uNow*.1,v/wi*.5+sd),3);
+  float strands=mix(1.,.25+1.5*pow(.5+.5*sin(v/wi*2.6+fbm(vec2(un*3.-uNow*.05,sd),2)*5.),6.),uK2.w);
+  float ionT=(exp(-v*v/(wi*wi*(1.+uK2.w*5.)))*.85+exp(-v*v/(wi*wi*9.))*.22)*exp(-un*1.3)*streak*strands*grow*end;
+  /* anti-tail: a thin spike of dust seen edge-on, pointing ahead */
+  float ua=max(-u,0.)/L;
+  float anti=exp(-v*v/(L*L*.00003))*exp(-ua*6.)*smoothstep(0.,.02,ua);
+  return uComa*coma+uDustC*(dustT*uK.x+anti*uK2.x)+uIonC*ionT*uK.y;
+}
+void main(){
+  float L=uSize.x;
+  vec3 c=one(vQ,L,uSeed);
+  /* a comet breaking up: smaller pieces trailing behind, a little off the line */
+  for(int i=1;i<3;i++){
+    if(float(i)>=uK2.y) break;
+    c+=one(vQ-vec2(L*.08*float(i),L*.014*(i==1?1.:-.8)),L*.5,uSeed+float(i)*3.7)*(.55-.12*float(i));
+  }
   o=vec4(c*uA,0.);
 }`;
 
@@ -704,66 +722,121 @@ void main(){ vec3 c=texture(uTex,vUv).rgb*.227;
   /* a galaxy's volume, drawn at a lower resolution, spread over the full picture (it is soft light and dust) */
   const UP_FS=HEAD+`out vec4 o; uniform sampler2D uTex; uniform vec2 uK;
 void main(){ o=texture(uTex,gl_FragCoord.xy*uK); }`;
-  /* the black hole lives here, in the last step: it bends the light of everything behind it.
-     Seen from a little above its disk: the near half of the disk crosses in front of the
-     shadow, the far half is bent up over the top of it (and a thin image under it), and two
-     thin rings of light that went round it hug the shadow. The side of the disk turning
-     towards us is brighter and bluer, the other side dimmer and redder, and the gas right at
-     the inner edge is dimmed and reddened by the pull of the hole itself */
+  /* the black hole lives here, in the last step, and it is traced, not painted: for every pixel
+     near it, the ray of light is followed backwards along its real path in the curved space
+     around the hole (Schwarzschild; the step is the one of Riccardo Antonelli's "Starless":
+     a = −1.5·h²·p/|p|⁵, h the ray's angular momentum). Whatever that path meets is what the
+     pixel shows: the hole (black), the thin disk of hot gas each time the ray crosses it, or
+     the sky it finally escapes to. The shadow, the thin ring of light that went round it, the
+     disk bent over the top and under the bottom, and the Einstein ring of the stars behind all
+     come out of that by themselves. The gas glows like a black body: hotter inside (the thin
+     disk's law), bluer and brighter on the side coming at us, redder on the side going away,
+     and dimmer and redder deep in the hole's pull (Doppler and gravitational redshift).
+     Units: the hole's own radius (the event horizon) is 1. */
   const COMP_FS=HEAD+NOISE+`in vec2 vUv; out vec4 o;
 uniform sampler2D uHdr, uBloom; uniform float uExp, uBloomK, uTime, uOutK; uniform vec2 uRes;
-uniform vec4 uBH;         /* centre (px of the picture), radius of the shadow (px), strength (0: none) */
-uniform vec4 uBHd;        /* far side of the disk on the screen (unit), how open it is seen (cos), time */
+uniform vec4 uBH;         /* the hole seen from the camera (x right, y up, z ahead; in its radii), strength (0: none) */
+uniform vec4 uBHn;        /* the axis of its disk (same axes), time */
+uniform float uFpx;       /* focal length in px of the picture */
 float h(vec2 p){ vec3 p3=fract(vec3(p.xyx)*.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
-float diskI(float rho){ return pow(1.3/rho,2.3)*smoothstep(1.2,1.45,rho)*(1.-smoothstep(3.6,5.2,rho)); }
-/* the colour of the gas: hotter inside; shifted by its motion towards or away from us (g) and by the hole's pull */
-vec3 diskCol(float rho,float g){
-  vec3 c=mix(vec3(1.,.46,.18),vec3(1.,.92,.8),smoothstep(3.4,1.3,rho));
-  c=mix(c,vec3(.8,.88,1.),clamp((g-1.)*1.1,0.,.55));
-  c=mix(c,c*vec3(1.,.5,.3),clamp((1.-g)*1.8,0.,.75));
-  return c*sqrt(max(0.,1.-.8/rho))*1.25;
+float h31(vec3 p){ p=fract(p*.1031); p+=dot(p,p.zyx+31.32); return fract((p.x+p.y)*p.z); }
+float vn3(vec3 p){ vec3 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
+  return mix(mix(mix(h31(i),h31(i+vec3(1,0,0)),f.x),mix(h31(i+vec3(0,1,0)),h31(i+vec3(1,1,0)),f.x),f.y),
+             mix(mix(h31(i+vec3(0,0,1)),h31(i+vec3(1,0,1)),f.x),mix(h31(i+vec3(0,1,1)),h31(i+vec3(1,1,1)),f.x),f.y),f.z); }
+float fbm3(vec3 p){ return (.5*vn3(p)+.25*vn3(p*2.07+3.1)+.125*vn3(p*4.13+7.7))/.875; }
+/* colour of a black body at K kelvin (normalised) */
+vec3 bb(float K){
+  float t=K/100.;
+  float r=t<=66.?1.:clamp(1.2929*pow(t-60.,-.1332),0.,1.);
+  float g=t<=66.?clamp(.3900816*log(t)-.6318414,0.,1.):clamp(1.1298909*pow(t-60.,-.0755148),0.,1.);
+  float b=t>=66.?1.:t<=19.?0.:clamp(.5432068*log(t-10.)-1.1962541,0.,1.);
+  return vec3(r,g,b);
 }
-/* the gas turns faster inside than outside; two phases blended, so it swirls for ever without winding up */
-float swirl(vec2 p,float rho,int oc){
-  float w=1.6/pow(rho,1.5), ph=fract(uBHd.w*.04), f=abs(ph*2.-1.);
-  float a1=w*ph*8., a2=w*fract(ph+.5)*8.;
-  vec2 q1=mat2(cos(a1),sin(a1),-sin(a1),cos(a1))*p, q2=mat2(cos(a2),sin(a2),-sin(a2),cos(a2))*p;
-  float n=mix(fbm(q1*2.4+vec2(0.,rho*.8),oc),fbm(q2*2.4+vec2(5.3,rho*.8),oc),1.-f);
-  float lanes=.86+.14*sin(rho*17.+n*11.+fbm(p*.7,2)*6.);  /* fine, uneven streaks along the orbits */
-  return (.3+1.9*n*n)*lanes;
+/* the gas at a point of the disk: its clumps and streaks turn with it. Three rings of pattern,
+   each turning at the speed of its own orbits and blended by radius: the inside goes round
+   faster than the outside, and the pattern never winds itself up (nor has to start over) */
+float gas(float r,vec2 xy){
+  float ph=atan(xy.y,xy.x), t=uBHn.w, n=0., wsum=0.;
+  for(int k=0;k<3;k++){
+    float rk=k==0?3.6:k==1?6.:9.5, w=exp(-pow((r-rk)/(k==0?1.6:2.4),2.));
+    float a=ph-t*.9*pow(3./rk,1.5);                      /* Keplerian: faster inside */
+    vec3 q=vec3(r*3.4,cos(a)*1.6,sin(a)*1.6)+float(k)*7.3;
+    n+=w*(fbm3(q)*.65+fbm3(vec3(r*11.,cos(a)*.9,sin(a)*.9)+float(k)*3.1)*.35);   /* clumps, and fine streaks along the orbits */
+    wsum+=w;
+  }
+  n/=max(wsum,1e-3);
+  return .25+1.6*n*n;
 }
-/* how much brighter the gas looks for coming towards us: g³ */
-float beam(float xr,float rho,float si){ float g=1./max(.3,1.+.58/sqrt(max(rho,1.))*si*xr); return g; }
 void main(){
-  vec2 uv=vUv; vec3 add=vec3(0.); float hole=0.;
+  vec2 uv=vUv; vec3 add=vec3(0.); float hole=0., bgT=1.;
   if(uBH.w>0.){
-    vec2 d=gl_FragCoord.xy-uBH.xy; float r=length(d)/uBH.z;
-    if(r<16.){
-      int oc=uBH.z>50.?4:3;                              /* up close: finer detail */
-      /* a point lens: what is seen here comes from further out (inside the ring, from the other side) */
-      float k=2.9/max(r*r,.3)*(1.-smoothstep(9.,16.,r))*uBH.w;
-      uv=(uBH.xy+d*(1.-k))/uRes;
-      hole=(1.-smoothstep(.975,1.02,r))*uBH.w;
-      vec2 Fd=uBHd.xy, Md=vec2(-Fd.y,Fd.x);
-      float x=dot(d,Md)/uBH.z, y=dot(d,Fd)/uBH.z, s=max(uBHd.z,.06), si=sqrt(1.-s*s);
-      /* the disk itself: its far half hides behind the shadow */
-      vec2 X=vec2(x,y/s); float rho=max(length(X),1e-3);
-      float g=beam(X.x/rho,rho,si);
-      vec3 direct=diskCol(rho,g)*diskI(rho)*swirl(X,rho,oc)*g*g*g*(1.-step(0.,y)*hole);
-      /* the far half again, bent over the shadow; under it, a thinner and dimmer image */
-      float up=y/max(r,1e-3), rr=max(1.2,1.25+(r-1.03)*3.6);   /* (never below the disk's edge: a power of a negative is NaN, and NaN·0 is still NaN) */
-      float gb=beam(x/max(r,1e-3),rr,si);
-      vec3 lensed=diskCol(rr,gb)*diskI(rr)*swirl(vec2(x,up*r)/max(r,1e-3)*rr,rr,oc)*gb*gb*gb
-                 *mix(.3,1.,smoothstep(-.7,.7,up))*smoothstep(1.,1.06,r)*2.2;
-      /* light that went round once, and round again: two thin rings, the inner one fainter */
-      float ring=exp(-pow((r-1.035)/.022,2.))*1.7+exp(-pow((r-1.012)/.008,2.))*.8;
-      ring*=mix(.7,1.25,smoothstep(-1.,1.,-x/max(r,1e-3)*si));   /* brighter on the side coming at us */
-      /* a haze of warm light around the disk, strongest along its plane */
-      vec3 glow=vec3(1.,.66,.38)*(.06*exp(-(r-1.)*.5)+.05*exp(-abs(y)*4.)*exp(-rho*.3))*step(1.,r);
-      add=(direct+lensed+vec3(1.,.88,.76)*ring+glow)*uBH.w;
+    vec3 rd=normalize(vec3((gl_FragCoord.xy-uRes*.5)/uFpx,1.));
+    vec3 Q=uBH.xyz, ro=-Q;                                 /* the camera, seen from the hole */
+    float tc=dot(Q,rd), b=length(cross(Q,rd));             /* how close the straight ray passes */
+    const float RI=14.;                                     /* inside this sphere the path is traced */
+    if(tc>0.&&b<RI*3.){
+      vec3 dir=rd;
+      if(b>=RI){
+        /* far from it the bending is small: a point lens (2 radii / closest approach), fading out */
+        float al=2./b*(1.-smoothstep(RI*1.6,RI*3.,b));
+        vec3 w=normalize(Q/length(Q)-rd*dot(Q/length(Q),rd));
+        dir=normalize(rd*cos(al)+w*sin(al));
+      } else {
+        vec3 n=normalize(uBHn.xyz), e1=normalize(abs(n.y)<.9?cross(n,vec3(0,1,0)):cross(n,vec3(1,0,0))), e2=cross(n,e1);
+        float D=length(ro);
+        vec3 p=D>RI?ro+rd*(tc-sqrt(RI*RI-b*b)):ro, v=rd;
+        float h2=dot(cross(p,v),cross(p,v));
+        vec3 T=vec3(1.); bool caught=false, out_=false;
+        for(int i=0;i<150;i++){
+          float r=length(p);
+          if(r<1.){ caught=true; break; }
+          if(r>RI*1.02&&dot(p,v)>0.){ out_=true; break; }
+          /* leapfrog steps, finer near the hole: the path near the photon sphere (1.5) is delicate */
+          float dt=clamp(.055*r*r/(r+.5),.012,.8);
+          v+=-1.5*h2*p/pow(r,5.)*dt*.5;
+          vec3 pn=p+v*dt;
+          float rn=length(pn);
+          v+=-1.5*h2*pn/pow(rn,5.)*dt*.5;
+          /* crossing the disk's plane: the gas there */
+          float s0=dot(p,n), s1=dot(pn,n);
+          if(s0*s1<0.){
+            vec3 x=mix(p,pn,s0/(s0-s1)); float rr=length(x);
+            if(rr>3.&&rr<11.5){
+              /* the thin disk's temperature (inner edge at the last stable orbit, 3 radii) */
+              float Tn=pow(3./rr,.75)*pow(max(1.-sqrt(3./rr),0.),.25)/.214;
+              /* it orbits: towards us or away (Doppler), and deep in the pull (gravitational) */
+              vec3 uo=normalize(cross(n,x)); float be=min(sqrt(.5/(rr-1.)),.7), ga=inversesqrt(1.-be*be);
+              float opz=ga*(1.+be*dot(uo,normalize(v)))/sqrt(1.-1./rr);
+              float g=1./max(opz,.1), Tobs=Tn*g;
+              float gz=gas(rr,vec2(dot(x,e1),dot(x,e2)));
+              float edge=smoothstep(3.,3.35,rr)*(1.-smoothstep(6.5,10.,rr));
+              float I=pow(Tobs,4.)*gz*edge*.06;
+              vec3 em=pow(bb(clamp(2900.*Tobs,900.,30000.)),vec3(1.7))*min(I,6.)*1.3;   /* (deepened: the picture's curve washes colours out) */
+              float al=clamp((.72+.25*gz)*edge,0.,.97);     /* thick gas: what lies behind it hardly shows (thinner at the edges) */
+              add+=T*em;
+              T*=1.-al;
+            }
+          }
+          p=pn;
+          if(T.g<.01) break;
+        }
+        if(caught||!out_){ hole=1.; bgT=0.; }
+        else { dir=normalize(v); bgT=T.g; }
+      }
+      if(bgT>0.){
+        /* the sky the ray escapes to: the picture, seen in that direction */
+        uv=dir.z>.02?(uRes*.5+dir.xy/dir.z*uFpx)/uRes:vec2(-1.);
+      }
+      add*=uBH.w; hole*=uBH.w; bgT=mix(1.,bgT,uBH.w);
     }
   }
-  vec3 c=(texture(uHdr,uv).rgb*uOutK+texture(uBloom,uv).rgb*uBloomK*uOutK)*(1.-hole)+add*uOutK;
+  /* where the bent ray points off the picture there is nothing to show: the unbent sky, faded in at the border */
+  vec3 bgc=texture(uHdr,vUv).rgb*uOutK+texture(uBloom,vUv).rgb*uBloomK*uOutK;
+  if(uv!=vUv){
+    float inside=uv.x<0.?0.:smoothstep(0.,.03,min(min(uv.x,1.-uv.x),min(uv.y,1.-uv.y)));
+    if(inside>0.) bgc=mix(bgc,texture(uHdr,uv).rgb*uOutK+texture(uBloom,uv).rgb*uBloomK*uOutK,inside);
+  }
+  vec3 c=bgc*bgT*(1.-hole)+add*uOutK;
   c=1.-exp(-c*uExp);
   vec3 sky=mix(vec3(.008,.008,.012),vec3(.03,.032,.05),pow(vUv.y,1.6));
   c=c+sky*(1.-c)*(1.-hole);
@@ -1124,7 +1197,6 @@ void main(){
   const meteors=[];            /* {x,y,vx,vy,t0,dur,len,b} (seconds of the page clock) */
   const comets=[];             /* several can cross at once, each on its own path */
   let nextMeteor=0, nextComet=0;
-  const smooth=(a,b,x)=>{ const t=Math.min(1,Math.max(0,(x-a)/(b-a))); return t*t*(3-2*t); };
   const clock=()=>performance.now()/1000;
   const epoch=Math.floor(clock());
   function skyEvents(){
@@ -1154,18 +1226,39 @@ void main(){
     const b=.55+Math.pow(Math.random(),2)*1.1;                  /* most are faint, a few bright */
     meteors.push({x:x0,y:y0,vx:(x1-x0)/L*dist/dur,vy:(y1-y0)/L*dist/dur,t0:now,dur,len:(110+Math.random()*170)*(.7+b*.35),b});
   }
-  /* a comet crossing the screen in any direction, from beyond one edge to beyond the other, its
-     tails pointing away from a far sun. Most drift for about a minute; some shoot across in
-     ten or fifteen seconds. at: how far along it starts (0 = still off the screen) */
+  /* kinds of comets, after real ones. coma/dust/ion: colours; k: dust tail, ion tail, curve of
+     the dust tail, how wide it fans; k2: anti-tail, pieces, coma size, ion streamers; L: tail
+     length (share of the screen) */
+  const COMET_KINDS=[
+    /* a great comet: a broad curved dust tail and a straight blue ion tail (Hale-Bopp) */
+    {coma:[.66,1,.86], dust:[1,.9,.74], ion:[.42,.62,1], k:[1.15,.8,.24,.15], k2:[0,1,1,.15], L:[.36,.5]},
+    /* an ion comet: a long straight blue tail split into streamers, hardly any dust */
+    {coma:[.55,.95,1], dust:[.8,.86,1], ion:[.36,.62,1], k:[.12,1.5,.05,.06], k2:[0,1,.8,1], L:[.4,.55]},
+    /* a dusty comet: a golden head and a wide, strongly curved fan of dust */
+    {coma:[1,.86,.6], dust:[1,.8,.5], ion:[.5,.6,1], k:[1.6,.08,.42,.26], k2:[0,1,1.3,0], L:[.28,.4]},
+    /* a small green comet with a thin anti-tail pointing ahead (like C/2022 E3) */
+    {coma:[.38,1,.5], dust:[.86,.96,.82], ion:[.4,.82,.9], k:[.45,.55,.12,.08], k2:[1.1,1,.75,.3], L:[.16,.24]},
+    /* a comet breaking up into pieces, each with its own small tails */
+    {coma:[.85,.95,1], dust:[1,.92,.8], ion:[.5,.66,1], k:[.9,.45,.18,.12], k2:[0,3,.85,.2], L:[.22,.3]},
+    /* a sungrazer: a very long, bright, curved white tail */
+    {coma:[1,.97,.9], dust:[1,.94,.84], ion:[.5,.66,1], k:[1.45,.5,.5,.1], k2:[0,1,1.5,.1], L:[.5,.66]}];
+  /* a comet crossing the screen from one side to the other, nearly level: it comes in from
+     beyond one edge (tail and all) and leaves beyond the other, bright all the way. Most drift
+     across in about a minute; some shoot across in ten or fifteen seconds. No two of the same
+     kind on the screen at once. at: how far along it starts (0 = still off the screen) */
   function newComet(now,at){
-    const th=Math.random()*TAU, dx=Math.cos(th), dy=Math.sin(th), D=Math.hypot(W,H)*1.35;
-    const off=(Math.random()-.5)*Math.min(W,H)*.8, cx=W/2-dy*off, cy=H/2+dx*off;
-    const fast=Math.random()<.4;
-    const dur=fast?9+Math.random()*9:45+Math.random()*35;
-    const ang=th+Math.PI+(Math.random()-.5)*(fast?.5:1.2);           /* roughly behind it */
-    const L=Math.min(W,H)*(fast?.22+Math.random()*.14:.32+Math.random()*.18);
-    comets.push({t0:now-dur*at,dur,x0:cx-dx*D/2,y0:cy-dy*D/2,x1:cx+dx*D/2,y1:cy+dy*D/2,
-      dir:[Math.cos(ang),Math.sin(ang)],L,seed:Math.random()*50,b:fast?.75+Math.random()*.35:.85});
+    const used=comets.map(c=>c.kind), free=COMET_KINDS.map((_,i)=>i).filter(i=>!used.includes(i));
+    const pool=free.length?free:COMET_KINDS.map((_,i)=>i), kind=pool[Math.floor(Math.random()*pool.length)], K=COMET_KINDS[kind];
+    const L=Math.min(W,H)*(K.L[0]+Math.random()*(K.L[1]-K.L[0]))*(W<760?1.4:1);
+    const right=Math.random()<.5, tilt=(Math.random()-.5)*.2;                 /* at most about 6 degrees */
+    const th=(right?0:Math.PI)+tilt, dx=Math.cos(th), dy=Math.sin(th);
+    const y=H*(.1+Math.random()*.55), ahead=L*(.08+.4*K.k2[0])+30, behind=L*1.05+30;
+    /* from just beyond one edge (nothing of it on the screen yet) to just beyond the other */
+    const x0=right?-ahead:W+ahead, x1=right?W+behind:-behind;
+    const dist=Math.abs(x1-x0)/Math.abs(dx);
+    const fast=Math.random()<.35, dur=(fast?10+Math.random()*6:40+Math.random()*30)*Math.max(.6,Math.min(1.3,dist/1600));
+    const ang=th+Math.PI+(Math.random()-.5)*.3;                                  /* the tails stream out behind it */
+    comets.push({kind,t0:now-dur*at,dur,x0,y0:y,x1,y1:y+dy*dist,dir:[Math.cos(ang),Math.sin(ang)],L,seed:Math.random()*50,b:fast?.9:.85});
   }
 
   /* ---------- drawing one frame ---------- */
@@ -1233,28 +1326,25 @@ void main(){
     gl.uniform1f(u.uExp,1.1); gl.uniform1f(u.uBloomK,TIER.bloom?.55:0); gl.uniform1f(u.uTime,now%100); gl.uniform1f(u.uOutK,1);
     gl.uniform2f(u.uRes,RW,RH);
     const bh=blackHole();
-    gl.uniform4f(u.uBH,bh?bh[0]:0,bh?bh[1]:0,bh?bh[2]:1,bh?starsFade:0);
-    gl.uniform4f(u.uBHd,bh?bh[3]:0,bh?bh[4]:1,bh?bh[5]:1,t);
+    gl.uniform4f(u.uBH,bh?bh.q[0]:0,bh?bh.q[1]:0,bh?bh.q[2]:1,bh?starsFade:0);
+    gl.uniform4f(u.uBHn,bh?bh.n[0]:0,bh?bh.n[1]:1,bh?bh.n[2]:0,t);
+    gl.uniform1f(u.uFpx,F*scale);
     full();
     gl.activeTexture(gl.TEXTURE0);
   }
 
-  /* the black hole on the screen: centre and shadow radius in px of the picture, the far side
-     of its disk on the screen and how open the disk is seen (null: not in view) */
+  /* the black hole seen from the camera, in its own radii (x right, y up, z ahead), and the
+     axis of its disk in the same axes (null: not in view). R is the radius of its shadow,
+     which is 2.6 times the hole's own */
   function blackHole(){
     const s=SIGHTS.bh, a=onScreen(s.p);
     if(!a) return null;
-    const rs=s.R*F/a[2], m=rs*16;
-    if(rs<1.5||a[0]<-m||a[1]<-m||a[0]>W+m||a[1]>H+m) return null;
+    const rpx=s.R*F/a[2], m=rpx*30;
+    if(rpx<1.5||a[0]<-m||a[1]<-m||a[0]>W+m||a[1]>H+m) return null;
     const R=camR, n=s.n, nc=[R[0]*n[0]+R[1]*n[1]+R[2]*n[2], R[3]*n[0]+R[4]*n[1]+R[5]*n[2], R[6]*n[0]+R[7]*n[1]+R[8]*n[2]];
-    /* the far side: the line of sight minus its part along the disk's axis, carried onto the screen */
-    const q=toCam(s.p,cam,camR), v=unit(q), nv=nc[0]*v[0]+nc[1]*v[1]+nc[2]*v[2];
-    const e=[v[0]-nv*nc[0],v[1]-nv*nc[1],v[2]-nv*nc[2]];
-    let fx=e[0]-q[0]/q[2]*e[2], fy=e[1]-q[1]/q[2]*e[2];
-    const l=Math.hypot(fx,fy); if(l<1e-6){ fx=0; fy=-1; } else { fx/=l; fy/=l; }
-    return [a[0]*scale,(H-a[1])*scale,rs*scale, fx,-fy, Math.abs(nv)];
+    const q=toCam(s.p,cam,camR), rh=s.R/2.598;
+    return {q:[q[0]/rh,-q[1]/rh,q[2]/rh], n:[nc[0],-nc[1],nc[2]]};
   }
-
 
   function drawGalaxy(w,e,VP,t){
     const g=w.g, d=g.disk, dz=w.cz-cam.z;
@@ -1361,11 +1451,12 @@ void main(){
       const u=P.comet.u; gl.useProgram(P.comet.p);
       gl.uniform2f(u.uCss,W,H); gl.uniform1f(u.uNow,now-epoch); gl.bindVertexArray(emptyVAO);
       for(const c of comets){
-        /* they glow up and fade away slowly (they also start and end off the screen): never a pop */
-        const k=(now-c.t0)/c.dur, env=smooth(0,.2,k)*(1-smooth(.8,1,k));
-        if(env<=0) continue;
+        /* full brightness all the way: they start and end off the screen, so they come in over an edge */
+        const k=(now-c.t0)/c.dur, K=COMET_KINDS[c.kind];
         gl.uniform2f(u.uHead,c.x0+(c.x1-c.x0)*k,c.y0+(c.y1-c.y0)*k); gl.uniform2f(u.uDir,c.dir[0],c.dir[1]);
-        gl.uniform2f(u.uSize,c.L,c.L*.5); gl.uniform1f(u.uA,env*.9*c.b); gl.uniform1f(u.uSeed,c.seed);
+        gl.uniform2f(u.uSize,c.L,c.L*.5); gl.uniform1f(u.uA,.9*c.b*starsFade); gl.uniform1f(u.uSeed,c.seed);
+        gl.uniform3fv(u.uComa,K.coma); gl.uniform3fv(u.uDustC,K.dust); gl.uniform3fv(u.uIonC,K.ion);
+        gl.uniform4fv(u.uK,K.k); gl.uniform4fv(u.uK2,K.k2);
         gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
       }
     }

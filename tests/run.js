@@ -244,7 +244,7 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
   section("Settings");
   {
     const p=await open(b,{hash:"settings"});
-    ok(await p.evaluate(()=>!document.getElementById("settings").hidden&&document.querySelectorAll("#settingsList .seg").length===3&&!document.querySelector(".seg[data-key=theme]")),"#settings shows language, animations and quality (no light theme any more)");
+    ok(await p.evaluate(()=>!document.getElementById("settings").hidden&&document.querySelectorAll("#settingsList .seg").length===2&&!!document.querySelector(".seg[data-key=look]")&&!document.querySelector(".seg[data-key=theme]")),"#settings shows language and Effects, one choice for animations and quality (no light theme any more)");
     const nav=p.waitForEvent("framenavigated");
     await p.click('.seg[data-key=lang] button[data-value=en]'); await p.waitForTimeout(250);
     ok(await p.evaluate(()=>document.getElementById("shift").classList.contains("on")&&!document.querySelector("#shift canvas")),"changing a setting fades softly before reloading (no tunnel of stars)");
@@ -314,7 +314,10 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
         uni:getComputedStyle(document.getElementById("universe")).display,glass:getComputedStyle(document.querySelector("nav.bar")).backdropFilter}; });
     ok(!mr.gl&&!mr.cls&&mr.canvas&&mr.layers==="none"&&mr.sky!=="none"&&mr.uni==="none"&&mr.glass&&mr.glass!=="none"&&!md.errors.length,
       `Quality = Medium: no galaxies, a still sky of simple stars, the glass look kept (${JSON.stringify(mr)})`);
-    ok(await md.evaluate(()=>document.querySelectorAll('.seg[data-key="quality"] button').length===3),"Settings offers three qualities: High, Medium, Low");
+    ok(await md.evaluate(()=>document.querySelectorAll('.seg[data-key="look"] button').length===4
+      &&document.querySelector('.seg[data-key="look"] button[aria-checked=true]').dataset.value==="light"
+      &&LOOKS.full.motion==="full"&&LOOKS.full.quality==="high"&&LOOKS.off.motion==="none"&&LOOKS.off.quality==="low"),
+      "Effects offers four levels (Full, Calm, Light, Minimal), each setting animations and quality together; a Medium device shows Light");
     await md.context().close();
   }
 

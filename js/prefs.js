@@ -1,5 +1,5 @@
 /* ==========================================================
-   prefs.js — user settings (language, animations, quality), saved on this
+   prefs.js — user settings (language, and Effects: animations and quality together), saved on this
    device. index.html reads them in <head> before painting (so there is
    no flash of the wrong look) and leaves them in window.SETTINGS.
    There is only the dark, starry look: the light theme was removed in v0.52.
@@ -21,8 +21,25 @@ const highQuality=()=>SETTINGS.quality==="high";
 /* the showy extras (stardust, warp, shooting stars) need both */
 const fancy=()=>fullMotion()&&highQuality();
 
+/* Effects: one choice in Settings, which sets both how much moves and how heavy the look is */
+const LOOKS={full:{motion:"full",quality:"high"}, calm:{motion:"basic",quality:"high"},
+             light:{motion:"basic",quality:"medium"}, off:{motion:"none",quality:"low"}};
+/* the level the saved settings amount to (older devices may have any pair: the nearest) */
+function currentLook(){
+  const q=SETTINGS.quality, m=SETTINGS.motion;
+  return q==="low"?"off":q==="medium"?"light":m==="full"?"full":"calm";
+}
+
 /* saves one setting. Language re-renders everything, so the page reloads. */
 function saveSetting(key,value){
+  if(key==="look"){
+    const L=LOOKS[value]; if(!L) return;
+    const changed=currentLook()!==value||SETTINGS.motion!==L.motion||SETTINGS.quality!==L.quality;
+    Object.assign(SETTINGS,L);
+    try{ localStorage.setItem(SETTINGS_KEY,JSON.stringify(SETTINGS)); }catch(e){}
+    if(changed){ if(typeof Shift!=="undefined") Shift.leave("look"); else location.reload(); }
+    return;
+  }
   if(!SETTINGS_OPTIONS[key]||!SETTINGS_OPTIONS[key].includes(value)) return;
   const changed=SETTINGS[key]!==value;
   SETTINGS[key]=value;

@@ -123,12 +123,10 @@ es:{
   /* settings */
   "s.settings.lead":"Se guarda en este dispositivo.",
   "s.set.lang":"Idioma", "s.set.langHelp":"Toda la interfaz. Los textos de las asignaturas (evaluación, consejos, temario) siguen en español.",
-  "s.set.motion":"Animaciones",
-  "s.set.motionHelp":"Básicas quita lo que se mueve solo (estrellas, estrellas fugaces, destellos, contadores) y deja las transiciones. Ninguna lo deja todo quieto. Si tu sistema pide reducir el movimiento, no se anima nada.",
-  "s.set.motion.full":"Todas", "s.set.motion.basic":"Básicas", "s.set.motion.none":"Ninguna",
-  "s.set.quality":"Calidad", "s.set.quality.high":"Alta", "s.set.quality.medium":"Media", "s.set.quality.low":"Baja",
-  "s.set.qualityHelp":"Alta: el universo en 3D con sus galaxias, cristal y brillos. Media: un cielo de estrellas sencillo, sin galaxias, mucho más ligero. Baja: fondo liso y todo sencillo, para móviles lentos o ahorrar batería. Con Animaciones en Ninguna y Calidad baja queda todo apagado.",
-  "s.set.reload":"Cambiar el idioma, las animaciones o la calidad recarga la página."
+  "s.set.look":"Efectos",
+  "s.set.lookHelp":"Completo: el universo en 3D vivo, con galaxias, cometas y estrellas fugaces. Tranquilo: el mismo universo, quieto. Ligero: un cielo de estrellas sencillo y quieto, mucho más ligero. Mínimo: fondo liso y nada se mueve, para móviles lentos o ahorrar batería. Si tu sistema pide reducir el movimiento, no se anima nada.",
+  "s.set.look.full":"Completo", "s.set.look.calm":"Tranquilo", "s.set.look.light":"Ligero", "s.set.look.off":"Mínimo",
+  "s.set.reload":"Cambiar el idioma o los efectos recarga la página."
 },
 en:{
   "and":"and", "close":"Close", "copied.f":"Copied",
@@ -222,12 +220,10 @@ en:{
   "s.wip":"Under construction", "s.nolanSoon":"Coming soon, with whatever you tell me.", "s.view":"View",
   "s.settings.lead":"Saved on this device.",
   "s.set.lang":"Language", "s.set.langHelp":"The whole interface. Subject texts (grading, advice, syllabus) stay in Spanish.",
-  "s.set.motion":"Animations",
-  "s.set.motionHelp":"Basic stops whatever moves by itself (stars, shooting stars, sparkles, counters) and keeps the transitions. None keeps everything still. If your system asks for reduced motion, nothing animates.",
-  "s.set.motion.full":"All", "s.set.motion.basic":"Basic", "s.set.motion.none":"None",
-  "s.set.quality":"Quality", "s.set.quality.high":"High", "s.set.quality.medium":"Medium", "s.set.quality.low":"Low",
-  "s.set.qualityHelp":"High: the 3D universe with its galaxies, glass and glows. Medium: a simple starry sky, no galaxies, much lighter. Low: plain background and everything simple, for slow phones or to save battery. With Animations on None and Quality on Low, everything is off.",
-  "s.set.reload":"Changing the language, the animations or the quality reloads the page."
+  "s.set.look":"Effects",
+  "s.set.lookHelp":"Full: the living 3D universe, with galaxies, comets and shooting stars. Calm: the same universe, standing still. Light: a simple, still starry sky, much lighter. Minimal: a plain background and nothing moves, for slow phones or to save battery. If your system asks for reduced motion, nothing animates.",
+  "s.set.look.full":"Full", "s.set.look.calm":"Calm", "s.set.look.light":"Light", "s.set.look.off":"Minimal",
+  "s.set.reload":"Changing the language or the effects reloads the page."
 }};
 
 /* ---------- lookup ---------- */
