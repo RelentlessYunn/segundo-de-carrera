@@ -124,6 +124,14 @@ const Universe=(function(){
       bulge:{I:.12,Rb:.45,n:1.6,q:[1,.6,.55]}, col:{old:[1,.9,.76],core:[1,.9,.78]}, rot:{vmax:.006,ac:.3,pat:0}, stars:{bulge:2600}, gain:{bulge:.8,stars:1}}
   ];
   const IDS=Object.keys(GALAXIES);
+  /* a black hole and a quasar, seen from home (at and z as for the galaxies; not scenes).
+     bh: R radius of its shadow; its disk is seen from home a little from above (open: radians
+       out of edge-on) and turned roll on the screen
+     qso: L length of each jet, jet their direction */
+  const unit=v=>{ const l=Math.hypot(...v); return v.map(x=>x/l); };
+  const SIGHTS={
+    bh:{at:{d:[-.37,-.3],m:[.62,-.62]}, z:90, R:2, open:.14, roll:-.12},
+    qso:{at:{d:[-.86,-.2],m:[-.8,-.92]}, z:620, L:34, jet:unit([.42,-.82,.38])}};
 
   /* ---------- the camera and the scenes ---------- */
   let W=0,H=0,F=1;                   /* css px, focal length in px */
@@ -145,6 +153,11 @@ const Universe=(function(){
       const o=mul3(h.M,c.off);
       world[c.id]=frame(c,h.cx+o[0],h.cy+o[1],h.cz+o[2],h.R*c.size,c.tilt,c.roll);
     });
+    Object.values(SIGHTS).forEach(s=>{ const at=small?s.at.m:s.at.d; s.p=[at[0]*(W/2)/F*s.z, at[1]*(H/2)/F*s.z, s.z]; });
+    /* the black hole's axis, from the line of sight from home (not the screen's centre: it sits off it) */
+    const bh=SIGHTS.bh, v=unit(bh.p), up=[Math.sin(bh.roll),-Math.cos(bh.roll),0], k=up[0]*v[0]+up[1]*v[1]+up[2]*v[2];
+    const u0=unit([up[0]-k*v[0],up[1]-k*v[1],up[2]-k*v[2]]);
+    bh.n=u0.map((x,i)=>x*Math.cos(bh.open)-v[i]*Math.sin(bh.open));
   }
   /* a galaxy's frame: local (u,v,w) → world = centre + R · aim · roll · tilt · (u,v,w).
      tilt and roll say how it looks seen from home; "aim" turns it towards home's
@@ -173,6 +186,8 @@ const Universe=(function(){
   const mat3=(a,b)=>{ const o=new Array(9); for(let c=0;c<3;c++) for(let r=0;r<3;r++) o[c*3+r]=a[r]*b[c*3]+a[3+r]*b[c*3+1]+a[6+r]*b[c*3+2]; return o; };
   /* a world point in the camera's frame: x right, y down, z ahead */
   const toCam=(p,c,R)=>{ const d=[p[0]-c.x,p[1]-c.y,p[2]-c.z]; return [R[0]*d[0]+R[1]*d[1]+R[2]*d[2], R[3]*d[0]+R[4]*d[1]+R[5]*d[2], R[6]*d[0]+R[7]*d[1]+R[8]*d[2]]; };
+  /* a world point on the screen: css px and depth (null: behind the camera) */
+  const onScreen=p=>{ const q=toCam(p,cam,camR); return q[2]>1?[W/2+q[0]*F/q[2],H/2+q[1]*F/q[2],q[2]]:null; };
 
   function camFor(s){
     if(s==="gate") return {x:0,y:0,z:-430};
@@ -668,6 +683,32 @@ void main(){
   o=vec4(c*uA,0.);
 }`;
 
+  /* --- the quasar: a blazing point with two thin jets; the one coming towards us is brighter,
+     knots of matter run out along them and they end in soft lobes --- */
+  const QSO_VS=HEAD+`uniform vec2 uCss, uHead, uDir; uniform float uLen, uCore; out vec2 vQ;
+void main(){
+  vec2 c=vec2(float(gl_VertexID&1),float(gl_VertexID>>1));
+  float hw=max(uCore*16.,uLen*.32), hl=uLen*1.2+hw;
+  vec2 nrm=vec2(-uDir.y,uDir.x);
+  float u=(c.x*2.-1.)*hl, v=(c.y*2.-1.)*hw;
+  vec2 p=uHead+uDir*u+nrm*v;
+  gl_Position=vec4(p.x/uCss.x*2.-1.,1.-p.y/uCss.y*2.,0.,1.);
+  vQ=vec2(u,v);
+}`;
+  const QSO_FS=HEAD+`in vec2 vQ; out vec4 o; uniform float uLen, uCore, uT, uA, uFlick;
+void main(){
+  float u=vQ.x, v=vQ.y, r=length(vQ), c=uCore;
+  float core=exp(-r*r/(c*c))*9.+exp(-r/(c*1.6))*1.1+exp(-r/(c*6.))*.16;
+  float au=abs(u)/uLen, w=c*.3+abs(u)*.045;
+  float jet=exp(-v*v/(w*w))*smoothstep(0.,.08,au)*(1.-smoothstep(.72,1.05,au))*(.35+.65*exp(-au*1.4));
+  float knots=.55+.9*pow(.5+.5*sin(au*26.-uT*.9+(u<0.?1.7:0.)),6.);
+  float lobe=exp(-pow((au-1.02)/.13,2.)-v*v/(uLen*uLen*.018))*.32;
+  float side=u>0.?1.:.35;
+  vec3 col=vec3(.78,.87,1.)*core*uFlick+vec3(.46,.56,1.)*(jet*knots+lobe)*side
+          +vec3(1.,.8,.6)*exp(-r*r/(c*c*30.))*.05;          /* its host galaxy, lost in the glare */
+  o=vec4(col*uA,0.);
+}`;
+
   /* --- the glow around bright things, and developing the picture --- */
   const BRIGHT_FS=HEAD+`in vec2 vUv; out vec4 o; uniform sampler2D uTex; uniform vec2 uTexel; uniform float uThr;
 void main(){ vec3 c=vec3(0.);
@@ -682,14 +723,54 @@ void main(){ vec3 c=texture(uTex,vUv).rgb*.227;
   /* a galaxy's volume, drawn at a lower resolution, spread over the full picture (it is soft light and dust) */
   const UP_FS=HEAD+`out vec4 o; uniform sampler2D uTex; uniform vec2 uK;
 void main(){ o=texture(uTex,gl_FragCoord.xy*uK); }`;
-  const COMP_FS=HEAD+`in vec2 vUv; out vec4 o;
+  /* the black hole lives here, in the last step: it bends the light of everything behind it.
+     Seen from a little above its disk: the near half of the disk crosses in front of the
+     shadow, the far half is bent up over the top of it (and a thin image under it), the side
+     turning towards us is brighter, and a thin ring of light that went round it hugs the shadow */
+  const COMP_FS=HEAD+NOISE+`in vec2 vUv; out vec4 o;
 uniform sampler2D uHdr, uBloom; uniform float uExp, uBloomK, uTime, uOutK; uniform vec2 uRes;
+uniform vec4 uBH;         /* centre (px of the picture), radius of the shadow (px), strength (0: none) */
+uniform vec4 uBHd;        /* far side of the disk on the screen (unit), how open it is seen (cos), time */
 float h(vec2 p){ vec3 p3=fract(vec3(p.xyx)*.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
+vec3 diskCol(float rho){ return mix(vec3(1.,.48,.2),vec3(1.,.93,.82),smoothstep(3.2,1.3,rho)); }
+float diskI(float rho){ return pow(1.3/rho,2.3)*smoothstep(1.2,1.45,rho)*(1.-smoothstep(3.4,4.8,rho)); }
+/* the gas turns faster inside than outside; two phases blended, so it swirls for ever without winding up */
+float swirl(vec2 p,float rho){
+  float w=1.6/pow(rho,1.5), ph=fract(uBHd.w*.04), f=abs(ph*2.-1.);
+  float a1=w*ph*8., a2=w*fract(ph+.5)*8.;
+  vec2 q1=mat2(cos(a1),sin(a1),-sin(a1),cos(a1))*p, q2=mat2(cos(a2),sin(a2),-sin(a2),cos(a2))*p;
+  float n=mix(fbm(q1*2.4+vec2(0.,rho*.8),3),fbm(q2*2.4+vec2(5.3,rho*.8),3),1.-f);
+  return .35+1.1*n*n*1.6;
+}
 void main(){
-  vec3 c=texture(uHdr,vUv).rgb*uOutK+texture(uBloom,vUv).rgb*uBloomK*uOutK;
+  vec2 uv=vUv; vec3 add=vec3(0.); float hole=0.;
+  if(uBH.w>0.){
+    vec2 d=gl_FragCoord.xy-uBH.xy; float r=length(d)/uBH.z;
+    if(r<16.){
+      /* a point lens: what is seen here comes from further out (inside the ring, from the other side) */
+      float k=2.9/max(r*r,.3)*(1.-smoothstep(9.,16.,r))*uBH.w;
+      uv=(uBH.xy+d*(1.-k))/uRes;
+      hole=(1.-smoothstep(.97,1.03,r))*uBH.w;
+      vec2 Fd=uBHd.xy, Md=vec2(-Fd.y,Fd.x);
+      float x=dot(d,Md)/uBH.z, y=dot(d,Fd)/uBH.z, s=max(uBHd.z,.06), si=sqrt(1.-s*s);
+      /* the disk itself: its far half hides behind the shadow */
+      vec2 X=vec2(x,y/s); float rho=max(length(X),1e-3);
+      float dop=1./max(.3,1.+.55/sqrt(max(rho,1.))*si*X.x/rho);
+      vec3 direct=diskCol(rho)*diskI(rho)*swirl(X,rho)*dop*dop*dop*(1.-step(0.,y)*hole);
+      /* the far half again, bent over the shadow; under it, a thinner and dimmer image */
+      float up=y/max(r,1e-3), rr=max(1.2,1.25+(r-1.03)*3.6);   /* (never below the disk's edge: a power of a negative is NaN, and NaN·0 is still NaN) */
+      float dl=1./max(.3,1.+.55/sqrt(rr)*si*x/max(r,1e-3));
+      vec3 lensed=diskCol(rr)*diskI(rr)*swirl(vec2(x,up*r)/max(r,1e-3)*rr,rr)*dl*dl*dl
+                 *mix(.3,1.,smoothstep(-.7,.7,up))*smoothstep(1.,1.07,r)*1.5;
+      float ring=exp(-pow((r-1.04)/.028,2.))*1.6;
+      vec3 glow=vec3(1.,.7,.42)*.07*exp(-(r-1.)*.5)*step(1.,r);
+      add=(direct*1.25+lensed+vec3(1.,.86,.72)*ring+glow)*uBH.w;
+    }
+  }
+  vec3 c=(texture(uHdr,uv).rgb*uOutK+texture(uBloom,uv).rgb*uBloomK*uOutK)*(1.-hole)+add*uOutK;
   c=1.-exp(-c*uExp);
   vec3 sky=mix(vec3(.008,.008,.012),vec3(.03,.032,.05),pow(vUv.y,1.6));
-  c=c+sky*(1.-c);
+  c=c+sky*(1.-c)*(1.-hole);
   vec2 q=(vUv-.5)*vec2(uRes.x/uRes.y,1.);
   c*=mix(.5,1.,(1.-smoothstep(.35,1.05,length(q))));
   c+=(h(gl_FragCoord.xy+fract(uTime*7.3)*97.)-.5)/255.;
@@ -769,6 +850,7 @@ void main(){
     P.field=compile(FIELD_VS,FIELD_FS);
     P.met=compile(MET_VS,MET_FS);
     P.comet=compile(COMET_VS,COMET_FS);
+    P.qso=compile(QSO_VS,QSO_FS);
     P.bright=compile(FULL_VS,BRIGHT_FS);
     P.blur=compile(FULL_VS,BLUR_FS);
     P.comp=compile(FULL_VS,COMP_FS);
@@ -1121,6 +1203,8 @@ void main(){
     gl.uniformMatrix4fv(u.uVP,false,VP); gl.uniformMatrix4fv(u.uVPp,false,VPp);
     gl.uniform2f(u.uCss,W,H); gl.uniform1f(u.uScale,scale); gl.uniform1f(u.uBoost,boost||0); gl.uniform1f(u.uFade,starsFade);
     gl.bindVertexArray(field.vao); gl.drawArraysInstanced(gl.TRIANGLE_STRIP,0,4,field.n);
+    /* the quasar, far behind every galaxy (their dust can hide it) */
+    drawQuasar(t);
     /* the galaxies, far to near */
     const list=Object.keys(G).map(id=>world[id]&&{id,w:world[id],e:G[id]}).filter(Boolean)
       .sort((a,b)=>(b.w.cz-cam.z)-(a.w.cz-cam.z));
@@ -1146,8 +1230,43 @@ void main(){
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D,bloomA.t); gl.uniform1i(u.uBloom,1);
     gl.uniform1f(u.uExp,1.1); gl.uniform1f(u.uBloomK,TIER.bloom?.55:0); gl.uniform1f(u.uTime,now%100); gl.uniform1f(u.uOutK,1);
     gl.uniform2f(u.uRes,RW,RH);
+    const bh=blackHole();
+    gl.uniform4f(u.uBH,bh?bh[0]:0,bh?bh[1]:0,bh?bh[2]:1,bh?starsFade:0);
+    gl.uniform4f(u.uBHd,bh?bh[3]:0,bh?bh[4]:1,bh?bh[5]:1,t);
     full();
     gl.activeTexture(gl.TEXTURE0);
+  }
+
+  /* the black hole on the screen: centre and shadow radius in px of the picture, the far side
+     of its disk on the screen and how open the disk is seen (null: not in view) */
+  function blackHole(){
+    const s=SIGHTS.bh, a=onScreen(s.p);
+    if(!a) return null;
+    const rs=s.R*F/a[2], m=rs*16;
+    if(rs<1.5||a[0]<-m||a[1]<-m||a[0]>W+m||a[1]>H+m) return null;
+    const R=camR, n=s.n, nc=[R[0]*n[0]+R[1]*n[1]+R[2]*n[2], R[3]*n[0]+R[4]*n[1]+R[5]*n[2], R[6]*n[0]+R[7]*n[1]+R[8]*n[2]];
+    /* the far side: the line of sight minus its part along the disk's axis, carried onto the screen */
+    const q=toCam(s.p,cam,camR), v=unit(q), nv=nc[0]*v[0]+nc[1]*v[1]+nc[2]*v[2];
+    const e=[v[0]-nv*nc[0],v[1]-nv*nc[1],v[2]-nv*nc[2]];
+    let fx=e[0]-q[0]/q[2]*e[2], fy=e[1]-q[1]/q[2]*e[2];
+    const l=Math.hypot(fx,fy); if(l<1e-6){ fx=0; fy=-1; } else { fx/=l; fy/=l; }
+    return [a[0]*scale,(H-a[1])*scale,rs*scale, fx,-fy, Math.abs(nv)];
+  }
+  function drawQuasar(t){
+    const s=SIGHTS.qso, a=onScreen(s.p);
+    if(!a) return;
+    const b=onScreen([s.p[0]+s.jet[0]*s.L, s.p[1]+s.jet[1]*s.L, s.p[2]+s.jet[2]*s.L]);
+    let dx=b?b[0]-a[0]:0, dy=b?b[1]-a[1]:-1; const len=Math.hypot(dx,dy)||1;
+    const L=Math.max(len,6), pad=L*1.3+60;
+    if(a[0]<-pad||a[1]<-pad||a[0]>W+pad||a[1]>H+pad) return;
+    const u=P.qso.u; gl.useProgram(P.qso.p);
+    gl.uniform2f(u.uCss,W,H); gl.uniform2f(u.uHead,a[0],a[1]); gl.uniform2f(u.uDir,dx/len,dy/len);
+    gl.uniform1f(u.uLen,L); gl.uniform1f(u.uCore,Math.min(8,Math.max(1.6,1800/a[2])));
+    gl.uniform1f(u.uT,t); gl.uniform1f(u.uA,starsFade);
+    /* quasars flicker slowly: their disk is small enough to change in days */
+    gl.uniform1f(u.uFlick,.85+.15*Math.sin(t*.37)*Math.sin(t*.11+1.3));
+    gl.blendFunc(gl.ONE,gl.ONE);
+    gl.bindVertexArray(emptyVAO); gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
   }
 
   function drawGalaxy(w,e,VP,t){
@@ -1409,6 +1528,8 @@ void main(){
   const ready=()=>!gl||lost||dead||root.hasAttribute("data-locked")||settled>=1;
   return {go, skip, ready, seek:v=>{ life=v; need(); }, scene:()=>scene, busy:()=>!!anim, camera:()=>({...base}),
     painted:()=>IDS.filter(id=>G[id]).length, gl:()=>ok, built:()=>Object.keys(G),
+    /* sights(): which of the black hole and the quasar are on the screen now (tests) */
+    sights:()=>{ const q=ok&&onScreen(SIGHTS.qso.p); return {bh:ok&&!!blackHole(), qso:!!q&&q[0]>=0&&q[1]>=0&&q[0]<=W&&q[1]<=H}; },
     /* shoot(): a shooting star and a comet right now (tests) */
     shoot:at=>{ newMeteor(clock()); newComet(clock(),at||0); need(); }, GALAXIES};
 })();

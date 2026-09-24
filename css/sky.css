@@ -53,4 +53,7 @@ html{background:var(--space,#050810)}
 /* the page itself is see-through, so the sky shows between (and through) the cards */
 body{background:transparent}
 /* while home is open, the page behind it steps away and only the sky remains */
-body.portal-open > header.top,body.portal-open > nav.bar,body.portal-open > div.wrap{visibility:hidden}
+body.portal-open > header.top,body.portal-open > nav.bar,body.portal-open > div.wrap{visibility:hidden;opacity:0}
+/* …and is not drawn at all: with visibility alone, some browsers kept drawing the lines of its
+   tables and timetable through home (every way out of home scrolls back to the top anyway) */
+body.portal-open > div.wrap{content-visibility:hidden}

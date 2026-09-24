@@ -130,6 +130,13 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
       "mobile: inside a galaxy, Notes and Settings can be tapped");
     await p.context().close();
   }
+  for(const mobile of [false,true]){
+    const p=await open(b,{hash:"home",mobile});
+    await p.waitForFunction(()=>Universe.ready(),null,{timeout:20000}).catch(()=>{});
+    const s=await p.evaluate(()=>Universe.gl()?Universe.sights():{bh:true,qso:true});
+    ok(s.bh&&s.qso&&!p.errors.length,`${mobile?"mobile":"desktop"}: the black hole and the quasar are in the sky of home ${p.errors.join(" | ")}`);
+    await p.context().close();
+  }
 
   section("Tabs");
   {
@@ -215,6 +222,8 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     const p=await open(b,{hash:"subjects"});
     await p.click(".home-btn"); await p.waitForTimeout(400);
     ok(await p.evaluate(()=>!document.getElementById("portal").hidden&&document.querySelector("nav.bar").inert),"the home button opens the window and blocks what is behind");
+    ok(await p.evaluate(()=>{ const w=getComputedStyle(document.querySelector("body > div.wrap"));
+      return w.visibility==="hidden"&&w.opacity==="0"&&w.contentVisibility==="hidden"; }),"while home is open, the page behind is not drawn at all (no lines of its tables through home)");
     await p.keyboard.press("Escape");
     await p.waitForFunction(()=>document.getElementById("portal").hidden,null,{timeout:3000}).catch(()=>{});
     ok(await p.evaluate(()=>document.getElementById("portal").hidden&&location.hash==="#subjects"),"Escape closes it and you are back on the same tab");
