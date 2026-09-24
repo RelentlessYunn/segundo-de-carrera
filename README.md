@@ -42,7 +42,12 @@ The whole app is one universe in real 3D, drawn by the graphics card (WebGL2) on
 - **Budget**: phones draw about a third of the stars, smaller maps and at about 30 frames a second; computers about 60 (every frame of a 60 Hz screen, every other one of a faster screen; flights, shooting stars and comets every frame). Each galaxy's volume (its soft light and dust, the costliest part of a frame) is drawn at half the resolution and spread over the full picture; the stars stay sharp (about 40% less per frame, the same picture within 1/255). The render size adapts within a second or two if the device cannot keep up. Automated tests use a tiny budget (`?tier=phone` or `?tier=desk` forces one).
 - Every galaxy has its own shape in `GALAXIES`, after beautiful real ones: Nolan (home) a golden **barred spiral** (like NGC 1300: a straight bar of old stars, made by long aligned inner orbits and a cigar-shaped bulge, with two open arms); UC3M a blue **grand-design spiral** seen face-on (like the Whirlpool, M51: tightly wound arms full of pink knots, and a small yellow companion, NGC 5195); Nolan-in-construction an amber **elliptical**; Andrómeda a **ring galaxy** (like Hoag's Object: a round yellow core, a dark gap and a nearly perfect ring of young blue stars); Sombrero **edge-on**, a big bright bulge cut by its dark ring of dust.
 - Without WebGL2 there is no 3D universe: `js/sky.js` draws a simpler sky with CSS layers instead.
-- **To add a section**: add a galaxy to `GALAXIES` in `universe.js` (kind, size, angle, colours, where it sits seen from home), a card with `data-galaxy="<id>"` in home, and its view.
+- **To add a section** (a checklist, so nothing is forgotten):
+  1. its galaxy in `GALAXIES` (`universe.js`): kind and shape, size, angle, colours, where it sits seen from home (`at.d` computer, `at.m` phone), and `star`, the colour of its bright star in the sky of stars (Effects = Medium) — `sky.js` reads it from there;
+  2. a card on home (`index.html`) with `data-galaxy="<id>"`, and its texts in both languages (`i18n.js`);
+  3. its page: a route in `router.js` (`isHome` if it opens inside home) and its view (`home.js`, `sceneOf`), or the ready-made "to explore" page (`#soon/<id>`, `SOON_NAMES` in `home.js`);
+  4. a test in `tests/run.js` that opening it flies into its galaxy.
+- **Just the sky**: the eye button (on home and in UC3M's header) hides the whole interface and leaves the universe on the screen; the button at the bottom or Escape brings it back (`js/view.js`). The button fades to almost nothing when left alone, and while you look the sky never goes to sleep. Not shown with Effects = Minimal.
 - **Notes and Settings belong to every section**: their buttons are in UC3M's header and on home, they open where you are without moving the camera, and "← Volver" takes you back there.
 - **The logo is the home button** (top left in UC3M).
 - The opening of home (the N drawing itself, NOLAN appearing) plays after the PIN and when the app starts.
@@ -142,6 +147,7 @@ Each file does one thing. To change something you usually only need one or two.
 | `nolan.js` | **The Nolan section.** Everything new for Nolan goes here. |
 | `home.js` | The home window (UC3M / Nolan). |
 | `router.js` | Routes (`#schedule`, `#home`, `#nolan/…`), tabs, the swipe gesture and the Escape key. |
+| `view.js` | Just the sky: hides the interface to enjoy the universe. |
 | `debug.js` | `#debug` panel with screen measurements, data warnings and missing translations. |
 | `effects.js` | Ripple and stardust on tap, star burst on ticking a task, warp on changing tab, and *idle* (decorations pause after 45 s without touching anything). |
 
@@ -237,7 +243,7 @@ Settings are not in the cloud: they are per device (`localStorage`, key `setting
 node tests/run.js
 ```
 
-Needs Node and Playwright. 82 checks in a real browser:
+Needs Node and Playwright. 84 checks in a real browser:
 
 - the page loads without errors;
 - the PIN screen (wrong PIN, the flight into the galaxy, remembered device, PIN not in the page, Log out), starting at home, the camera flights between galaxies (UC3M, back home, a galaxy to explore), and Notes and Settings inside home;

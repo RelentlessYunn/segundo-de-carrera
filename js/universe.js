@@ -70,7 +70,8 @@ const Universe=(function(){
      bulge: I brightness, Rb size, n profile (higher = steeper core), q axis ratios
      rot: vmax orbital speed (radians/s at the edge), ac core size, pat speed of the
        arms pattern (minus: the arms trail)
-     stars: how many of each kind (before the budget) · gain: brightness of each part */
+     stars: how many of each kind (before the budget) · gain: brightness of each part
+     star: the colour of its bright star in the sky of stars (Effects = Medium; sky.js) */
   const GALAXIES={
     /* home: a golden barred spiral (like NGC 1300): a straight bar of old stars through the
        middle, and two arms that sweep out from its ends (the inner orbits are long and
@@ -86,7 +87,7 @@ const Universe=(function(){
     /* UC3M: a blue "grand design" spiral seen nearly face-on (like the Whirlpool, M51): two
        strong, tightly wound arms full of pink knots, and a small yellow companion at the
        end of one of them (NGC 5195) */
-    uc3m:{kind:"spiral", r:3.9, tilt:.42, roll:.55, at:{d:[.62,-.42],m:[.62,-.56]}, z:60, seed:23,
+    uc3m:{kind:"spiral", star:"120,190,255", r:3.9, tilt:.42, roll:.55, at:{d:[.62,-.42],m:[.62,-.56]}, z:60, seed:23,
       disk:{h:.26, rc:.1, ex1:.7, ex2:.78, twist:6.4, phi0:1.1, hz:.045, warp:.05, floc:.25,
             young:{h:.34,k:2.3}, hii:{c1:1.5,c2:2.2}, dust:{h:.34,k:2.1,lag:.2}},
       bulge:{I:.26, Rb:.055, n:2, q:[1,.95,.8]},
@@ -95,7 +96,7 @@ const Universe=(function(){
       stars:{old:18000, young:11000, hii:1200, bulge:6000, halo:900, gc:8},
       gain:{disk:1, young:1.1, hii:.9, dust:2.8, bulge:1, stars:1}},
     /* Nolan (under construction): a big round ember, an amber elliptical */
-    forge:{kind:"elliptical", r:3.1, tilt:.6, roll:-.2, at:{d:[-.66,-.5],m:[-.62,-.74]}, z:75, seed:37,
+    forge:{kind:"elliptical", star:"255,176,96", r:3.1, tilt:.6, roll:-.2, at:{d:[-.66,-.5],m:[-.62,-.74]}, z:75, seed:37,
       bulge:{I:.3, Rb:.26, n:3, q:[1,.86,.72]},
       col:{old:[1,.74,.48], core:[1,.76,.5]},
       rot:{vmax:.008, ac:.2, pat:0},
@@ -103,7 +104,7 @@ const Universe=(function(){
       gain:{bulge:1, stars:1}},
     /* Andrómeda: a ring galaxy (like Hoag's Object): a round yellow core, a dark gap, and a
        nearly perfect ring of young blue stars around it; two small companions nearby */
-    andromeda:{kind:"ring", r:4.4, tilt:.5, roll:-.9, at:{d:[.74,.42],m:[.62,.6]}, z:110, seed:41,
+    andromeda:{kind:"ring", star:"196,170,255", r:4.4, tilt:.5, roll:-.9, at:{d:[.74,.42],m:[.62,.6]}, z:110, seed:41,
       disk:{h:.07, rc:.2, ex1:1, ex2:1, twist:0, phi0:0, hz:.03, warp:.015, floc:.55,
             young:{h:.5,k:1}, hii:{c1:9,c2:10}, dust:{h:.6,k:1,lag:0}, ring:{a:.66,w:.075,light:1.4,dust:.3,stars:6000}},
       bulge:{I:.5, Rb:.1, n:2.5, q:[1,1,.95]},
@@ -112,7 +113,7 @@ const Universe=(function(){
       stars:{old:3000, bulge:9000, halo:900, gc:6},
       gain:{disk:.9, young:0, hii:0, dust:1, bulge:1, stars:1}},
     /* Sombrero: seen edge-on, a big bright bulge and a dark ring of dust */
-    sombrero:{kind:"ring", r:3.6, tilt:1.52, roll:.18, at:{d:[-.44,-.8],m:[.05,-.86]}, z:130, seed:53,
+    sombrero:{kind:"ring", star:"255,236,206", r:3.6, tilt:1.52, roll:.18, at:{d:[-.44,-.8],m:[.05,-.86]}, z:130, seed:53,
       disk:{h:.34, rc:.2, ex1:1, ex2:1, twist:0, phi0:0, hz:.028, warp:.02, floc:.4,
             young:{h:.4,k:1}, hii:{c1:9,c2:10}, dust:{h:.5,k:1,lag:0}, ring:{a:.72,w:.085,light:.35,dust:3.2}},
       bulge:{I:.9, Rb:.3, n:3, q:[1,1,.8]},
@@ -137,7 +138,7 @@ const Universe=(function(){
      both from home and up close */
   const unit=v=>{ const l=Math.hypot(...v); return v.map(x=>x/l); };
   const SIGHTS={
-    bh:{at:{d:[-.36,-.28],m:[-.45,-.1]}, z:90, R:1.5, open:.25, roll:-.1}};
+    bh:{star:"255,120,210", at:{d:[-.36,-.28],m:[-.45,-.1]}, z:90, R:1.5, open:.25, roll:-.1}};
 
   /* ---------- the camera and the scenes ---------- */
   let W=0,H=0,F=1;                   /* css px, focal length in px */

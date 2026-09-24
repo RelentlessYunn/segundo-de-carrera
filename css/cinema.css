@@ -230,3 +230,26 @@ html.shifting #shift{opacity:1}
 .p-txt .hole-tag{color:#FFC98F;background:rgba(255,179,107,.1);border-color:rgba(255,179,107,.4)}
 .p-txt .hole-tag::before{background:#FFB36B;box-shadow:0 0 8px #FFB36B}
 .p-card.hole .p-txt b{display:block;font-size:1.7rem}
+
+/* ---------- just the sky (view.js) ----------
+   the interface fades away and the universe has the screen to itself */
+html.viewing header.top,html.viewing nav.bar,html.viewing body>div.wrap,html.viewing #portal .p-in,html.viewing #portal .p-bar,
+html.view-back header.top,html.view-back nav.bar,html.view-back body>div.wrap,html.view-back #portal .p-in,html.view-back #portal .p-bar{transition:opacity .6s ease!important}
+html.viewing header.top,html.viewing nav.bar,html.viewing body>div.wrap,html.viewing #portal .p-in,html.viewing #portal .p-bar{opacity:0!important;pointer-events:none!important}
+html.viewing #portal{overflow:hidden}
+.view-exit{
+  position:fixed;z-index:400;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  display:inline-flex;align-items:center;gap:6px;padding:9px 16px 9px 12px;border-radius:99px;cursor:pointer;
+  font:inherit;font-size:.84rem;font-weight:600;color:#E6E8F0;
+  background:rgba(8,9,14,.55);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  transition:opacity .8s ease,background .2s ease;animation:fade-in .6s .3s ease backwards;
+}
+.view-exit[hidden]{display:none}
+.view-exit svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.view-exit.dim{opacity:.16}
+@media (hover:hover){.view-exit:hover{opacity:1;background:rgba(20,22,30,.75)}}
+.view-exit:focus-visible{outline:2px solid #fff;outline-offset:2px;opacity:1}
+/* with Effects = Minimal there is nothing behind to look at */
+[data-quality=low] .view-btn{display:none}
+.view-btn svg .f{fill:currentColor;fill-opacity:.5}
+button.icon,button.p-tool{padding:0;font:inherit}

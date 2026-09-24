@@ -73,7 +73,8 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     for(const k of "220226") await p.click(`#gate [data-k="${k}"]`);
     await p.waitForTimeout(2500);
     ok(await p.evaluate(()=>Universe.busy()&&Universe.scene()==="home"&&document.getElementById("gate").classList.contains("leaving")),"the keypad drifts away and the camera flies into the home galaxy");
-    await p.waitForTimeout(4500);
+    /* (a slow software graphics card stretches the flight: wait for it to land, not a fixed time) */
+    await p.waitForFunction(()=>!document.documentElement.hasAttribute("data-locked")&&!Universe.busy(),null,{timeout:20000}).catch(()=>{});
     const r=await p.evaluate(()=>({locked:document.documentElement.hasAttribute("data-locked"),saved:localStorage.getItem("nolan-device"),
       home:!document.getElementById("portal").hidden,canvas:Universe.busy()}));
     ok(!r.locked&&r.saved&&r.home&&!r.canvas,"the right PIN opens it, lands on home and the device remembers it");
@@ -86,7 +87,7 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     ok(await p.evaluate(()=>document.documentElement.hasAttribute("data-locked")&&!document.getElementById("gate").hidden&&!localStorage.getItem("nolan-device")),
       "Log out (in Settings) forgets the device and asks for the PIN again");
     for(const k of "220226") await p.click(`#gate [data-k="${k}"]`);
-    await p.waitForTimeout(7000);
+    await p.waitForFunction(()=>!document.documentElement.hasAttribute("data-locked")&&!Universe.busy(),null,{timeout:20000}).catch(()=>{});
     ok(await p.evaluate(()=>!document.documentElement.hasAttribute("data-locked")&&location.hash==="#home"&&!document.querySelector('#portal .p-view[data-view="home"]').hidden),
       "after logging out from Settings, the PIN lands on home again");
     await p.context().close();
@@ -111,7 +112,7 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.click("header .home-btn"); await p.waitForTimeout(200);
     ok(await p.evaluate(()=>Universe.scene()==="home"&&!!document.querySelector("header .home-btn .logo-mark")),"the logo takes you home, flying back to the home galaxy");
     await p.waitForTimeout(2800);
-    await p.click('.p-card[data-galaxy="andromeda"]'); await p.waitForTimeout(3600);
+    await p.click('.p-card[data-galaxy="andromeda"]'); await p.waitForFunction(()=>location.hash==="#soon/andromeda"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
     ok(await p.evaluate(()=>Universe.scene()==="andromeda"&&!document.getElementById("soonView").hidden&&location.hash==="#soon/andromeda"),"a galaxy to explore opens inside its own galaxy");
     await p.goto(PAGE+"#notes"); await p.waitForTimeout(500);
     ok(await p.evaluate(()=>!document.getElementById("portal").hidden&&!document.getElementById("notes").hidden&&!!document.querySelector("#portal #notesText")),"Notes open inside home");
@@ -236,6 +237,14 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.keyboard.press("Escape");
     await p.waitForFunction(()=>document.getElementById("portal").hidden,null,{timeout:3000}).catch(()=>{});
     ok(await p.evaluate(()=>document.getElementById("portal").hidden&&location.hash==="#subjects"),"Escape closes it and you are back on the same tab");
+    /* just the sky: the interface hides, the way back stays, Escape returns */
+    await p.click('header [data-view-sky]'); await p.waitForTimeout(800);
+    const v=await p.evaluate(()=>({on:document.documentElement.classList.contains("viewing"),exit:!document.getElementById("viewExit").hidden,
+      page:getComputedStyle(document.querySelector("body > div.wrap")).opacity,header:getComputedStyle(document.querySelector("header.top")).pointerEvents}));
+    await p.keyboard.press("Escape"); await p.waitForTimeout(800);
+    const back=await p.evaluate(()=>!document.documentElement.classList.contains("viewing")&&document.getElementById("viewExit").hidden
+      &&getComputedStyle(document.querySelector("body > div.wrap")).opacity==="1"&&location.hash==="#subjects");
+    ok(v.on&&v.exit&&v.page==="0"&&v.header==="none"&&back,`the eye button shows just the sky, and Escape brings everything back (${JSON.stringify(v)})`);
     await p.goto(PAGE+"#nolan"); await p.waitForTimeout(600);
     ok(await p.evaluate(()=>!document.getElementById("nolanView").hidden),"#nolan opens the Nolan section");
     await p.context().close();

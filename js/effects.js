@@ -55,9 +55,11 @@
   /* idle: after 45 s without input the decorations pause */
   const IDLE=45000;
   let timer=0;
+  /* (not while just looking at the sky: that is the point of it) */
+  const nap=()=>{ if(document.documentElement.classList.contains("viewing")){ timer=setTimeout(nap,IDLE); return; } document.body.classList.add("idle"); };
   const wake=()=>{
     if(document.body.classList.contains("idle")) document.body.classList.remove("idle");
-    clearTimeout(timer); timer=setTimeout(()=>document.body.classList.add("idle"),IDLE);
+    clearTimeout(timer); timer=setTimeout(nap,IDLE);
   };
   ["pointerdown","keydown","wheel","touchstart","scroll"].forEach(ev=>
     document.addEventListener(ev,wake,{passive:true,capture:true}));

@@ -34,7 +34,12 @@
     let W=0,H=0,DPR=1;
     const TINT=["255,255,255","255,250,242","226,234,255","205,220,255","255,236,214","255,214,184"];
     /* each section's star: its colour, where its galaxy sits seen from home */
-    const COL={uc3m:"120,190,255",forge:"255,176,96",andromeda:"196,170,255",sombrero:"255,236,206",blackhole:"255,120,210"};
+    /* (from the galaxies' own definitions in universe.js: a new section only needs its "star" there) */
+    const COL={};
+    if(typeof Universe!=="undefined"){
+      Object.entries(Universe.GALAXIES||{}).forEach(([k,g])=>{ if(g.star) COL[k]=g.star; });
+      if(Universe.SIGHTS&&Universe.SIGHTS.bh&&Universe.SIGHTS.bh.star) COL.blackhole=Universe.SIGHTS.bh.star;
+    }
     const SEC=Object.keys(COL);
     const posOf=id=>{
       const g=typeof Universe!=="undefined"&&(id==="blackhole"?Universe.SIGHTS&&Universe.SIGHTS.bh:Universe.GALAXIES&&Universe.GALAXIES[id]);
