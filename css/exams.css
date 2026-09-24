@@ -13,5 +13,11 @@
   .filters button{font-size:.74rem;padding:5px 10px}
 }
 
+/* "Add to my calendar" */
+.ics-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-bottom:14px}
+.ics-btn{display:inline-flex;align-items:center;gap:7px}
+.ics-btn svg{width:17px;height:17px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.ics-note{color:var(--ink-3);font-size:.8rem;max-width:60ch}
+
 /* what is already past is dimmed */
 #examRows tr.past td{opacity:.5}

@@ -198,6 +198,33 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.context().close();
   }
 
+  section("Add to my calendar (.ics)");
+  {
+    const p=await open(b,{hash:"exams"});
+    const ics=await p.evaluate(()=>buildICS(icsEvents(),new Date("2026-09-21T11:06:00Z")));
+    const r=await p.evaluate(()=>({n:icsEvents().length,
+      want:EVENTS.filter(e=>(e.type==="ex"||e.type==="en")&&!e.noDay).length,
+      noDay:EVENTS.some(e=>e.noDay&&icsEvents().includes(e))}));
+    const lines=ics.split("\r\n");
+    ok(/^BEGIN:VCALENDAR\r\n/.test(ics)&&/END:VCALENDAR\r\n$/.test(ics)&&!/[^\r]\n/.test(ics),"a well-formed calendar with CRLF line endings");
+    ok(r.n===r.want&&!r.noDay&&(ics.match(/BEGIN:VEVENT/g)||[]).length===r.n,`every exam and submission with a day, none without one (${r.n})`);
+    ok(lines.every(l=>new TextEncoder().encode(l).length<=75),"no line is longer than 75 bytes");
+    const unfolded=ics.replace(/\r\n /g,"");
+    ok(/DTSTART;TZID=Europe\/Madrid:20261015T090000\r\nDTEND;TZID=Europe\/Madrid:20261015T103000/.test(unfolded)&&/BEGIN:VTIMEZONE\r\nTZID:Europe\/Madrid/.test(ics),
+      "a timed exam keeps its Madrid time (ED, 15 Oct 09:00–10:30)");
+    ok(/DTSTART;VALUE=DATE:20261026\r\nDTEND;VALUE=DATE:20261101/.test(unfolded)&&/TRIGGER;RELATED=END:-P1D/.test(ics),
+      "a window of several days is all-day, 26–31 Oct, and warns before it closes");
+    ok(/LOCATION:Aula 2\.3\.C01 · Getafe|LOCATION:Aula 2\.3\.C01 · Leganés/.test(unfolded)&&/SUMMARY:Examen · [^\r]+Primer parcial: bloque 1/.test(unfolded),
+      "room with its campus, and the title, are there");
+    ok(!/[^\\],/.test(unfolded.split("\r\n").filter(l=>/^(SUMMARY|DESCRIPTION|LOCATION):/.test(l)).join("\n")),"commas in texts are escaped");
+    const text=await p.textContent("#icsNote");
+    ok(/\d+ exámenes y entregas/.test(text)&&/sin día confirmado/.test(text),`the note says how many go in and how many wait for a day ("${text}")`);
+    const [dl]=await Promise.all([p.waitForEvent("download",{timeout:3000}).catch(()=>null),p.click("#icsButton")]);
+    ok(dl&&dl.suggestedFilename()==="nolan-uc3m.ics","the button downloads nolan-uc3m.ics");
+    ok(!p.errors.length,`no JavaScript errors ${p.errors.join(" | ")}`);
+    await p.context().close();
+  }
+
   section("Home");
   {
     const p=await open(b,{hash:"subjects"});

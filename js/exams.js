@@ -31,4 +31,9 @@
   });
   document.addEventListener("newDay",render);
   render();
+
+  /* "Add to my calendar" (js/ics.js) */
+  const pending=icsPending();
+  $("#icsNote").textContent=t("ics.note",{n:icsEvents().length})+(pending?" "+t("ics.pending",{n:pending}):"");
+  $("#icsButton").addEventListener("click",downloadICS);
 })();

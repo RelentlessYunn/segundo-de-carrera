@@ -79,7 +79,7 @@ The site is called **Nolan**. The logo is an astral N: four identical four-point
 | **Home** (house icon, `#home`; also where the app starts) | Choose a section: **UC3M**, **Nolan**, and the galaxies still to explore. The UC3M card sums up the week, the class now and the next assessment. Also: a weather card (now, high, low, rain, next sunrise/sunset) for where you are, and buttons for Notes and Settings. |
 | **Schedule** (`#schedule`) | *Today*: the day's classes with their room, the red "now" line and "X min left"; the next 7 days; the week's dates and advice. Below: weekly timetable and monthly planner. |
 | **Subjects** (`#subjects`) | One card per subject: timetable and rooms, faculty, grading with a grade calculator, dates, and syllabus with progress. |
-| **Exams** (`#exams`) | Everything graded, with filters. Past items are dimmed. |
+| **Exams** (`#exams`) | Everything graded, with filters. Past items are dimmed. **Add to my calendar** downloads an `.ics` with every exam and submission (Madrid time, reminders the day before and an hour before), so the phone's own calendar reminds you. |
 | **Tasks** (`#tasks`) | Tasks per subject and general ones. Ticks are saved to the cloud. |
 | **Faculty** (`#faculty`) | Table with email and office. |
 | **Notes for Claude** (`#notes`, inside home) | Free text saved to the cloud. **Claude cannot read JSONBin**: to pass them on, press *Copy notes* and paste into the chat. |
@@ -136,6 +136,7 @@ Each file does one thing. To change something you usually only need one or two.
 | `schedule.js` | Weekly timetable (grid and list by day) and the clash status bar. |
 | `today.js` | The *Today* viewer. |
 | `subjects.js` | Subject cards and grade calculator (`subjectCard`, `recalc`). |
+| `ics.js` | *Add to my calendar*: builds the `.ics` from `EVENTS` (`buildICS`, `downloadICS`). |
 | `faculty.js` · `exams.js` · `tasks.js` · `notes.js` · `planner.js` · `settings.js` | One tab, page or block each. |
 | `nolan.js` | **The Nolan section.** Everything new for Nolan goes here. |
 | `home.js` | The home window (UC3M / Nolan). |
@@ -167,7 +168,7 @@ Each one has its own mobile tweaks at the end.
 - If **the day is unknown**: use that week's Saturday and `noDay:1`. It shows as "semana N". A custom text can go in `label`.
 - If it **lasts several days** (an online test open Monday to Saturday): `until:"2026-10-31"`. The planner joins the first and last day with a line.
 - If it is **online**: `online:1`, so there is no warning that there is no class that day.
-- It shows up by itself in the subject card, *Today*, the planner, *Exams* and the week.
+- It shows up by itself in the subject card, *Today*, the planner, *Exams*, the week and the calendar file (`ics.js`; dates with `noDay` stay out of it until they have a day).
 
 **A class** → `data.js`, list `CLASSES`:
 
@@ -235,7 +236,7 @@ Settings are not in the cloud: they are per device (`localStorage`, key `setting
 node tests/run.js
 ```
 
-Needs Node and Playwright. 63 checks in a real browser:
+Needs Node and Playwright. 73 checks in a real browser:
 
 - the page loads without errors;
 - the PIN screen (wrong PIN, the flight into the galaxy, remembered device, PIN not in the page, Log out), starting at home, the camera flights between galaxies (UC3M, back home, a galaxy to explore), and Notes and Settings inside home;
@@ -244,6 +245,7 @@ Needs Node and Playwright. 63 checks in a real browser:
 - dates without a day and multi-day windows (and the line that joins them in the planner);
 - the cloud, with a simulated JSONBin: a failed or slow first read and migration of old ticks;
 - grades with a comma;
+- the calendar file: well formed, every exam and submission with a day, Madrid times, multi-day windows, escaping, and the download;
 - the home window;
 - settings: no light theme, the passage when a setting reloads the page, English after reloading, every text translated in both languages, English dates, and the animation levels;
 - the astral layer: weather and sun on home, the sea of stars, Quality = Low and the tasks constellation;
@@ -262,8 +264,7 @@ Ordered by how much it will be noticed.
 2. **Syllabus of each exam** (`syllabus` in `EVENTS`). It already shows in the detail panel when present.
 3. **Term 2.** The structure is ready: only the data is missing (see above).
 4. **Nolan.** Decide what it is and build it in `nolan.js`.
-5. **Exams in the phone's calendar.** An "Add to my calendar" button that generates an `.ics` with all `EVENTS`, so the phone itself gives reminders.
-6. **Offline.** A *service worker* to open the site without signal and load instantly. Needs care with versions so an old copy is not kept.
-7. **Term average.** With the calculator grades and the ECTS, the weighted average and what each final needs.
-8. **Fixed Madrid time**, even when the phone is in another time zone (travel).
-9. **Tests on GitHub.** Run `tests/run.js` with GitHub Actions on every upload.
+5. **Offline.** A *service worker* to open the site without signal and load instantly. Needs care with versions so an old copy is not kept.
+6. **Term average.** With the calculator grades and the ECTS, the weighted average and what each final needs.
+7. **Fixed Madrid time**, even when the phone is in another time zone (travel).
+8. **Tests on GitHub.** Run `tests/run.js` with GitHub Actions on every upload.
