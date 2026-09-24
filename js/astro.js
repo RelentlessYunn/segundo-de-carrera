@@ -3,10 +3,7 @@
    · sun(): sunrise and sunset for any place (the NOAA / SunCalc method,
      accurate to a minute or two). weather.js uses it without connection.
    · moon(): the Moon's phase for a date (SunCalc's method): how much of it
-     is lit, and whether it is growing or shrinking.
-   · planets(): which of the five bright planets can be seen tonight from
-     a place (Paul Schlyter's orbital elements: good to a degree or two,
-     plenty to say whether a planet is up and above the horizon).
+     is lit, and whether it is growing or shrinking (the Moon of the opening).
    · shower(): the meteor shower going on, if any, on its real dates
      (after the International Meteor Organization's calendar), and how
      strong it is: universe.js makes more shooting stars, from its radiant.
@@ -54,57 +51,6 @@ const Astro=(function(){
     return {phase,fraction,name:names[Math.round(phase*8)%8]};
   }
 
-  /* ---------- the bright planets ---------- */
-  /* orbital elements (N, i, w, a, e, M in degrees and AU), each [value at 2000, change per day] */
-  const EL={
-    mercury:[[48.3313,3.24587e-5],[7.0047,5e-8],[29.1241,1.01444e-5],[.387098,0],[.205635,5.59e-10],[168.6562,4.0923344368]],
-    venus:  [[76.6799,2.4659e-5],[3.3946,2.75e-8],[54.891,1.38374e-5],[.72333,0],[.006773,-1.302e-9],[48.0052,1.6021302244]],
-    mars:   [[49.5574,2.11081e-5],[1.8497,-1.78e-8],[286.5016,2.92961e-5],[1.523688,0],[.093405,2.516e-9],[18.6021,.5240207766]],
-    jupiter:[[100.4542,2.76854e-5],[1.303,-1.557e-7],[273.8777,1.64505e-5],[5.20256,0],[.048498,4.469e-9],[19.895,.0830853001]],
-    saturn: [[113.6634,2.3898e-5],[2.4886,-1.081e-7],[339.3939,2.97661e-5],[9.55475,0],[.055546,-9.499e-9],[316.967,.0334442282]]
-  };
-  const norm=x=>((x%360)+360)%360;
-  function kepler(M,e){ let E0=M+e*Math.sin(M)*(1+e*Math.cos(M)); for(let k=0;k<6;k++) E0-=(E0-e*Math.sin(E0)-M)/(1-e*Math.cos(E0)); return E0; }
-  /* where a body is, around the Sun (ecliptic, AU) */
-  function helio(el,d){
-    const [N,i,w,a,e,M]=el.map(([v,dv])=>v+dv*d);
-    const Er=kepler(rad*norm(M),e), xv=a*(Math.cos(Er)-e), yv=a*Math.sqrt(1-e*e)*Math.sin(Er);
-    const v=Math.atan2(yv,xv), r=Math.hypot(xv,yv), Nr=rad*N, ir=rad*i, u=v+rad*w;
-    return [r*(Math.cos(Nr)*Math.cos(u)-Math.sin(Nr)*Math.sin(u)*Math.cos(ir)), r*(Math.sin(Nr)*Math.cos(u)+Math.cos(Nr)*Math.sin(u)*Math.cos(ir)), r*Math.sin(u)*Math.sin(ir)];
-  }
-  /* the Sun seen from the Earth (ecliptic), and its mean longitude (for the sidereal hour) */
-  function sunGeo(d){
-    const w=282.9404+4.70935e-5*d, e=.016709-1.151e-9*d, M=norm(356.047+.9856002585*d);
-    const Er=kepler(rad*M,e), xv=Math.cos(Er)-e, yv=Math.sqrt(1-e*e)*Math.sin(Er);
-    const v=Math.atan2(yv,xv), r=Math.hypot(xv,yv), lon=v+rad*w;
-    return {x:r*Math.cos(lon),y:r*Math.sin(lon),L:norm(M+w)};
-  }
-  /* how high a body is above the horizon (degrees), from its place around the Sun */
-  function altitude(xyz,date,lat,lon){
-    const d=(date-Date.UTC(1999,11,31))/DAY, s=sunGeo(d);
-    const x=xyz[0]+s.x, y=xyz[1]+s.y, z=xyz[2], ecl=rad*(23.4393-3.563e-7*d);
-    const xe=x, ye=y*Math.cos(ecl)-z*Math.sin(ecl), ze=y*Math.sin(ecl)+z*Math.cos(ecl);
-    const RA=Math.atan2(ye,xe), Dec=Math.atan2(ze,Math.hypot(xe,ye));
-    const UT=date.getUTCHours()+date.getUTCMinutes()/60;
-    const LST=rad*norm(s.L+180+UT*15+lon), HA=LST-RA;
-    return Math.asin(Math.sin(rad*lat)*Math.sin(Dec)+Math.cos(rad*lat)*Math.cos(Dec)*Math.cos(HA))/rad;
-  }
-  /* tonight: the planets that are well above the horizon at some moment of the dark hours */
-  function planets(date,lat,lon){
-    const today=sun(date,lat,lon), tm=new Date(date); tm.setDate(tm.getDate()+1);
-    const from=new Date(today.set.getTime()+50*60000), to=new Date(sun(tm,lat,lon).rise.getTime()-50*60000);
-    const seen=[];
-    Object.keys(EL).forEach(k=>{
-      let best=-90;
-      for(let t=from.getTime();t<=to.getTime();t+=30*60000){
-        const when=new Date(t), d=(when-Date.UTC(1999,11,31))/DAY;
-        best=Math.max(best,altitude(helio(EL[k],d),when,lat,lon));
-      }
-      if(best>10) seen.push(k);
-    });
-    return seen;
-  }
-
   /* ---------- meteor showers ---------- */
   /* peak (month, day), how many days either side it lasts, its strength (ZHR), and where its
      radiant sits on the screen (x, y as a share of it) */
@@ -131,5 +77,5 @@ const Astro=(function(){
     return best;
   }
 
-  return {sun,moon,planets,shower};
+  return {sun,moon,shower};
 })();

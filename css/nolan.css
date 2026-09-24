@@ -15,7 +15,8 @@
 }
 .p-back:active{transform:scale(.96)}
 @media (hover:hover){.p-back:hover{background:rgba(255,255,255,.14)}}
-/* the back button is Nolan's logo, in a round of glass */
-.p-back-logo{display:inline-grid;place-items:center;width:40px;height:40px;padding:0;border-radius:50%}
-.p-back-logo .logo-mark{width:22px;height:22px;overflow:visible}
+/* the back button is Nolan's logo, big, on its own (no round around it) */
+.p-back-logo{display:inline-grid;place-items:center;width:52px;height:52px;padding:0;border:0;border-radius:50%;background:none}
+.p-back-logo .logo-mark{width:38px;height:38px;overflow:visible}
+@media (hover:hover){.p-back-logo:hover{background:none}}
 @media (hover:hover){.p-back-logo:hover .logo-mark .lm-line{stroke:#fff;opacity:1}}

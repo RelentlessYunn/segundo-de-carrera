@@ -52,9 +52,9 @@ const Universe=(function(){
      robot: automated tests (a software GPU); ?tier=phone or ?tier=desk forces one */
   const phone=matchMedia("(max-width:760px),(pointer:coarse)").matches;
   const TIERS={
-    robot:{k:.07,map:256,scale:.4,maxScale:.5,steps:[4,8],far:1500,field:500,bloom:false,neb:256,gc:20,vol:1},
-    phone:{k:.36,map:1024,scale:.8,maxScale:1.5,steps:[8,20],far:5000,field:900,bloom:true,neb:640,gc:60,vol:.5},
-    desk:{k:1,map:2048,scale:1,maxScale:1.5,steps:[12,30],far:9000,field:1400,bloom:true,neb:1024,gc:130,vol:.5}};
+    robot:{k:.07,map:256,scale:.4,maxScale:.5,steps:[4,8],far:1500,field:500,bloom:false,neb:256,band:256,bandStars:300,gc:20,vol:1},
+    phone:{k:.36,map:1024,scale:.8,maxScale:1.5,steps:[8,20],far:5000,field:900,bloom:true,neb:640,band:1100,bandStars:3500,gc:60,vol:.5},
+    desk:{k:1,map:2048,scale:1,maxScale:1.5,steps:[12,30],far:9000,field:1400,bloom:true,neb:1024,band:2048,bandStars:9000,gc:130,vol:.5}};
   const asked=(location.search.match(/[?&]tier=(robot|phone|desk)\b/)||[])[1];
   const robot=!asked&&!!navigator.webdriver;
   const TIER=TIERS[asked||(robot?"robot":phone?"phone":"desk")];
@@ -132,7 +132,7 @@ const Universe=(function(){
       bulge:{I:.12,Rb:.45,n:1.6,q:[1,.6,.55]}, col:{old:[1,.9,.76],core:[1,.9,.78]}, rot:{vmax:.006,ac:.3,pat:0}, stars:{bulge:2600}, gain:{bulge:.8,stars:1}}
   ];
   const IDS=Object.keys(GALAXIES);
-  /* the other wonders of the sky (nebulae, a cluster, a pulsar…), each described in wonders.js,
+  /* the other wonders of the sky (nebulae, a cluster, colliding galaxies…), each described in wonders.js,
      which registers them in window.UNIVERSE_EXTRAS before this file runs. Each one has its own
      fragment shaders (drawn on a screen quad, SPRITE_VS), a place, and a draw() called every frame
      with the api below: "far" before the galaxies, "near" after them */
@@ -290,7 +290,7 @@ const Universe=(function(){
   let hdr=null, bloomA=null, bloomB=null, volT=null, half=false, checkedHalf=false;
   let pointMax=64;
   const G={};                        /* per galaxy: buffers, map, ready time */
-  let far=null, field=null, deepBuf=null, nebTex=null, meteorBuf=null, noiseTex=null;
+  let far=null, field=null, deepBuf=null, nebTex=null, band=null, meteorBuf=null, noiseTex=null;
   let emptyVAO=null;
 
   const HEAD="#version 300 es\nprecision highp float;\nprecision highp int;\nprecision highp sampler3D;\n";
@@ -575,6 +575,53 @@ void main(){
   vec3 c=mix(vec3(.27,.16,.37),vec3(.47,.18,.24),k)*e+vec3(.63,.55,.47)*fil;
   o=vec4(c,1.);
 }`;
+  /* --- the band of our own galaxy across the sky (like the Milky Way on a dark night): painted
+     once. Star clouds, a brighter heart, winding lanes and dark globules of dust, pink knots of
+     gas, and faint wisps reaching out of its edges; the nebulae of wonders.js sit inside it,
+     the galaxies around it, as in the real sky. rgb: its light; a: how much its dust hides
+     what lies behind (drawn separately, so the far stars disappear into the dark lanes) */
+  const BANDGEN_FS=HEAD+NOISE+`
+in vec2 vUv; out vec4 o;
+uniform vec2 uHalf;       /* the picture's half size, in shares of half the screen */
+uniform vec4 uCurve;      /* its middle line: a + b·t + c·t², and whether t runs down (0) or across (1) */
+uniform vec3 uBand;       /* its half width, where its heart is (along it), the screen's width/height */
+void main(){
+  vec2 f=(vUv*2.-1.)*uHalf; float asp=uBand.z, s, d;
+  if(uCurve.w<.5){ float xc=uCurve.x+uCurve.y*f.y+uCurve.z*f.y*f.y, sl=(uCurve.y+2.*uCurve.z*f.y)*asp; d=(f.x-xc)*asp/sqrt(1.+sl*sl); s=f.y; }
+  else { float yc=uCurve.x+uCurve.y*f.x+uCurve.z*f.x*f.x, sl=(uCurve.y+2.*uCurve.z*f.x)/asp; d=(f.y-yc)/sqrt(1.+sl*sl); s=f.x*asp; }
+  float w=uBand.x*(1.+.22*sin(s*1.7+1.)+.12*sin(s*4.3+2.));      /* it swells and narrows */
+  float u=d/w;
+  vec2 warp=vec2(fbm(vec2(s*1.6,u*.8)+vec2(3.1,7.7),4),fbm(vec2(s*1.6,u*.8)+vec2(8.4,1.9),4))-.5;
+  vec2 bq=vec2(s*3.,u*1.5)+warp*1.6;
+  /* star clouds: the light comes in clumps, strongest along the middle */
+  float clouds=fbm(bq+vec2(0.,uCurve.x*9.),6), fine=fbm(bq*4.,4);
+  float core=exp(-u*u*2.), outer=exp(-u*u*.35);
+  float glow=core*(.1+2.2*pow(clouds,3.))*(.75+.5*fine)+outer*.07*(.5+clouds);
+  float sh=s-uBand.y; float heart=exp(-sh*sh*2.2)*exp(-u*u*1.1)*(.6+.8*clouds);   /* its bright heart */
+  /* dust: lanes winding along the middle (the "great rift"), clouds and small dark globules */
+  float rid=1.-abs(fbm(vec2(s*2.2,u*2.6)+warp*1.3+11.,5)*2.-1.);
+  float lane=pow(rid,5.)*exp(-pow((u-.2*sin(s*2.1+.5))/.45,2.))*smoothstep(.3,.6,fbm(vec2(s*1.3,3.),3));
+  float blot=smoothstep(.62,.8,fbm(vec2(s*4.,u*2.6)+warp*1.5+5.,5))*core;
+  float dust=clamp(lane*.85+blot*.35,0.,.85);
+  /* wisps of dust and gas reaching out from its edges, faintly lit */
+  float ten=pow(1.-abs(fbm(vec2(s*9.+warp.x*2.,u*.9)+2.,5)*2.-1.),9.)*exp(-u*u*.45)*smoothstep(.5,1.1,abs(u));
+  /* pink knots of glowing gas, and blue haze here and there */
+  float hii=smoothstep(.7,.88,fbm(vec2(s*7.,u*4.)+19.,4))*core;
+  float blue=smoothstep(.6,.85,fbm(vec2(s*3.,u*2.)+41.,4))*outer*(1.-core*.5);
+  vec3 warm=vec3(1.,.83,.64), cool=vec3(.62,.66,1.);
+  vec3 L=mix(warm,cool,smoothstep(.3,1.4,abs(u)))*glow+vec3(1.,.78,.52)*heart*1.3
+        +vec3(.7,.58,.66)*ten*.12+vec3(1.,.3,.5)*hii*.9+vec3(.35,.5,1.)*blue*.25;
+  /* it is made of stars: countless faint ones, one texel each, thickest where it glows */
+  float dens=clamp(glow*1.1+heart*.7+outer*.03,0.,1.);
+  vec2 g=gl_FragCoord.xy; float h=h12(g*1.37+.5), h2=h12(g*.71+9.3);
+  float grain=step(1.-dens*.3,h)*(.12+1.2*pow(h2,4.));
+  vec3 sc=mix(vec3(1.,.8,.6),vec3(.75,.85,1.),step(.6,h2));
+  L=L*.7+sc*grain*.9;
+  L*=1.-dust*.9;
+  o=vec4(L*.5,dust);
+}`;
+  const DUST_FS=HEAD+`in vec2 vUv; out vec4 o; uniform sampler2D uTex; uniform float uGain;
+void main(){ vec2 e=min(vUv,1.-vUv); float f=smoothstep(0.,.1,min(e.x,e.y)); o=vec4(0.,0.,0.,texture(uTex,vUv).a*uGain*f); }`;
   const NEB_VS=HEAD+`uniform mat4 uVP; uniform vec4 uQuad; out vec2 vUv;
 void main(){ vec2 c=vec2(float(gl_VertexID&1),float(gl_VertexID>>1)); vUv=c; gl_Position=uVP*vec4(uQuad.xy+(c*2.-1.)*uQuad.zw,1400.,1.); }`;
   const NEB_FS=HEAD+`in vec2 vUv; out vec4 o; uniform sampler2D uTex; uniform float uGain;
@@ -974,6 +1021,8 @@ void main(){
     P.far=compile(FAR_VS,DOT_FS);
     P.nebgen=compile(FULL_VS,NEBGEN_FS);
     P.neb=compile(NEB_VS,NEB_FS);
+    P.bandgen=compile(FULL_VS,BANDGEN_FS);
+    P.dust=compile(NEB_VS,DUST_FS);
     P.deep=compile(DEEP_VS,DEEP_FS);
     P.field=compile(FIELD_VS,FIELD_FS);
     P.met=compile(MET_VS,MET_FS);
@@ -1070,12 +1119,29 @@ void main(){
   }
 
   /* ---------- the far sky: built once ---------- */
+  /* where the band crosses home's sky: on a computer a low arch behind the interface, seen on
+     both sides and under the clock; on a phone a long diagonal. In shares of half the screen */
+  function bandShape(){
+    const asp=W/H, narrow=W<760;
+    return narrow?{curve:[-.05,-.45,.04,0],w:.12,heart:.45,asp}:{curve:[.12,-.2,.16,1],w:.16,heart:-.85*asp,asp};
+  }
   function buildSky(){
     noiseTex=buildNoise(robot?24:phone?48:64);
     const r=rng(20260921);
-    /* stars at infinity, in the cone the camera can see */
-    const n=TIER.far, S=new Float32Array(n*4), C=new Uint8Array(n*4);
-    for(let i=0;i<n;i++){
+    /* stars at infinity, in the cone the camera can see; then the band's own crowd of faint stars */
+    const bs=bandShape(), nb=TIER.bandStars||0, n0=TIER.far, n=n0+nb, S=new Float32Array(n*4), C=new Uint8Array(n*4);
+    for(let i=n0;i<n;i++){
+      let t,u,k=0;
+      do{ t=(r()*2-1)*1.5; u=(r()+r()+r()-1.5)*1.25; k++; }                /* thickest in the middle */
+      while(k<6&&r()>.3+.7*Math.pow(.5+.5*Math.sin(t*5.3+1.1)*Math.sin(t*2.1+u*1.7),1.5));   /* in clouds */
+      const c0=bs.curve, mid=c0[0]+c0[1]*t+c0[2]*t*t;
+      const fx=c0[3]<.5?mid+u*bs.w/bs.asp:t, fy=c0[3]<.5?t:mid+u*bs.w;
+      const v=unit([fx*(W/2)/F,fy*(H/2)/F,1]);
+      S[i*4]=v[0]; S[i*4+1]=v[1]; S[i*4+2]=v[2]; S[i*4+3]=Math.pow(r(),4.5)*.85;
+      const c=kelvin(r()<.25?3400+r()*1500:4800+r()*4000);
+      C[i*4]=c[0]*255; C[i*4+1]=c[1]*255; C[i*4+2]=c[2]*255; C[i*4+3]=r()<.05?255:0;
+    }
+    for(let i=0;i<n0;i++){
       const z=.55+.45*r(), a=r()*TAU, s=Math.sqrt(1-z*z);
       S[i*4]=Math.cos(a)*s; S[i*4+1]=Math.sin(a)*s; S[i*4+2]=z;
       S[i*4+3]=Math.pow(r(),5.5);                            /* most are faint, a few bright */
@@ -1115,6 +1181,17 @@ void main(){
     gl.viewport(0,0,nw,nh); gl.disable(gl.BLEND);
     gl.useProgram(P.nebgen.p); gl.uniform2f(P.nebgen.u.uAsp,nw/nh,1); full();
     nebTex=tg.t; gl.deleteFramebuffer(tg.f);
+    paintBand();
+  }
+  /* the band, painted once (again only if the screen changes shape), a little larger than the screen around home */
+  function paintBand(){
+    const bs=bandShape(), HB=1.45, bw=W>=H?TIER.band:Math.round(TIER.band*W/H), bh=W>=H?Math.round(TIER.band*H/W):TIER.band;
+    if(band) gl.deleteTexture(band.t);
+    const tb=target(bw,bh,"rgba8");
+    gl.viewport(0,0,bw,bh); gl.disable(gl.BLEND);
+    const u=P.bandgen.u; gl.useProgram(P.bandgen.p);
+    gl.uniform2f(u.uHalf,HB,HB); gl.uniform4f(u.uCurve,...bs.curve); gl.uniform3f(u.uBand,bs.w,bs.heart,bs.asp); full();
+    band={t:tb.t,hx:HB*(W/2)/F*1400,hy:HB*(H/2)/F*1400,W,H}; gl.deleteFramebuffer(tb.f);
   }
 
   /* ---------- a galaxy: its stars and its map, built when its turn comes ----------
@@ -1401,6 +1478,13 @@ void main(){
     gl.uniformMatrix4fv(u.uVP,false,VP); gl.uniform4f(u.uQuad,0,0,1800,1100); gl.uniform1f(u.uGain,.28*starsFade);
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,nebTex); gl.uniform1i(u.uTex,0);
     gl.bindVertexArray(emptyVAO); gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+    /* the band of our galaxy */
+    if(band){
+      if((band.W!==W||band.H!==H)&&(Math.abs(band.W/band.H-W/H)>.15)){ paintBand(); gl.bindFramebuffer(gl.FRAMEBUFFER,hdr.f); gl.viewport(0,0,RW,RH); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE,gl.ONE); gl.useProgram(P.neb.p); }
+      band.hx=1.45*(W/2)/F*1400; band.hy=1.45*(H/2)/F*1400;           /* (it follows small changes of size) */
+      gl.uniform4f(u.uQuad,0,0,band.hx,band.hy); gl.uniform1f(u.uGain,1.6*starsFade);
+      gl.bindTexture(gl.TEXTURE_2D,band.t); gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+    }
     /* far stars */
     u=P.far.u; gl.useProgram(P.far.p);
     gl.uniformMatrix4fv(u.uVP,false,VP); gl.uniform1f(u.uT,t); gl.uniform1f(u.uScale,scale); gl.uniform1f(u.uFade,starsFade);
@@ -1409,6 +1493,14 @@ void main(){
     u=P.deep.u; gl.useProgram(P.deep.p);
     gl.uniformMatrix4fv(u.uVP,false,VP); gl.uniform2f(u.uCss,W,H); gl.uniform1f(u.uF,F); gl.uniform1f(u.uFade,starsFade);
     gl.bindVertexArray(deepBuf.vao); gl.drawArraysInstanced(gl.TRIANGLE_STRIP,0,4,deepBuf.n);
+    /* the band's dust hides the far stars and galaxies behind it */
+    if(band){
+      u=P.dust.u; gl.useProgram(P.dust.p); gl.blendFunc(gl.ZERO,gl.ONE_MINUS_SRC_ALPHA);
+      gl.uniformMatrix4fv(u.uVP,false,VP); gl.uniform4f(u.uQuad,0,0,band.hx,band.hy); gl.uniform1f(u.uGain,.92*starsFade);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,band.t); gl.uniform1i(u.uTex,0);
+      gl.bindVertexArray(emptyVAO); gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+      gl.blendFunc(gl.ONE,gl.ONE);
+    }
     /* stars in the space we fly through */
     u=P.field.u; gl.useProgram(P.field.p);
     gl.uniformMatrix4fv(u.uVP,false,VP); gl.uniformMatrix4fv(u.uVPp,false,VPp);
@@ -1777,5 +1869,7 @@ void main(){
     /* hole(): whether the black hole is on the screen now (tests) */
     hole:()=>ok&&!!blackHole(),
     /* shoot(): a shooting star and a comet right now (tests) */
-    shoot:at=>{ newMeteor(clock()); newComet(clock(),at||0); need(); }, GALAXIES, SIGHTS};
+    shoot:at=>{ newMeteor(clock()); newComet(clock(),at||0); need(); },
+    /* band(): whether the band of our galaxy has been painted (tests) */
+    band:()=>!!band, GALAXIES, SIGHTS};
 })();

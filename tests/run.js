@@ -313,22 +313,20 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.waitForFunction(()=>window.UNIVERSE_EXTRAS.every(x=>x.ready||x.broken),null,{timeout:60000}).catch(()=>{});
     await p.waitForTimeout(300);
     const wn=await p.evaluate(()=>({list:Wonders.list(),broken:window.UNIVERSE_EXTRAS.filter(x=>x.broken).map(x=>x.id),nova:Wonders.nova(-.5,-.5,10),state:Wonders.state()}));
-    ok(wn.list.join()==="orion,pillars,pleiades,ringneb,pulsar,binary,antennae,nova,earth"&&!wn.broken.length&&wn.nova&&wn.state&&wn.state.k>0&&wn.state.at&&!p.errors.length,
-      `the nine wonders compile and draw, and a supernova can flare (${JSON.stringify(wn)})`);
+    ok(wn.list.join()==="orion,pillars,pleiades,ringneb,binary,antennae,nova,earth"&&!wn.broken.length&&wn.nova&&wn.state&&wn.state.k>0&&wn.state.at&&!p.errors.length,
+      `the eight wonders compile and draw, and a supernova can flare (${JSON.stringify(wn)})`);
+    /* the band of our galaxy is painted, and its dust is drawn */
+    ok(await p.evaluate(()=>Universe.band())&&!p.errors.length,"the band of our galaxy crosses the sky, painted once");
     /* the opening: from the Earth and the Moon, the first time in a session */
     ok(await p.evaluate(()=>{ Universe.go("gate",{animate:false}); return Universe.ready(); })&&!p.errors.length,"the Earth and the Moon are drawn at the opening");
-    /* tonight's sky on the weather card: the Moon as it is, the planets up tonight */
-    const night=await p.evaluate(()=>{ const n=document.querySelector("#homeWeather .w-night"); return n?n.textContent:""; });
-    ok(/Esta noche/.test(night)&&/Luna gibosa creciente/.test(night)&&/90\s*%/.test(night)&&/Marte/.test(night)&&/Júpiter/.test(night)&&/Saturno/.test(night),`tonight's sky on the weather card ("${night}")`);
     await p.context().close();
     /* the real sky, computed without connection */
     const ast=await (async()=>{ const a=await open(b,{time:"2026-08-12T22:00:00",hash:"schedule"});
       const r=await a.evaluate(()=>({new0:Astro.moon(new Date(2026,7,12,12)).name,full:Astro.moon(new Date(2026,9,26,12)).name,
-        per:(Astro.shower(new Date(2026,7,12,22))||{}).id,gem:(Astro.shower(new Date(2026,11,14,22))||{}).id,none:Astro.shower(new Date(2026,2,10)),
-        pl:Astro.planets(new Date(2026,8,23,16),40.305,-3.731)}));
+        per:(Astro.shower(new Date(2026,7,12,22))||{}).id,gem:(Astro.shower(new Date(2026,11,14,22))||{}).id,none:Astro.shower(new Date(2026,2,10))}));
       await a.context().close(); return r; })();
-    ok(ast.new0==="new"&&ast.full==="full"&&ast.per==="perseids"&&ast.gem==="geminids"&&ast.none===null&&ast.pl.join()==="mars,jupiter,saturn",
-      `the Moon's phase, the planets and the meteor showers come out right (${JSON.stringify(ast)})`);
+    ok(ast.new0==="new"&&ast.full==="full"&&ast.per==="perseids"&&ast.gem==="geminids"&&ast.none===null,
+      `the Moon's phase and the meteor showers come out right (${JSON.stringify(ast)})`);
     const q=await open(b,{settings:{quality:"low"},hash:"tasks"});
     const s=await q.evaluate(()=>({shown:getComputedStyle(document.querySelector("#sky .sky-par")).display,
       blur:getComputedStyle(document.querySelector("nav.bar")).backdropFilter,stars:document.querySelectorAll("#tasksConstellation .c-star").length}));

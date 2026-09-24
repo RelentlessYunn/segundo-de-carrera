@@ -11,9 +11,6 @@
      haze of dust they light up (a reflection nebula).
    · The Ring Nebula: a dying star's shell of gas, blue-green inside and
      red at the rim, with the tiny white dwarf left in the middle.
-   · The Crab pulsar: a neutron star spinning, its two beams sweeping like
-     a lighthouse (a flash each time one points at us), inside the tangled
-     filaments of the supernova it came from.
    · A star eating its companion: a swollen red giant, pulled into a drop,
      pours a stream of gas onto a white dwarf through its bright disk; the
      two go round each other.
@@ -73,7 +70,7 @@ float edgeFade(){ return 1.-smoothstep(.82,1.,max(abs(vQ.x),abs(vQ.y))); }
   }
 
   /* ---------- the Orion Nebula ---------- */
-  skyWonder("orion",{at:{d:[.22,.8],m:[-.05,.3]},z:140,R:10.5,rot:.35,blend:"over",shader:COMMON+`
+  skyWonder("orion",{at:{d:[.8,.1],m:[-.12,.3]},z:140,R:13.5,rot:.35,blend:"over",shader:COMMON+`
 float warp(vec2 p){ vec2 q=vec2(fbm(p+uS,5),fbm(p+vec2(5.2,1.3)+uS,5)); return fbm(p+2.3*q+vec2(uT*.004,0.),5); }
 void main(){
   vec2 p=vQ*1.15; float r=length(p);
@@ -100,7 +97,7 @@ void main(){
 }`});
 
   /* ---------- the Pillars of Creation ---------- */
-  skyWonder("pillars",{at:{d:[.3,-.8],m:[-.7,-.3]},z:150,R:11,blend:"over",shader:COMMON+`
+  skyWonder("pillars",{at:{d:[.3,-.8],m:[.22,-.62]},z:150,R:11,blend:"over",shader:COMMON+`
 /* a pillar: a column narrowing upwards, its edges ragged */
 float pillar(vec2 p,float x0,float top,float w0,float lean,float sd){
   float y=clamp(p.y,top,1.4), w=w0*(.55+.45*smoothstep(top,1.,y));
@@ -127,7 +124,7 @@ void main(){
 }`});
 
   /* ---------- the Pleiades ---------- */
-  skyWonder("pleiades",{at:{d:[.9,.02],m:[.72,.05]},z:120,R:9.5,rot:-.2,shader:COMMON+`
+  skyWonder("pleiades",{at:{d:[-.85,-.03],m:[.72,.05]},z:120,R:8,rot:-.2,shader:COMMON+`
 /* the nine brightest (positions and brightness after the real cluster) */
 const vec3 S[9]=vec3[9](vec3(0.,0.,1.),vec3(-.48,.05,.62),vec3(-.5,-.08,.2),vec3(.36,-.1,.58),vec3(.17,.2,.42),
                         vec3(.23,-.26,.5),vec3(.35,-.44,.38),vec3(.49,-.28,.16),vec3(.33,-.56,.14));
@@ -156,7 +153,7 @@ void main(){
 }`});
 
   /* ---------- the Ring Nebula ---------- */
-  skyWonder("ringneb",{at:{d:[-.9,.12],m:[-.8,.38]},z:120,R:6.2,rot:.5,shader:COMMON+`
+  skyWonder("ringneb",{at:{d:[-.72,.27],m:[-.38,.5]},z:120,R:4.6,rot:.5,shader:COMMON+`
 void main(){
   vec2 p=vQ*1.25; vec2 e=p/vec2(1.,.8); float r=length(e), a=atan(e.y,e.x);
   float fil=fbm(vec2(a*2.6,r*9.)+uS,4), grain=fbm(p*7.+uS,4);
@@ -168,34 +165,8 @@ void main(){
   o=vec4(C*uA*edgeFade(),0.);
 }`});
 
-  /* ---------- the Crab pulsar ---------- */
-  const pulsar=skyWonder("pulsar",{at:{d:[.42,.12],m:[.25,-.3]},z:130,R:8,shader:COMMON+`
-uniform vec3 uBeam;   /* the beam's direction on the screen, and how straight at us it points (the flash) */
-void main(){
-  vec2 p=vQ*1.2; float r=length(p/vec2(1.,.72)), rp=length(p);
-  float env=smoothstep(1.,.25,r);
-  vec3 C=vec3(.42,.58,1.)*exp(-r*r*5.)*.45;                        /* the blue glow of fast electrons */
-  float rn=1.-abs(fbm(p*5.+uS,5)*2.-1.);
-  float fil=pow(rn,6.)*env*smoothstep(.15,.65,r);
-  C+=mix(vec3(1.,.58,.26),vec3(1.,.24,.2),smoothstep(.45,.9,r))*fil*1.5;   /* the tangled filaments */
-  C+=vec3(.6,.75,1.)*exp(-pow((length(p/vec2(1.,.38))-.17)/.025,2.))*.35;  /* its ring of wind */
-  /* the two beams, sweeping round */
-  float bd=sin(atan(p.y,p.x)-atan(uBeam.y,uBeam.x));
-  float beam=exp(-bd*bd*1400.)*exp(-rp*1.6)*smoothstep(.0,.04,rp);
-  C+=vec3(.7,.85,1.)*beam*(.3+uBeam.z*2.2);
-  C+=vec3(.85,.92,1.)*(exp(-rp*rp*3000.)*3.+exp(-rp*rp*70.)*uBeam.z*1.6);   /* the star, and its flash */
-  o=vec4(C*uA*edgeFade(),0.);
-}`,uniforms(api,u,t){
-    /* its magnetic axis turns round the spin axis (70° apart), 0.6 turns a second */
-    const ph=t*TAU*.6, al=70*Math.PI/180, s=[.25,-.95,.2], sl=Math.hypot(...s); s.forEach((v,i)=>s[i]=v/sl);
-    const a=[s[1],-s[0],0], al2=Math.hypot(...a); a.forEach((v,i)=>a[i]=v/al2);
-    const b=[s[1]*a[2]-s[2]*a[1],s[2]*a[0]-s[0]*a[2],s[0]*a[1]-s[1]*a[0]];
-    const m=[0,1,2].map(i=>Math.cos(al)*s[i]+Math.sin(al)*(Math.cos(ph)*a[i]+Math.sin(ph)*b[i]));
-    set(u,"uBeam",m[0],m[1],Math.pow(Math.abs(m[2]),14));
-  }});
-
   /* ---------- a star eating its companion ---------- */
-  skyWonder("binary",{at:{d:[-.2,.86],m:[0,.6]},z:110,R:7,blend:"over",shader:COMMON+`
+  skyWonder("binary",{at:{d:[.61,.12],m:[.05,-.1]},z:110,R:5.2,blend:"over",shader:COMMON+`
 uniform float uPh;    /* where they are on their orbit */
 void main(){
   vec2 p=vQ*1.3; const float ci=.34;                         /* the orbit, seen tilted */
@@ -232,7 +203,7 @@ void main(){
   /* NGC 4038/4039: two spirals in the middle of crashing. Their pull has thrown out two long
      curved tails of stars (the "antennae"); where their disks meet, the squeezed gas lights
      up in hundreds of pink knots of newborn stars, crossed by lanes of dust. */
-  skyWonder("antennae",{at:{d:[.93,-.76],m:[-.38,-.5]},z:160,R:12,rot:-.3,blend:"over",shader:COMMON+`
+  skyWonder("antennae",{at:{d:[.93,-.76],m:[-.38,-.5]},z:160,R:9,rot:-.3,blend:"over",shader:COMMON+`
 float seg(vec2 p,vec2 a,vec2 b){ vec2 pa=p-a, ba=b-a; float h=clamp(dot(pa,ba)/dot(ba,ba),0.,1.); return length(pa-ba*h); }
 /* a tidal tail: a spiral arc thrown out of a disk, wider and fainter as it goes */
 vec2 tail(vec2 p,vec2 c,float th0,float dir,float sd){
