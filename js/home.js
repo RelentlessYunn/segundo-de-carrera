@@ -83,6 +83,8 @@ const Home=(function(){
      Played when the app starts (or right after the PIN), not every time home opens. */
   function intro(){
     if(P.hidden||!fullMotion()) return;
+    /* back from changing a setting: the page must be ready and still when the passage opens */
+    if(document.documentElement.classList.contains("shift-arriving")) return;
     P.classList.remove("intro"); void P.offsetWidth; P.classList.add("intro");
     setTimeout(()=>P.classList.remove("intro"),4200);
   }
@@ -112,6 +114,13 @@ const Home=(function(){
       setTimeout(()=>{ document.body.classList.remove("arriving"); entering=false; },1200);
     }});
   }
+  /* impatient? a second click (or Enter / Space) during the trip skips it: the section shows at once */
+  document.addEventListener("click",ev=>{
+    if(entering&&Universe.skip()){ ev.preventDefault(); ev.stopPropagation(); }
+  },true);
+  document.addEventListener("keydown",ev=>{
+    if(entering&&(ev.key==="Enter"||ev.key===" ")&&Universe.skip()) ev.preventDefault();
+  },true);
   /* the other galaxies (Nolan and the ones to explore) open inside home */
   $$("#portal .p-card[data-galaxy]").forEach(card=>{
     if(card.id==="homeUc3m") return;                      /* router.js handles UC3M */

@@ -61,7 +61,7 @@ const Shift=(function(){
   function run(v0,v1){
     if(still()) return;
     setup(); speed=v0; target=v1; last=performance.now();
-    cancelAnimationFrame(raf); raf=requestAnimationFrame(frame);
+    cancelAnimationFrame(raf); frame(last);            /* the first picture at once: never a black screen */
   }
   /* opacity over time, by hand (see above) */
   function fade(from,to,ms,done){
@@ -93,20 +93,36 @@ const Shift=(function(){
     fade(0,1,still()?260:760,()=>setTimeout(()=>location.reload(),still()?40:260));
   }
 
-  /* arriving: the stars brake, then the page appears */
+  /* arriving: the stars slow down to a drift while the page gets ready behind; only when
+     everything is in place (the universe built and drawn, the saved data read, the font
+     in) does the page appear, so nothing changes after the passage has opened.
+     Never more than 9 s, whatever happens. */
   function arrive(){
     let key=null; try{ key=sessionStorage.getItem(KEY); sessionStorage.removeItem(KEY); }catch(e){}
     if(!root.classList.contains("shifting")) return;
     label(key||"motion");
     el.style.opacity="1"; el.classList.add("on");
+    root.classList.add("shift-arriving");               /* the others know nobody sees the page yet */
     root.classList.remove("shifting");                 /* from here the overlay is ours */
-    run(2.6,0);
-    const go=()=>setTimeout(()=>fade(1,0,still()?320:900,()=>{
-      el.classList.remove("on"); cancelAnimationFrame(raf); raf=0;
-    }),still()?60:520);
-    /* when the page has loaded, but never waiting more than 1.2 s (a slow font server, say) */
-    let started=false; const once=()=>{ if(!started){ started=true; go(); } };
-    if(document.readyState==="complete") once(); else { window.addEventListener("load",once,{once:true}); setTimeout(once,1200); }
+    run(2.6,.4);
+    const t0=performance.now(), since=()=>performance.now()-t0;
+    const settled=()=>{
+      if(since()>9000) return true;
+      if(document.readyState!=="complete") return false;
+      if(typeof Universe!=="undefined"&&!Universe.ready()) return false;
+      if(typeof Cloud!=="undefined"&&Cloud.enabled&&!Cloud.ready()&&since()<4000) return false;
+      if(document.fonts&&document.fonts.status==="loading"&&since()<4000) return false;
+      return since()>(still()?150:900);                 /* the stars get to slow down first */
+    };
+    const open=()=>{
+      /* two more frames, so the last drawing is on the screen, then the fade */
+      let started=false;
+      const f=()=>{ if(started) return; started=true;
+        fade(1,0,still()?320:900,()=>{ el.classList.remove("on"); cancelAnimationFrame(raf); raf=0; root.classList.remove("shift-arriving"); }); };
+      requestAnimationFrame(()=>requestAnimationFrame(f));
+      setTimeout(f,150);                                 /* (a hidden tab has no frames) */
+    };
+    (function wait(){ if(settled()) open(); else setTimeout(wait,80); })();
   }
   arrive();
   return {leave};

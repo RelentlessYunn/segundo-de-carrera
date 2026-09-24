@@ -15,11 +15,13 @@
          (where the orbits squeeze together) and fade as they leave it;
        – bulges are swarms of stars on orbits in every direction, and
          globular clusters circle each galaxy in 3D.
-   · The soft light of each disk and its dust are a 3D layer with thickness, painted
-     once on the graphics card as a map (from the same orbits) and then
-     looked through with perspective: the dust darkens only what lies
-     behind it, so dust lanes cross the near side of a bulge and an
-     edge-on galaxy shows its dark band. Bulges are real 3D volumes.
+   · Each disk is a real volume. Its light and dust are painted once on the
+     graphics card as a map (from the same orbits), a small cube of 3D noise
+     is made once, and every ray walks through the disk: old stars in a
+     thick flared layer, young ones in a thin one, dust in clouds with a 3D
+     shape. The dust darkens what lies behind it, so dust lanes cross the
+     near side of a bulge and an edge-on galaxy shows its dark band. Bulges
+     are real 3D volumes, and a faint stellar halo surrounds each galaxy.
    · The far sky: thousands of stars, a faint nebula (painted once on the
      graphics card), dozens of tiny far galaxies, stars scattered through
      space that stretch into streaks when the camera flies, shooting stars
@@ -34,8 +36,10 @@
      is hidden, and life pauses after a while without touching anything.
    · Universe.go(scene, {animate, duration, onArrive, onCancel}) moves the
      camera. Without animations it simply jumps and everything stands still.
-   · Without WebGL2 (or with Quality = Low) there is no universe: sky.js
-     draws a simpler sky instead.
+     Universe.skip() ends a flight at once; Universe.ready() says whether
+     everything is built and on the screen (the passage of shift.js waits).
+   · Only with Quality = High. Without WebGL2 (or with Medium or Low) there is
+     no universe: sky.js draws a simpler sky instead (or none).
    ========================================================== */
 const Universe=(function(){
   const cv=$("#universe");
@@ -47,9 +51,9 @@ const Universe=(function(){
      robot: automated tests (a software GPU); ?tier=phone or ?tier=desk forces one */
   const phone=matchMedia("(max-width:760px),(pointer:coarse)").matches;
   const TIERS={
-    robot:{k:.07,map:256,scale:.4,maxScale:.5,steps:6,far:1500,field:500,bloom:false,neb:256,gc:20},
-    phone:{k:.36,map:1024,scale:.8,maxScale:1.5,steps:12,far:5000,field:900,bloom:true,neb:640,gc:60},
-    desk:{k:1,map:2048,scale:1,maxScale:1.5,steps:18,far:9000,field:1400,bloom:true,neb:1024,gc:130}};
+    robot:{k:.07,map:256,scale:.4,maxScale:.5,steps:[4,8],far:1500,field:500,bloom:false,neb:256,gc:20},
+    phone:{k:.36,map:1024,scale:.8,maxScale:1.5,steps:[8,20],far:5000,field:900,bloom:true,neb:640,gc:60},
+    desk:{k:1,map:2048,scale:1,maxScale:1.5,steps:[12,30],far:9000,field:1400,bloom:true,neb:1024,gc:130}};
   const asked=(location.search.match(/[?&]tier=(robot|phone|desk)\b/)||[])[1];
   const robot=!asked&&!!navigator.webdriver;
   const TIER=TIERS[asked||(robot?"robot":phone?"phone":"desk")];
@@ -69,7 +73,7 @@ const Universe=(function(){
   const GALAXIES={
     /* home: a calm golden spiral with soft arms */
     nolan:{kind:"spiral", r:8, tilt:1.10, roll:-.50, at:{d:[-.78,.74],m:[-.92,.8]}, z:58, seed:11,
-      disk:{h:.25, rc:.14, ex1:.76, ex2:.86, twist:3.4, phi0:.4, hz:.035, warp:.05, floc:.55,
+      disk:{h:.25, rc:.14, ex1:.76, ex2:.86, twist:3.4, phi0:.4, hz:.05, warp:.05, floc:.55,
             young:{h:.34,k:1.6}, hii:{c1:1.45,c2:1.95}, dust:{h:.36,k:1.5,lag:.22}},
       bulge:{I:.26, Rb:.07, n:2, q:[1,.95,.74]},
       col:{old:[1,.8,.52], young:[.74,.8,1], hii:[1,.42,.58], core:[1,.76,.48]},
@@ -78,7 +82,7 @@ const Universe=(function(){
       gain:{disk:.62, young:.5, hii:.45, dust:2.2, bulge:1, stars:1}},
     /* UC3M: a lively blue spiral, strong arms full of pink star-forming knots */
     uc3m:{kind:"spiral", r:5.5, tilt:.85, roll:.55, at:{d:[.62,-.42],m:[.62,-.56]}, z:60, seed:23,
-      disk:{h:.23, rc:.13, ex1:.72, ex2:.84, twist:3.6, phi0:1.1, hz:.03, warp:.06, floc:.45,
+      disk:{h:.23, rc:.13, ex1:.72, ex2:.84, twist:3.6, phi0:1.1, hz:.045, warp:.06, floc:.45,
             young:{h:.32,k:1.8}, hii:{c1:1.6,c2:2.5}, dust:{h:.32,k:1.7,lag:.2}},
       bulge:{I:.24, Rb:.06, n:2, q:[1,.92,.72]},
       col:{old:[1,.9,.78], young:[.55,.72,1], hii:[1,.34,.6], core:[1,.86,.66]},
@@ -94,7 +98,7 @@ const Universe=(function(){
       gain:{bulge:1, stars:1}},
     /* Andrómeda: a wide violet spiral seen steeply, with two small companions */
     andromeda:{kind:"spiral", r:6, tilt:1.2, roll:-.9, at:{d:[.82,.42],m:[.7,.72]}, z:110, seed:41,
-      disk:{h:.27, rc:.14, ex1:.78, ex2:.88, twist:4.2, phi0:2.0, hz:.03, warp:.04, floc:.5,
+      disk:{h:.27, rc:.14, ex1:.78, ex2:.88, twist:4.2, phi0:2.0, hz:.045, warp:.04, floc:.5,
             young:{h:.38,k:1.7}, hii:{c1:1.4,c2:1.9}, dust:{h:.4,k:1.6,lag:.25}},
       bulge:{I:.26, Rb:.07, n:2, q:[1,.95,.75]},
       col:{old:[1,.87,.74], young:[.7,.68,1], hii:[1,.45,.76], core:[1,.86,.7]},
@@ -249,10 +253,10 @@ const Universe=(function(){
   let hdr=null, bloomA=null, bloomB=null, half=false, checkedHalf=false;
   let pointMax=64;
   const G={};                        /* per galaxy: buffers, map, ready time */
-  let far=null, field=null, deepBuf=null, nebTex=null, meteorBuf=null;
+  let far=null, field=null, deepBuf=null, nebTex=null, meteorBuf=null, noiseTex=null;
   let emptyVAO=null;
 
-  const HEAD="#version 300 es\nprecision highp float;\nprecision highp int;\n";
+  const HEAD="#version 300 es\nprecision highp float;\nprecision highp int;\nprecision highp sampler3D;\n";
   const NOISE=`
 float h12(vec2 p){ vec3 p3=fract(vec3(p.xyx)*.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
 float vn(vec2 p){ vec2 i=floor(p), f=fract(p); vec2 u=f*f*(3.-2.*f);
@@ -387,7 +391,9 @@ in vec2 vUv; out vec4 o;
 uniform sampler2D uMap; uniform vec4 uMax; uniform float uB;
 uniform vec3 uCamL; uniform mat3 uRot;
 uniform vec2 uCss; uniform vec2 uRes; uniform float uScale; uniform float uF;
-uniform float uPat, uSide, uFade, uFrame; uniform int uSteps;
+uniform float uPat, uSide, uFade, uFrame, uSeed; uniform vec2 uSteps;
+uniform highp sampler3D uNoise;   /* 3D clouds, made once */
+uniform vec2 uHalo;       /* stellar halo: brightness, size */
 uniform vec4 uZ;          /* thickness, has a disk, dust strength, disk gain */
 uniform vec3 uCOld, uCYoung, uCHii, uCCore;
 uniform vec4 uBul;        /* brightness, size, profile, reach */
@@ -412,75 +418,72 @@ void main(){
   vec3 col=vec3(0.); float T=1.;
   float Tb=1.;                                     /* what this half's dust lets through */
   if(uZ.y>.5){
-    float hz=uZ.x, hd=uDust.y, h3=3.5*hz, mu=abs(rd.z);
-    float wThin=smoothstep(.16,.3,mu);
-    /* seen steeply the layer is thin: what lies where the ray crosses it. The stars of this
-       half are in front of its dust (this half near us) or behind it (the far half) */
-    if(wThin>0.){
-      float mm=max(mu,.2), k=.5/mm*uZ.w, tc=-ro.z/rd.z, foot=uPix/sqrt(mm);
-      vec3 old=vec3(0.), yng=vec3(0.); float th=1., fl=1.;
-      if(tc>0.){
-        vec2 xc=(ro+rd*tc).xy;
-        vec4 m=mapAt(xc,tc*foot);
-        old=m.r*uCOld*k*.46;
-        yng=(m.g*uGains.x*uCYoung+m.b*uGains.y*uCHii)*k;
-        th=exp(-.5*m.a*uZ.z/mm);
-        fl=1.+.9*length(xc);                        /* the disk flares: thicker towards the edge */
+    /* the disk is a real volume: old stars in a thick layer that flares towards the edge,
+       young stars and pink regions in a thinner one, and dust in clouds with a 3D shape
+       (they rise out of the middle plane and dip into it). The ray walks through this
+       half of it, front to back; the samples crowd where the ray is nearest the middle
+       plane, where the light and the dust are. */
+    float hz=uZ.x, hd=uDust.y, mu=abs(rd.z), Hs=hz*9.;
+    float sg=camSide*uSide;                               /* this half: z has this sign */
+    float zlo=sg>0.?0.:-Hs, zhi=sg>0.?Hs:0.;
+    vec3 inv=1./(rd+vec3(1e-7));
+    vec3 t0s=(vec3(-uB,-uB,zlo)-ro)*inv, t1s=(vec3(uB,uB,zhi)-ro)*inv;
+    vec3 tn=min(t0s,t1s), tx=max(t0s,t1s);
+    float ta=max(max(tn.x,tn.y),max(tn.z,0.)), tb=min(min(tx.x,tx.y),tx.z);
+    if(tb>ta){
+      float denseB=abs(ro.z+rd.z*tb)<abs(ro.z+rd.z*ta)?1.:0.;
+      float steep=smoothstep(.08,.45,mu), pw=mix(1.,2.2,steep);
+      int N=int(mix(uSteps.y,uSteps.x,steep)+.5);
+      float L=tb-ta; vec3 T=vec3(1.), acc=vec3(0.);
+      for(int i=0;i<48;i++){ if(i>=N) break;
+        float fN=float(N), u0=float(i)/fN, u1=float(i+1)/fN, um=(float(i)+jit)/fN;
+        float s0=denseB>.5?1.-pow(1.-u0,pw):pow(u0,pw);
+        float s1=denseB>.5?1.-pow(1.-u1,pw):pow(u1,pw);
+        float sm=denseB>.5?1.-pow(1.-um,pw):pow(um,pw);
+        float t=ta+L*sm, dt=L*(s1-s0);
+        vec3 p=ro+rd*t;
+        float r=length(p.xy), fl=1.+.9*r;
+        vec4 m=mapAt(p.xy,max(t*uPix,dt*.3)+abs(p.z)*.35);        /* softer away from the middle */
+        if(m.r+m.g+m.b+m.a<1e-4) continue;
+        vec3 q=p*vec3(3.,3.,7.)+uSeed;
+        float n1=textureLod(uNoise,q,0.).r, n2=textureLod(uNoise,q*2.63+vec3(.31,.17,.53),0.).r;
+        float n=n1*.62+n2*.38;
+        float hy=hz*.28*(1.+.4*r);
+        float co=cosh(p.z/(hz*fl)), cy=cosh(p.z/hy), cd=cosh(p.z/(hd*fl));
+        float so=1./(co*co*2.*hz*fl), sy=1./(cy*cy*2.*hy), sd=1./(cd*cd*2.*hd*fl);
+        vec3 em=(m.r*uCOld*so*(.72+.56*n2)+(m.g*uGains.x*uCYoung+m.b*uGains.y*uCHii)*sy*(.3+1.4*n1))*uZ.w;
+        /* dust: clouds (brownish at their thin edges: blue light is dimmed a little more) */
+        float k=m.a*uZ.z*sd*(.12+2.4*n*n);
+        vec3 a=k*dt*vec3(.82,1.,1.22), tr=exp(-a);
+        acc+=T*em*dt*mix(vec3(1.),(1.-tr)/max(a,vec3(1e-5)),step(1e-4,a.g));
+        T*=tr;
+        if(T.g<.004) break;
       }
-      /* the old stars are a thicker layer: two more sheets above (or below) the middle, on
-         this half's side, a little softer. Seen at an angle they sit beside each other, so
-         the disk has a real thickness that changes as the camera turns */
-      float sg=camSide*uSide;
-      for(int j=0;j<2;j++){
-        float zj=sg*uZ.x*fl*(j==0?.85:2.), tj=(zj-ro.z)/rd.z;
-        if(tj>0.) old+=mapAt((ro+rd*tj).xy,tj*foot+uTexel*(1.5+2.5*float(j))).r*uCOld*k*(j==0?.33:.21);
-      }
-      col+=wThin*(uSide<0.?(old+yng)*th:old*pow(th,.3)+yng*sqrt(th));   /* the dust is a little thicker than it looks: it dims the near side too */
-      Tb=mix(1.,th,wThin);
-    }
-    /* seen at a grazing angle the layer has thickness: walk through it, front to back */
-    if(wThin<1.){
-      vec3 inv=1./(rd+vec3(1e-7));
-      vec3 t0s=(vec3(-uB,-uB,-h3)-ro)*inv, t1s=(vec3(uB,uB,h3)-ro)*inv;
-      vec3 tn=min(t0s,t1s), tx=max(t0s,t1s);
-      float ta=max(max(tn.x,tn.y),max(tn.z,0.)), tb=min(min(tx.x,tx.y),tx.z);
-      if(tb>ta){
-        float L=tb-ta;
-        int N=int(clamp(L/(.5*hz),4.,float(uSteps)));
-        float dt=L/float(N);
-        vec3 acc=vec3(0.); float T=1.;
-        for(int i=0;i<48;i++){ if(i>=N) break;
-          float t=ta+(float(i)+jit)*dt;
-          vec3 p=ro+rd*t;
-          if((p.z>=0.?1.:-1.)*camSide*uSide<0.) continue;
-          vec4 m=mapAt(p.xy,max(t*uPix,dt*.5));
-          float cs=cosh(p.z/hz), cd=cosh(p.z/hd);
-          acc+=T*(m.r*uCOld+m.g*uGains.x*uCYoung+m.b*uGains.y*uCHii)/(cs*cs*2.*hz)*dt;
-          T*=exp(-m.a*uZ.z/(cd*cd*2.*hd)*dt);
-        }
-        col+=(1.-wThin)*acc*uZ.w;
-        Tb*=mix(1.,T,1.-wThin);
-      }
+      col+=acc; Tb=T.g;
     }
   }
   /* the bulge: a real 3D glow, brightest at the centre; the samples crowd around the point
      of the ray nearest the centre, where the light is */
-  float R=uBul.w, b=dot(ro,rd), cc=dot(ro,ro)-R*R, disc=b*b-cc;
+  float R=max(uBul.w,uHalo.x>0.?uHalo.y*4.:0.), b=dot(ro,rd), cc=dot(ro,ro)-R*R, disc=b*b-cc;
   if(disc>0.){
     float sq=sqrt(disc), t0=max(-b-sq,0.), t1=-b+sq;
     if(t1>t0){
-      float tm=clamp(-b,t0,t1), bn=2.*uBul.z-.327, acc=0.;
+      float tm=clamp(-b,t0,t1), bn=2.*uBul.z-.327, acc=0., hal=0.;
       for(int h=0;h<2;h++){
         float L=h==0?tm-t0:t1-tm, sgn=h==0?-1.:1.;
-        for(int i=0;i<8;i++){
-          float u0=float(i)/8., u1=float(i+1)/8., um=(float(i)+.25+.5*jit)/8.;
+        for(int i=0;i<10;i++){
+          float u0=float(i)/10., u1=float(i+1)/10., um=(float(i)+.25+.5*jit)/10.;
           vec3 p=ro+rd*(tm+sgn*L*um*um);
           if((p.z>=0.?1.:-1.)*camSide*uSide<0.) continue;
+          float w=L*(u1*u1-u0*u0);
           float rb=length(p/uBQ)/uBul.y;
-          acc+=exp(-bn*(pow(rb+.001,1./uBul.z)-1.))*L*(u1*u1-u0*u0);
+          if(rb<12.) acc+=exp(-bn*(pow(rb+.001,1./uBul.z)-1.))*w;
+          /* the stellar halo: a faint round glow around the whole galaxy, so it sits in
+             space instead of looking cut out */
+          hal+=exp(-length(p*vec3(1.,1.,1.3))/uHalo.y)*w;
         }
       }
-      col+=uCCore*uBul.x*acc*(uSide<0.?Tb:1.);
+      col+=(uCCore*uBul.x*acc+uCOld*uHalo.x*hal)*(uSide<0.?Tb:1.);
     }
   }
   o=vec4(col,1.-Tb)*uFade;
@@ -732,6 +735,9 @@ void main(){
     half=!!gl.getExtension("EXT_color_buffer_float");
     pointMax=gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1]||64;
     emptyVAO=gl.createVertexArray();
+    return true;
+  }
+  function compileAll(){
     P.map=compile(FULL_VS,MAP_FS);
     P.part=compile(PART_VS,PART_FS);
     P.vol=compile(FULL_VS,VOL_FS);
@@ -745,7 +751,6 @@ void main(){
     P.bright=compile(FULL_VS,BRIGHT_FS);
     P.blur=compile(FULL_VS,BLUR_FS);
     P.comp=compile(FULL_VS,COMP_FS);
-    return true;
   }
   /* the render size: css size × pixels per css px (adapts to the device) */
   function sizeTargets(){
@@ -764,8 +769,41 @@ void main(){
     bloomA=target(bw,bh,fmt); bloomB=target(bw,bh,fmt);
   }
 
+  /* ---------- 3D clouds: a small cube of smooth noise that repeats, made once ----------
+     (three layers of smoothly blended random values, from coarse to fine) */
+  function buildNoise(S){
+    const r=rng(777), out=new Uint8Array(S*S*S), acc=new Float32Array(S*S*S);
+    const fade=t=>t*t*(3-2*t);
+    let amp=1, tot=0;
+    for(const c of [4,8,16]){
+      const lat=new Float32Array(c*c*c); for(let i=0;i<lat.length;i++) lat[i]=r();
+      const L=(x,y,z)=>lat[((z%c)*c+(y%c))*c+(x%c)];
+      for(let z=0;z<S;z++){ const fz=z*c/S, z0=Math.floor(fz), wz=fade(fz-z0);
+        for(let y=0;y<S;y++){ const fy=y*c/S, y0=Math.floor(fy), wy=fade(fy-y0);
+          for(let x=0;x<S;x++){ const fx=x*c/S, x0=Math.floor(fx), wx=fade(fx-x0);
+            const a=L(x0,y0,z0)+(L(x0+1,y0,z0)-L(x0,y0,z0))*wx, b=L(x0,y0+1,z0)+(L(x0+1,y0+1,z0)-L(x0,y0+1,z0))*wx;
+            const c2=L(x0,y0,z0+1)+(L(x0+1,y0,z0+1)-L(x0,y0,z0+1))*wx, d=L(x0,y0+1,z0+1)+(L(x0+1,y0+1,z0+1)-L(x0,y0+1,z0+1))*wx;
+            const e=a+(b-a)*wy, f=c2+(d-c2)*wy;
+            acc[(z*S+y)*S+x]+=amp*(e+(f-e)*wz);
+          } } }
+      tot+=amp; amp*=.5;
+    }
+    /* stretch the values over the whole range, so clouds have clear edges */
+    let lo=1e9, hi=-1e9; for(const v of acc){ if(v<lo) lo=v; if(v>hi) hi=v; }
+    for(let i=0;i<acc.length;i++) out[i]=Math.round((acc[i]-lo)/(hi-lo)*255);
+    const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_3D,t);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);
+    gl.texImage3D(gl.TEXTURE_3D,0,gl.R8,S,S,S,0,gl.RED,gl.UNSIGNED_BYTE,out);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT,4);
+    gl.texParameteri(gl.TEXTURE_3D,gl.TEXTURE_MIN_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_3D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T,gl.TEXTURE_WRAP_R].forEach(k=>gl.texParameteri(gl.TEXTURE_3D,k,gl.REPEAT));
+    gl.bindTexture(gl.TEXTURE_3D,null);
+    return t;
+  }
+
   /* ---------- the far sky: built once ---------- */
   function buildSky(){
+    noiseTex=buildNoise(robot?24:phone?48:64);
     const r=rng(20260921);
     /* stars at infinity, in the cone the camera can see */
     const n=TIER.far, S=new Float32Array(n*4), C=new Uint8Array(n*4);
@@ -894,12 +932,15 @@ void main(){
       gl.generateMipmap(gl.TEXTURE_2D);
       e.map=tg.t; e.mapSize=S; gl.deleteFramebuffer(tg.f);
     }
-    e.at=fancy()&&!robot?performance.now():-1e9;
+    e.at=fancy()&&!robot&&!covering()?performance.now():-1e9;   /* fades in, unless nobody is looking yet */
     G[id]=e;
   }
   /* one galaxy per turn, so the page never stutters: home's first */
   let queue=[];
-  const idle=fn=>window.requestIdleCallback?requestIdleCallback(fn,{timeout:700}):setTimeout(fn,60);
+  /* behind the passage of shift.js (a setting just changed) nobody sees the page yet: build
+     at full speed, so everything is there, still, when the passage opens */
+  const covering=()=>root.classList.contains("shift-arriving");
+  const idle=fn=>covering()?setTimeout(fn,16):window.requestIdleCallback?requestIdleCallback(fn,{timeout:700}):setTimeout(fn,60);
   function buildNext(){
     if(!gl||lost) return;
     const job=queue.shift(); if(!job) return;
@@ -913,7 +954,7 @@ void main(){
     ["nolan","uc3m","forge","andromeda","sombrero"].forEach(id=>queue.push(()=>buildGalaxy(id,GALAXIES[id])));
     COMPANIONS.forEach(c=>queue.push(()=>buildGalaxy(c.id,c)));
     let started=false; const go=()=>{ if(!started){ started=true; idle(buildNext); } };
-    if(document.readyState==="complete") go(); else { window.addEventListener("load",go,{once:true}); setTimeout(go,1500); }
+    if(document.readyState==="complete"||covering()) go(); else { window.addEventListener("load",go,{once:true}); setTimeout(go,1500); }
   }
 
   /* ---------- projection: world → screen, from where the camera is and how it is turned ---------- */
@@ -964,10 +1005,11 @@ void main(){
   }
 
   /* ---------- drawing one frame ---------- */
-  let frameNo=0, starsFade=1, flightFromGate=0;
+  let frameNo=0, starsFade=1, flightFromGate=0, settled=0, dead=false;
   function render(boost){
     if(!gl||lost||!ok) return;
     frameNo++;
+    if(!queue.length&&Object.keys(G).length===IDS.length+COMPANIONS.length) settled++;
     const f=float(); cam={x:base.x+f.x,y:base.y+f.y,z:base.z+f.z}; camR=[1,0,0, 0,1,0, 0,0,1];
     const o=orbit();
     if(o){
@@ -1061,12 +1103,14 @@ void main(){
       gl.uniform3f(u.uCamL,camL[0],camL[1],camL[2]); gl.uniformMatrix3fv(u.uRot,false,mat3(w.Rot,camR));
       gl.uniform2f(u.uCss,W,H); gl.uniform2f(u.uRes,RW,RH); gl.uniform1f(u.uScale,scale); gl.uniform1f(u.uF,F);
       gl.uniform1f(u.uPat,pat); gl.uniform1f(u.uSide,side); gl.uniform1f(u.uFade,fade); gl.uniform1f(u.uFrame,frameNo%64);
-      gl.uniform1i(u.uSteps,TIER.steps);
+      gl.uniform2f(u.uSteps,TIER.steps[0],TIER.steps[1]); gl.uniform1f(u.uSeed,(g.seed||1)*.173%1*9.);
+      const hl=g.halo||{I:d?.07:.04,R:d?.34:.4}; gl.uniform2f(u.uHalo,hl.I,hl.R);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_3D,noiseTex); gl.uniform1i(u.uNoise,1); gl.activeTexture(gl.TEXTURE0);
       const b=g.bulge, n=b.n, bn=2*n-.327, reach=Math.min(1.6,b.Rb*Math.pow(1+Math.log(b.I/.0008)/bn,n));
       gl.uniform4f(u.uBul,b.I*(g.gain.bulge||1),b.Rb,n,reach); gl.uniform3f(u.uBQ,b.q[0],b.q[1],b.q[2]);
       gl.uniform3fv(u.uCCore,g.col.core);
       if(d&&e.map){
-        gl.uniform4f(u.uZ,d.hz,1,g.gain.dust,g.gain.disk*1.25); gl.uniform2f(u.uDust,0,d.hzd||d.hz*.35);
+        gl.uniform4f(u.uZ,d.hz,1,g.gain.dust,g.gain.disk*1.25); gl.uniform2f(u.uDust,0,d.hzd||d.hz*.45);
         gl.uniform1f(u.uTexel,2*1.35/e.mapSize); gl.uniform1f(u.uPix,1/(F*scale));
         gl.uniform3fv(u.uCOld,g.col.old); gl.uniform3fv(u.uCYoung,g.col.young); gl.uniform3fv(u.uCHii,g.col.hii);
         gl.uniform2f(u.uGains,g.gain.young*1.35,g.gain.hii);
@@ -1080,7 +1124,7 @@ void main(){
   }
   /* the rectangle of the render target a galaxy can cover (null: nothing on screen) */
   function screenBox(w,d){
-    const b=w.g.bulge, bn=2*b.n-.327, reach=Math.min(1.6,b.Rb*Math.pow(1+Math.log(b.I/.0008)/bn,b.n)), ex=d?Math.max(1.35,reach):reach, ez=d?Math.max(3.5*d.hz,reach):reach;
+    const b=w.g.bulge, bn=2*b.n-.327, reach=Math.max(Math.min(1.6,b.Rb*Math.pow(1+Math.log(b.I/.0008)/bn,b.n)),((w.g.halo&&w.g.halo.R)||(d?.34:.4))*4), ex=d?Math.max(1.35,reach):reach, ez=d?Math.max(9*d.hz,reach):reach;
     let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
     for(let i=0;i<8;i++){
       const p=mul3(w.M,[(i&1?1:-1)*ex,(i&2?1:-1)*ex,(i&4?1:-1)*ez]);
@@ -1187,6 +1231,14 @@ void main(){
       if(p>=1&&anim===me) anim=null;
       /* while flying, the scattered stars shine more: that is where the sense of speed comes from */
       return Math.sin(Math.PI*p)*.9;
+    },
+    /* there at once (a second click during the trip) */
+    finish(){
+      if(anim!==me) return;
+      base={...camFor(to)}; prevCam=null; anim=null;
+      if(from==="gate"){ starsFade=1; flightFromGate=0; }
+      if(!reached){ reached=true; me.also.forEach(fn=>fn()); }
+      need();
     }};
     anim=me; kick();
   }
@@ -1207,13 +1259,15 @@ void main(){
   /* no 3D after all: the plain background shows instead */
   function giveUp(e){
     console.warn("universe: no 3D",e);
-    ok=false; root.classList.remove("gl"); root.classList.add("nogl"); cv.style.display="none";
+    ok=false; dead=true; root.classList.remove("gl"); root.classList.add("nogl"); cv.style.display="none";
   }
   if(cv&&HQ){
     try{
       if(initGL()){
         root.classList.add("gl");                      /* at once, so sky.js does not draw its own sky */
-        whenCompiled(()=>{ try{ start(); }catch(e){ giveUp(e); } },giveUp);
+        const boot=()=>{ try{ compileAll(); whenCompiled(()=>{ try{ start(); }catch(e){ giveUp(e); } },giveUp); }catch(e){ giveUp(e); } };
+        /* behind the passage: first let the page paint its stars, then the heavy work */
+        if(covering()) requestAnimationFrame(()=>setTimeout(boot,0)); else boot();
         /* the pictures saved by older versions are not needed any more */
         try{ indexedDB.deleteDatabase("nolan-cosmos"); }catch(e){}
       }
@@ -1223,7 +1277,7 @@ void main(){
       cv.addEventListener("webglcontextrestored",()=>{
         lost=false; P={}; hdr=bloomA=bloomB=null; RW=RH=1;
         Object.keys(G).forEach(k=>delete G[k]);
-        try{ if(initGL()) whenCompiled(()=>{ hdr=null; sizeTargets(); buildSky(); ok=true; startBuilding(); need(); },giveUp); }catch(e){ giveUp(e); }
+        try{ if(initGL()){ compileAll(); whenCompiled(()=>{ hdr=null; sizeTargets(); buildSky(); ok=true; startBuilding(); need(); },giveUp); } }catch(e){ giveUp(e); }
       });
     }
     /* only a real change of size */
@@ -1235,7 +1289,11 @@ void main(){
   if(!gl) root.classList.add("nogl");
   if(!scene) scene=startScene();
   /* seek(seconds): jump life forward (tests and debugging) */
-  return {go, seek:v=>{ life=v; need(); }, scene:()=>scene, busy:()=>!!anim, camera:()=>({...base}),
+  /* skip(): the flight under way ends now, as if it had arrived (true if there was one) */
+  const skip=()=>{ if(!anim) return false; anim.finish(); return true; };
+  /* ready(): everything is built and on the screen (or there is no universe to wait for) */
+  const ready=()=>!gl||lost||dead||root.hasAttribute("data-locked")||settled>=1;
+  return {go, skip, ready, seek:v=>{ life=v; need(); }, scene:()=>scene, busy:()=>!!anim, camera:()=>({...base}),
     painted:()=>IDS.filter(id=>G[id]).length, gl:()=>ok, built:()=>Object.keys(G),
     /* shoot(): a shooting star and a comet right now (tests) */
     shoot:at=>{ newMeteor(clock()); newComet(clock(),at||0); need(); }, GALAXIES};

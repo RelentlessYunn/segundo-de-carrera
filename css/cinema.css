@@ -165,7 +165,7 @@ body.arriving>div.wrap{animation-delay:.2s}
 #universe{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
 /* flying into a section: home has faded, nothing in it can be clicked meanwhile */
 .portal.entering .p-in,.portal.entering .p-bar{pointer-events:none}
-[data-quality=low] #universe{display:none}
+[data-quality=low] #universe,[data-quality=medium] #universe{display:none}
 /* the 3D universe draws the whole sky: the CSS sky (for devices without WebGL2) steps aside */
 html.gl #sky{display:none}
 /* during the flight after the PIN, the far stars fade in around you */

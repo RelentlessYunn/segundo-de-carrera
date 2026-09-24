@@ -13,11 +13,63 @@
    ========================================================== */
 (function(){
   const sky=$("#sky"); if(!sky) return;
-  if(!highQuality()) return;               /* low quality: a plain gradient, nothing to draw */
+  if(SETTINGS.quality==="low") return;     /* low quality: a plain gradient, nothing to draw */
+  if(SETTINGS.quality==="medium"){ simple(); return; }
   /* the 3D universe (universe.js) draws the whole sky itself: this one is only
      for devices without WebGL2 */
   if(document.documentElement.classList.contains("gl")) return;
   start();
+
+  /* ---------- Quality = Medium: simple stars, drawn once ----------
+     No galaxies and no moving layers: one still picture the size of the screen, with
+     small stars in real colours, a few brighter ones, a faint band of the Milky Way
+     and two or three very faint clouds of gas, so it still looks like deep space.
+     Drawn again only if the screen changes size. */
+  function simple(){
+    const c=document.createElement("canvas"); c.className="sky-simple";
+    sky.insertBefore(c,sky.firstChild);
+    let w0=0,h0=0;
+    function draw(){
+      const W=innerWidth, H=innerHeight;
+      if(Math.abs(W-w0)<60&&Math.abs(H-h0)<60&&w0) return;
+      w0=W; h0=H;
+      const DPR=Math.min(devicePixelRatio||1,2), x=c.getContext("2d");
+      c.width=Math.round(W*DPR); c.height=Math.round(H*DPR); x.setTransform(DPR,0,0,DPR,0,0);
+      let sd=20260924; const rnd=()=>{ sd=(sd*1664525+1013904223)%4294967296; return sd/4294967296; };
+      const TINT=["255,255,255","255,250,242","226,234,255","205,220,255","255,236,214","255,214,184"];
+      /* faint clouds of gas */
+      [[.22,.3,"120,90,170"],[.78,.62,"150,80,110"],[.55,.12,"80,110,170"]].forEach(([fx,fy,col])=>{
+        const R=Math.max(W,H)*(.35+rnd()*.2), g=x.createRadialGradient(W*fx,H*fy,0,W*fx,H*fy,R);
+        g.addColorStop(0,`rgba(${col},.07)`); g.addColorStop(.5,`rgba(${col},.025)`); g.addColorStop(1,`rgba(${col},0)`);
+        x.fillStyle=g; x.fillRect(0,0,W,H);
+      });
+      /* a faint band across the sky, where the stars crowd */
+      const ang=-.5, cx=W*.5, cy=H*.45, ca=Math.cos(ang), sa=Math.sin(ang), band=Math.min(W,H)*.16;
+      x.save(); x.translate(cx,cy); x.rotate(ang);
+      const bg=x.createLinearGradient(0,-band*1.6,0,band*1.6);
+      bg.addColorStop(0,"rgba(190,200,240,0)"); bg.addColorStop(.5,"rgba(190,200,240,.045)"); bg.addColorStop(1,"rgba(190,200,240,0)");
+      x.fillStyle=bg; x.fillRect(-W*1.5,-band*1.6,W*3,band*3.2); x.restore();
+      const star=(px,py,r,a,tint)=>{ x.fillStyle=`rgba(${tint},${a})`; x.beginPath(); x.arc(px,py,r,0,Math.PI*2); x.fill(); };
+      const n=Math.round(W*H/1100);
+      for(let i=0;i<n;i++){
+        let px=rnd()*W, py=rnd()*H;
+        if(i%3===0){ const u=(rnd()-.5)*W*1.6, v=(rnd()+rnd()+rnd()-1.5)*band*.8; px=cx+u*ca-v*sa; py=cy+u*sa+v*ca; }
+        star(px,py,.35+Math.pow(rnd(),3)*.75,(.18+Math.pow(rnd(),2)*.7).toFixed(2),TINT[Math.floor(rnd()*TINT.length)]);
+      }
+      /* a few brighter ones, with a small soft glow */
+      for(let i=0;i<Math.round(n/70);i++){
+        const px=rnd()*W, py=rnd()*H, tint=TINT[Math.floor(rnd()*TINT.length)], R=4+rnd()*5;
+        const g=x.createRadialGradient(px,py,0,px,py,R);
+        g.addColorStop(0,`rgba(${tint},.5)`); g.addColorStop(.25,`rgba(${tint},.14)`); g.addColorStop(1,`rgba(${tint},0)`);
+        x.fillStyle=g; x.beginPath(); x.arc(px,py,R,0,Math.PI*2); x.fill();
+        star(px,py,.9+rnd()*.5,.95,"255,255,255");
+      }
+      c.classList.add("ready");
+    }
+    draw();
+    let rz=0; window.addEventListener("resize",()=>{ clearTimeout(rz); rz=setTimeout(draw,250); });
+  }
+
   function start(){
   const DPR=Math.min(window.devicePixelRatio||1,2);
   /* the same sky on every visit: a small seeded random generator */

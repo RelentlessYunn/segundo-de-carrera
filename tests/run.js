@@ -103,6 +103,10 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     ok(await p.evaluate(()=>Universe.scene()==="uc3m"&&!document.getElementById("notes").hidden&&document.querySelector("#notes .p-back-top").getAttribute("href")==="#schedule"),
       "Notes open from UC3M without leaving its galaxy, and Back returns to the timetable");
     await p.click("#notes .p-back-top"); await p.waitForTimeout(600);
+    await p.click("header .home-btn"); await p.waitForTimeout(3200);
+    await p.click("#homeUc3m"); await p.waitForTimeout(250); await p.mouse.click(640,450); await p.waitForTimeout(350);
+    ok(await p.evaluate(()=>document.getElementById("portal").hidden&&location.hash==="#schedule"&&!Universe.busy()&&Universe.scene()==="uc3m"),
+      "a second click during the trip skips it: the timetable shows at once");
     await p.click("header .home-btn"); await p.waitForTimeout(200);
     ok(await p.evaluate(()=>Universe.scene()==="home"&&!!document.querySelector("header .home-btn .logo-mark")),"the logo takes you home, flying back to the home galaxy");
     await p.waitForTimeout(2800);
@@ -273,6 +277,15 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await q.locator("#generalTasks input").nth(0).check(); await q.waitForTimeout(200);
     ok(s.stars>0&&await q.evaluate(()=>document.querySelectorAll("#tasksConstellation .c-star.on").length===1),`the constellation lights a star per task done (${s.stars} stars)`);
     await q.context().close();
+    const md=await open(b,{settings:{quality:"medium"},hash:"schedule"});
+    const mr=await md.evaluate(()=>{ const c=document.querySelector("#sky .sky-simple");
+      return {gl:Universe.gl(),cls:document.documentElement.classList.contains("gl"),canvas:!!c&&c.classList.contains("ready")&&c.width>0,
+        layers:getComputedStyle(document.querySelector("#sky .sky-par")).display,sky:getComputedStyle(document.getElementById("sky")).display,
+        uni:getComputedStyle(document.getElementById("universe")).display,glass:getComputedStyle(document.querySelector("nav.bar")).backdropFilter}; });
+    ok(!mr.gl&&!mr.cls&&mr.canvas&&mr.layers==="none"&&mr.sky!=="none"&&mr.uni==="none"&&mr.glass&&mr.glass!=="none"&&!md.errors.length,
+      `Quality = Medium: no galaxies, a still sky of simple stars, the glass look kept (${JSON.stringify(mr)})`);
+    ok(await md.evaluate(()=>document.querySelectorAll('.seg[data-key="quality"] button').length===3),"Settings offers three qualities: High, Medium, Low");
+    await md.context().close();
   }
 
   section("Compact header when scrolled");

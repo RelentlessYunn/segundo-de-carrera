@@ -30,6 +30,11 @@ html{background:var(--space,#050810)}
 @keyframes twinkle-b{from{opacity:.25}to{opacity:1}}
 @keyframes twinkle-c{from{opacity:1}to{opacity:.6}}
 
+/* Quality = Medium: one still picture of simple stars (sky.js draws it once) instead of the layers */
+.sky-simple{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .6s ease}
+.sky-simple.ready{opacity:1}
+[data-quality=medium] .sky-par,[data-quality=medium] .sky-meteors,[data-quality=medium] .sky-grain{display:none}
+
 /* shooting stars (sky.js adds and removes them) */
 .sky-meteors{position:absolute;inset:0}
 .meteor{

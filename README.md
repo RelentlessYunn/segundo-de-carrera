@@ -26,13 +26,13 @@ The whole app is one universe in real 3D, drawn by the graphics card (WebGL2) on
 
 - **Home is the Nolan galaxy.** After the PIN the camera flies from deep space into it (five seconds, the far stars fading in around you) and stays there: home's background *is* that galaxy, low on the left.
 - **Each section is a galaxy you can see from home**: UC3M, Nolan (under construction), and two kept for future sections, Andrómeda and Sombrero (cards "Por explorar" on home, route `#soon/<id>`).
-- **Opening a section** flies the camera into its galaxy (`Home.enter` → `Universe.go(id)`), and the section appears inside it: UC3M's timetable has UC3M's galaxy glowing over the header. **Going home** flies back out.
+- **Opening a section** flies the camera into its galaxy (`Home.enter` → `Universe.go(id)`), and the section appears inside it: UC3M's timetable has UC3M's galaxy glowing over the header. **A second click** (or Enter / Space) during the trip skips it and shows the section at once (`Universe.skip()`). **Going home** flies back out.
 - **Nothing is recalculated frame by frame on the processor.** Every moving thing is an exact formula of time evaluated by the graphics card; each frame the page only passes the time and the camera. Galaxy stars and maps are built once, one galaxy at a time (home's first) so the page never stutters.
 - **Spiral galaxies follow the density-wave model** (Lin & Shu, as in Ingo Berg's *Galaxy Renderer*): every star moves on an ellipse, each ellipse a little flatter and a little more turned the further out it is. The arms are where the ellipses crowd together, so they stay while the stars flow through them, and inner stars turn faster than outer ones. The whole pattern turns slowly too.
   - **Pink star-forming regions** only light up while they cross an arm (where neighbouring orbits squeeze together) and fade as they leave it; young blue stars and clouds of them live in the arms and fade between them.
   - **Resolved stars**: most are faint grain, a few are bright giants (a steep luminosity function), each at its own height above or below the disk, so they drift against the disk when the camera turns.
   - **Bulges** are swarms of stars on orbits in every direction; **globular clusters** (tight balls of old stars) circle each galaxy on their own tilted orbits; Andrómeda has two small companions.
-- **Soft light and dust are a 3D layer with thickness.** Each disk's light (old stars, young stars in clouds, pink regions) and its dust are painted once as a map on the graphics card, from the same orbits (plus patchiness and dust filaments). The page then looks *through* that layer with real perspective: seen steeply the old stars are three stacked sheets (the middle one and two softer ones above or below it, thicker towards the edge, like a real flared disk), so the disk has a thickness that shifts as the camera turns; seen at a grazing angle it is walked through. The dust lies in the middle: it darkens what is behind it and a little of what is in front, so dust lanes cross the near side of a bulge and the edge-on Sombrero shows its dark band. Bulges and the elliptical are real 3D glows (brightest at the centre, sampled densely there).
+- **Each disk is a real volume**, not a picture. Its light (old stars, young stars in clouds, pink regions) and its dust are painted once as a map on the graphics card, from the same orbits (plus patchiness and dust filaments), and a small cube of 3D noise is made once too. The page then walks every ray through the disk, front to back: old stars fill a thick layer that flares towards the edge, young stars and pink regions a thin one, and the dust forms clouds with a real 3D shape (made from the noise cube) that rise out of the middle plane and dip into it, brownish at their thin edges. Samples crowd where the ray is nearest the middle plane, where the light and the dust are. The dust darkens what lies behind it, so dust lanes cross the near side of a bulge and the edge-on Sombrero shows its dark band. Bulges and the elliptical are real 3D glows (brightest at the centre, sampled densely there), and every galaxy sits in a faint round **stellar halo**, so it glows into space instead of looking cut out.
 - **The far sky**: thousands of stars fixed on the sky (a few twinkle slowly), a faint nebula painted once, dozens of tiny far galaxies (each drawn from a formula), and stars scattered through space that stretch into streaks while the camera flies. Galaxies away from the centre of the screen are turned to face home's camera, so they look as intended from home and reveal their depth when you fly to them.
 - **Shooting stars and comets**: a shooting star every few seconds (now and then two together), starting anywhere and crossing in any direction: a hot blue-green head with a soft halo and a tapering tail that cools to orange, glows and flickers, and flares a little before it dies. Every minute or two a slow comet drifts across for about a minute: a bright nucleus in a green coma, a broad curved dust tail with faint rays and a straight blue ion tail streaming away. Only with Animations = All.
 - **Like a camera**: light is added up in high dynamic range and developed with a soft curve, a faint glow around bright things (bloom), a vignette and a fine dither against banding.
@@ -45,7 +45,7 @@ The whole app is one universe in real 3D, drawn by the graphics card (WebGL2) on
 - **The logo is the home button** (top left in UC3M).
 - The opening of home (the N drawing itself, NOLAN appearing) plays after the PIN and when the app starts.
 - **Log out** (Settings, red button): `Gate.lock()` forgets the device, puts the camera back in deep space and returns to home, so the next PIN lands at home.
-- With Animations = Basic or None there are no flights (the camera jumps) and the universe stands still. Quality = Low has no universe at all: a plain dark background.
+- With Animations = Basic or None there are no flights (the camera jumps) and the universe stands still. Quality = Medium has no universe: a still sky of simple stars (drawn once by `js/sky.js`, with a faint Milky Way band and faint clouds of gas). Quality = Low has no universe at all: a plain dark background.
 
 ## The astral theme
 
@@ -60,11 +60,11 @@ The whole site lives in the night sky:
 
 How much of it runs depends on Settings:
 
-| | Quality High | Quality Low |
-|---|---|---|
-| **Animations All** | everything | plain background, no glass or glows; ripple and bursts only |
-| **Animations Basic** | the sky stands still; no stardust, warp or shooting stars | plain and still |
-| **Animations None** | nothing moves | everything off |
+| | Quality High | Quality Medium | Quality Low |
+|---|---|---|---|
+| **Animations All** | everything | glass and glows over a still sky of simple stars; no galaxies, stardust, warp or shooting stars | plain background, no glass or glows; ripple and bursts only |
+| **Animations Basic** | the sky stands still; no stardust, warp or shooting stars | the same, still | plain and still |
+| **Animations None** | nothing moves | nothing moves | everything off |
 
 In code: `fullMotion()` for decorations that move, `lowMotion()` for any motion, `highQuality()` for heavy visuals, `fancy()` (both) for the showy extras.
 
@@ -83,7 +83,7 @@ The site is called **Nolan**. The logo is an astral N: four identical four-point
 | **Tasks** (`#tasks`) | Tasks per subject and general ones. Ticks are saved to the cloud. |
 | **Faculty** (`#faculty`) | Table with email and office. |
 | **Notes for Claude** (`#notes`, inside home) | Free text saved to the cloud. **Claude cannot read JSONBin**: to pass them on, press *Copy notes* and paste into the chat. |
-| **Settings** (`#settings`, inside home) | Language (Spanish / English), animations (all / basic / none) and quality (high / low). Saved on each device. Animations = None plus Quality = Low turns every effect off. There is only the dark look (the light theme was removed in v0.52). Changing any of them reloads the page through a passage: the screen dives into a tunnel of stars, the page reloads behind it and the new look fades in (`js/shift.js`; with Animations = None, only a soft fade). |
+| **Settings** (`#settings`, inside home) | Language (Spanish / English), animations (all / basic / none) and quality (high / medium / low). Saved on each device. Animations = None plus Quality = Low turns every effect off. There is only the dark look (the light theme was removed in v0.52). Changing any of them reloads the page through a passage: the screen dives into a tunnel of stars, the page reloads behind it and the new look fades in (`js/shift.js`; with Animations = None, only a soft fade). The passage only opens when the page is completely ready — the universe built and drawn (built at full speed while covered, without fading in), the saved data read, the font in, no opening animation — so nothing changes after it has opened (at most 9 s). |
 | **Nolan** (`#nolan`) | Under construction. |
 
 On mobile the tabs sit at the bottom and you can swipe between them.

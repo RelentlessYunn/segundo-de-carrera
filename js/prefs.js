@@ -6,7 +6,7 @@
    ========================================================== */
 const SETTINGS_KEY="settings";
 const SETTINGS_DEFAULTS={lang:"es",motion:"full",quality:"high"};
-const SETTINGS_OPTIONS={lang:["es","en"],motion:["full","basic","none"],quality:["high","low"]};
+const SETTINGS_OPTIONS={lang:["es","en"],motion:["full","basic","none"],quality:["high","medium","low"]};
 const SETTINGS=Object.assign({},SETTINGS_DEFAULTS,window.SETTINGS||{});
 Object.keys(SETTINGS_OPTIONS).forEach(k=>{ if(!SETTINGS_OPTIONS[k].includes(SETTINGS[k])) SETTINGS[k]=SETTINGS_DEFAULTS[k]; });
 
@@ -15,7 +15,8 @@ const systemReduced=()=>matchMedia("(prefers-reduced-motion:reduce)").matches;
 const lowMotion=()=>SETTINGS.motion==="none"||systemReduced();
 /* decorations too (stars, stardust, counters): only with "full" */
 const fullMotion=()=>SETTINGS.motion==="full"&&!systemReduced();
-/* high quality: the sea of stars, glass, glows. Low: plain background and nothing heavy */
+/* high quality: the 3D universe, glass, glows. Medium: the same look with a plain sky of
+   simple stars instead of the universe. Low: plain background and nothing heavy */
 const highQuality=()=>SETTINGS.quality==="high";
 /* the showy extras (stardust, warp, shooting stars) need both */
 const fancy=()=>fullMotion()&&highQuality();
