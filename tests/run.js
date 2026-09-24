@@ -14,8 +14,8 @@ const section=text=>console.log("\n"+text);
 
 /* opens the page at a given time (local time of this computer) */
 const DEVICE="f9d8f1cd96a7b5ffd4c1f01c7f5f0a7c00940726b33625b4755a1d4f25a91f20";
-async function open(b,{hash="",time="2026-09-21T13:06:00",mobile=false,clock="fixed",routes,before,settings,locked=false}={}){
-  const ctx=await b.newContext({viewport:mobile?{width:390,height:844}:{width:1280,height:900},hasTouch:mobile,isMobile:mobile});
+async function open(b,{hash="",time="2026-09-21T13:06:00",mobile=false,viewport,clock="fixed",routes,before,settings,locked=false}={}){
+  const ctx=await b.newContext({viewport:viewport||(mobile?{width:390,height:844}:{width:1280,height:900}),hasTouch:mobile,isMobile:mobile});
   const p=await ctx.newPage();
   p.errors=[];
   p.on("pageerror",e=>p.errors.push(e.message));
@@ -132,6 +132,19 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.tap("#portal .p-tool.gear-btn"); await p.waitForTimeout(400);
     ok(onTop&&await p.evaluate(()=>location.hash==="#settings"&&!document.getElementById("settings").hidden),
       "mobile: inside a galaxy, Notes and Settings can be tapped");
+    await p.context().close();
+  }
+  for(const [width,height] of [[390,844],[360,740],[744,1133]]){
+    /* on a phone the edge-on Sombrero is seen whole in its own scene, nearly edge-on and from
+       a little above, high on the screen: not a black bar of dust cut off by both edges */
+    const p=await open(b,{hash:"home",mobile:true,viewport:{width,height}});
+    await p.waitForFunction(()=>Universe.ready(),null,{timeout:20000}).catch(()=>{});
+    await p.click('.p-card[data-galaxy="sombrero"]');
+    await p.waitForFunction(()=>location.hash==="#soon/sombrero"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
+    await p.waitForTimeout(300);
+    const v=await p.evaluate(()=>Universe.gl()?Universe.view("sombrero"):{skip:1});
+    ok(!!v&&(v.skip||v.x0>=0&&v.x1<=v.W&&v.y0>=0&&v.cy<v.H*.35&&v.rise>2&&v.rise<10)&&!p.errors.length,
+      `mobile ${width}×${height}: the Sombrero is seen whole and edge-on in its own scene (${JSON.stringify(v)}) ${p.errors.join(" | ")}`);
     await p.context().close();
   }
   for(const mobile of [false,true]){

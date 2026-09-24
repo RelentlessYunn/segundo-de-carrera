@@ -71,6 +71,9 @@ const Universe=(function(){
      rot: vmax orbital speed (radians/s at the edge), ac core size, pat speed of the
        arms pattern (minus: the arms trail)
      stars: how many of each kind (before the budget) · gain: brightness of each part
+     whole (optional): on a narrow screen its own scene shows it whole and nearly edge-on
+       instead of close up from below (see camFor): rise radians above its disk plane,
+       span its half width (in R) that must fit the screen, y where its centre sits
      star: the colour of its bright star in the sky of stars (Effects = Medium; sky.js) */
   const GALAXIES={
     /* home: a golden barred spiral (like NGC 1300): a straight bar of old stars through the
@@ -114,6 +117,7 @@ const Universe=(function(){
       gain:{disk:.9, young:0, hii:0, dust:1, bulge:1, stars:1}},
     /* Sombrero: seen edge-on, a big bright bulge and a dark ring of dust */
     sombrero:{kind:"ring", star:"255,236,206", r:3.6, tilt:1.52, roll:.18, at:{d:[-.44,-.8],m:[.05,-.86]}, z:130, seed:53,
+      whole:{rise:.1, span:1.25, y:-.6},
       disk:{h:.34, rc:.2, ex1:1, ex2:1, twist:0, phi0:0, hz:.028, warp:.02, floc:.4,
             young:{h:.4,k:1}, hii:{c1:9,c2:10}, dust:{h:.5,k:1,lag:0}, ring:{a:.72,w:.085,light:.35,dust:3.2}},
       bulge:{I:.9, Rb:.3, n:3, q:[1,1,.8]},
@@ -209,9 +213,40 @@ const Universe=(function(){
     }
     if(s==="home"||!GALAXIES[s]||!world[s]) return {x:0,y:0,z:0};
     const w=world[s], r=w.R;
+    if(W<760&&w.g.whole) return wholeView(w,w.g.whole);
     /* close to the galaxy, a little off its centre: the core glows high on the right, over the header;
        on a phone the core sits nearer the middle so the galaxy stays in view */
     return W<760?{x:w.cx-r*.3, y:w.cy+r*1.1, z:w.cz-r*1.9}:{x:w.cx-r*.7, y:w.cy+r*.45, z:w.cz-r*1.9};
+  }
+  /* a galaxy that must be seen whole on a narrow screen (the edge-on Sombrero: close up from
+     below, as the others are framed, it overflows both edges and its dust ring becomes a black
+     bar across the header). The camera stands nearly in its disk plane, a little above it,
+     far enough back for the whole disk to fit the width, and turns (yaw, pitch; no roll) so
+     the galaxy sits high on the screen, over the header, like the others. */
+  function wholeView(w,v){
+    const c=[w.cx,w.cy,w.cz], n=unit([w.M[6],w.M[7],w.M[8]]);
+    /* towards home's camera, laid into the disk plane, then lifted by rise to the side that is
+       up on the screen: seen a little from above, the near side of the dust ring crosses the
+       lower half of the bulge, the brim under the crown, as in the real one */
+    const h=unit([-c[0],-c[1],-c[2]]), hn=h[0]*n[0]+h[1]*n[1]+h[2]*n[2], sd=n[1]<0?1:-1;   /* (y points down) */
+    const hp=unit([h[0]-n[0]*hn,h[1]-n[1]*hn,h[2]-n[2]*hn]), cr=Math.cos(v.rise), sr=Math.sin(v.rise)*sd;
+    const dir=[hp[0]*cr+n[0]*sr,hp[1]*cr+n[1]*sr,hp[2]*cr+n[2]*sr];
+    /* far enough for span·R to fill at most 44% of the width on each side, even on the side
+       nearer the camera (seen edge-on, a rim of radius r at distance D spans F·r/√(D²−r²)),
+       and sitting high on the screen (ty off the middle: everything there looks √(1+ty²) wider) */
+    const ty=v.y*(H/2)/F, q=F*Math.sqrt(1+ty*ty)/(W*.44), dist=Math.max(v.span*w.R*Math.sqrt(1+q*q),w.R*1.9);
+    const p=[c[0]+dir[0]*dist,c[1]+dir[1]*dist,c[2]+dir[2]*dist];
+    /* the turn that puts the galaxy's centre at (0, y) on the screen: with R = yaw·pitch (as in
+       orbit), camera coordinates (0, ty, 1)/L lie in world direction
+       (sin yaw·k, sin(a − pitch), cos yaw·k), with a = atan ty and k > 0 */
+    const g=[-dir[0],-dir[1],-dir[2]];
+    const yaw=Math.atan2(g[0],g[2]), pitch=Math.atan(ty)-Math.asin(Math.max(-1,Math.min(1,g[1])));
+    return {x:p[0],y:p[1],z:p[2],yaw,pitch};
+  }
+  /* the camera's axes (columns) for a yaw about the vertical and then a pitch about the horizontal */
+  function turn(yaw,pitch){
+    const cy=Math.cos(yaw), sy=Math.sin(yaw), cp=Math.cos(pitch), sp=Math.sin(pitch);
+    return [cy,0,-sy, sy*sp,cp,cy*sp, sy*cp,-sp,cy*cp];
   }
   function startScene(){
     if(root.hasAttribute("data-locked")) return "gate";
@@ -256,12 +291,33 @@ const Universe=(function(){
   function orbit(){
     const t=life, a=Math.min(1,life/10)*orbitK, sec=GALAXIES[orbitAt]||orbitAt==="blackhole"?1:0;
     if(orbitAt==="gate") return null;
+    /* a galaxy seen whole and edge-on (wholeView) is circled about its own axis, so the camera
+       stays close to its disk plane, and tipped only a little: it keeps its shape while its
+       depth still shows against the sky behind */
+    const wv=wholeAxis(orbitAt);
     const yaw=a*(sec?.15:.075)*(Math.sin(t*.052)*.8+Math.sin(t*.021+1.3)*.2)-ptr.x*.045*orbitK;
-    const pitch=a*(sec?.07:.04)*Math.sin(t*.039+.7)+ptr.y*.03*orbitK;
+    const pitch=(a*(sec?.07:.04)*Math.sin(t*.039+.7)+ptr.y*.03*orbitK)*(wv?.45:1);
     if(Math.abs(yaw)+Math.abs(pitch)<1e-6) return null;
-    const cy=Math.cos(yaw), sy=Math.sin(yaw), cp=Math.cos(pitch), sp=Math.sin(pitch);
+    const cp=Math.cos(pitch), sp=Math.sin(pitch);
+    if(wv){
+      /* R = turn about the galaxy's axis k (Rodrigues) · turn about the horizontal (pitch) */
+      const k=wv, c=Math.cos(yaw), s=Math.sin(yaw), C=1-c;
+      const A=[c+k[0]*k[0]*C, k[1]*k[0]*C+k[2]*s, k[2]*k[0]*C-k[1]*s,
+               k[0]*k[1]*C-k[2]*s, c+k[1]*k[1]*C, k[2]*k[1]*C+k[0]*s,
+               k[0]*k[2]*C+k[1]*s, k[1]*k[2]*C-k[0]*s, c+k[2]*k[2]*C];
+      return {R:mat3(A,[1,0,0, 0,cp,sp, 0,-sp,cp]), P:pivotFor(orbitAt)};
+    }
+    const cy=Math.cos(yaw), sy=Math.sin(yaw);
     /* R = turn about the vertical (yaw) · turn about the horizontal (pitch) */
     return {R:[cy,0,-sy, sy*sp,cp,cy*sp, sy*cp,-sp,cy*cp], P:pivotFor(orbitAt)};
+  }
+  /* the axis a whole-seen galaxy is circled about (its disk's normal, pointing up like the
+     vertical, so a turn goes the same way as for the others), or null */
+  function wholeAxis(s){
+    const w=world[s];
+    if(W>=760||!w||!w.g.whole) return null;
+    const n=unit([w.M[6],w.M[7],w.M[8]]);
+    return n[1]>0?n:n.map(x=>-x);
   }
   /* the camera floats: slow, never quite repeating */
   function float(){
@@ -1458,11 +1514,12 @@ void main(){
     if(!gl||lost||!ok) return;
     frameNo++;
     if(!queue.length&&Object.keys(G).length===IDS.length+COMPANIONS.length) settled++;
-    const f=float(); cam={x:base.x+f.x,y:base.y+f.y,z:base.z+f.z}; camR=[1,0,0, 0,1,0, 0,0,1];
+    const f=float(); cam={x:base.x+f.x,y:base.y+f.y,z:base.z+f.z};
+    camR=base.yaw||base.pitch?turn(base.yaw||0,base.pitch||0):[1,0,0, 0,1,0, 0,0,1];
     const o=orbit();
     if(o){
       const P=o.P, d=mul3(o.R,[cam.x-P[0],cam.y-P[1],cam.z-P[2]]);
-      cam={x:P[0]+d[0],y:P[1]+d[1],z:P[2]+d[2]}; camR=o.R;
+      cam={x:P[0]+d[0],y:P[1]+d[1],z:P[2]+d[2]}; camR=mat3(o.R,camR);
     }
     const VP=viewProj(cam,camR);
     /* where the camera was a moment ago, for the streaks */
@@ -1788,7 +1845,8 @@ void main(){
     const ease=replaced?easeOut:easeInOut;
     const me={also:onArrive?[onArrive]:[],cancels:onCancel?[onCancel]:[],step(now){
       const p=Math.min(1,(now-t0)/duration), e=ease(p), target=camFor(to);   /* the target follows a resize */
-      base={x:start.x+(target.x-start.x)*e, y:start.y+(target.y-start.y)*e, z:start.z+(target.z-start.z)*e};
+      base={x:start.x+(target.x-start.x)*e, y:start.y+(target.y-start.y)*e, z:start.z+(target.z-start.z)*e,
+        yaw:(start.yaw||0)+((target.yaw||0)-(start.yaw||0))*e, pitch:(start.pitch||0)+((target.pitch||0)-(start.pitch||0))*e};
       if(p>=arriveAt&&!reached){ reached=true; me.also.forEach(fn=>fn()); }
       if(p>=1&&anim===me) anim=null;
       /* while flying, the scattered stars shine more: that is where the sense of speed comes from */
@@ -1871,5 +1929,16 @@ void main(){
     /* shoot(): a shooting star and a comet right now (tests) */
     shoot:at=>{ newMeteor(clock()); newComet(clock(),at||0); need(); },
     /* band(): whether the band of our galaxy has been painted (tests) */
-    band:()=>!!band, GALAXIES, SIGHTS};
+    band:()=>!!band,
+    /* view(id): how a galaxy sits on the screen now (tests): the box of its disk's rim in css px,
+       where its centre is, and how far (degrees) the camera stands out of its disk plane */
+    view:id=>{
+      const w=world[id]; if(!ok||!w) return null;
+      const d=w.g.disk, rim=d?1.35:1, xs=[], ys=[];
+      for(let i=0;i<48;i++){ const a=i/48*TAU, q=onScreen([w.cx+w.M[0]*Math.cos(a)*rim+w.M[3]*Math.sin(a)*rim, w.cy+w.M[1]*Math.cos(a)*rim+w.M[4]*Math.sin(a)*rim, w.cz+w.M[2]*Math.cos(a)*rim+w.M[5]*Math.sin(a)*rim]);
+        if(!q) return null; xs.push(q[0]); ys.push(q[1]); }
+      const c=onScreen([w.cx,w.cy,w.cz]), l=mul3(w.Inv,[cam.x-w.cx,cam.y-w.cy,cam.z-w.cz]);
+      return {x0:Math.min(...xs),x1:Math.max(...xs),y0:Math.min(...ys),y1:Math.max(...ys),cx:c&&c[0],cy:c&&c[1],W,H,
+        rise:Math.asin(l[2]/Math.hypot(...l))*180/Math.PI};
+    }, GALAXIES, SIGHTS};
 })();
