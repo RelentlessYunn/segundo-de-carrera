@@ -342,6 +342,8 @@ uniform vec4 uLook;   /* px per world unit at depth 1, largest point, star gain,
 out vec3 vCol; out float vI;
 void main(){
   float a=aP0.x, kind=aP0.w, I=aP1.x, sizeW=0.;
+  /* a disk star's height is fixed, so its side is known before its orbit: the other pass skips it at once */
+  if(kind<2.5&&(aP0.z>=0.?1.:-1.)*(uCamL.z>=0.?1.:-1.)*uSide<0.){ gl_Position=vec4(2.,2.,2.,1.); gl_PointSize=0.; return; }
   float om=uRot.z*uRot.x*(1.-exp(-a/uRot.y))/max(a,.015)*aP1.y;
   float th=aP0.y+om*uT;
   vec3 pl;
@@ -392,7 +394,15 @@ uniform sampler2D uMap; uniform vec4 uMax; uniform float uB;
 uniform vec3 uCamL; uniform mat3 uRot;
 uniform vec2 uCss; uniform vec2 uRes; uniform float uScale; uniform float uF;
 uniform float uPat, uSide, uFade, uFrame, uSeed; uniform vec2 uSteps;
-uniform highp sampler3D uNoise;   /* 3D clouds, made once */
+uniform highp sampler3D uN4, uN8, uN16;   /* 3D clouds: the three grids of random values, made once */
+uniform vec3 uNz;         /* grid offset, low end, 1/range */
+/* one layer: the grid blended smoothly (s-curve) by the texture unit itself, sampling
+   between two grid values at the eased position: one read, not eight */
+float layer(highp sampler3D s,float c,vec3 q){
+  vec3 u=(q-uNz.x)*c, i=floor(u), f=fract(u);
+  return textureLod(s,(i+f*f*(3.-2.*f)+.5)/c,0.).r;
+}
+float clouds(vec3 q){ return clamp((layer(uN4,4.,q)+.5*layer(uN8,8.,q)+.25*layer(uN16,16.,q)-uNz.y)*uNz.z,0.,1.); }
 uniform vec2 uHalo;       /* stellar halo: brightness, size */
 uniform vec4 uZ;          /* thickness, has a disk, dust strength, disk gain */
 uniform vec3 uCOld, uCYoung, uCHii, uCCore;
@@ -403,8 +413,9 @@ uniform vec2 uDust;       /* -, dust thickness */
 uniform float uTexel, uPix; /* size of a map texel (disk units), of a pixel (radians) */
 /* the map at a point of the disk; lod: how blurred, from the size of a pixel there
    (given by hand: inside branches and loops the graphics card cannot work it out) */
+vec2 pat;                 /* cos and sin of the pattern's turn: once per pixel, not per sample */
 vec4 mapAt(vec2 xy,float foot){
-  float c=cos(uPat), s=sin(uPat); vec2 p=vec2(c*xy.x+s*xy.y,-s*xy.x+c*xy.y);
+  vec2 p=vec2(pat.x*xy.x+pat.y*xy.y,-pat.y*xy.x+pat.x*xy.y);
   vec2 uv=p/(2.*uB)+.5;
   if(uv.x<0.||uv.y<0.||uv.x>1.||uv.y>1.) return vec4(0.);
   vec4 m=textureLod(uMap,uv,max(0.,log2(foot/uTexel))); return m*m*uMax;
@@ -417,6 +428,7 @@ void main(){
   float jit=h12(gl_FragCoord.xy);                 /* a fixed dither: no flicker */
   vec3 col=vec3(0.); float T=1.;
   float Tb=1.;                                     /* what this half's dust lets through */
+  pat=vec2(cos(uPat),sin(uPat));
   if(uZ.y>.5){
     /* the disk is a real volume: old stars in a thick layer that flares towards the edge,
        young stars and pink regions in a thinner one, and dust in clouds with a 3D shape
@@ -435,10 +447,12 @@ void main(){
       float steep=smoothstep(.08,.45,mu), pw=mix(1.,2.2,steep);
       int N=int(mix(uSteps.y,uSteps.x,steep)+.5);
       float L=tb-ta; vec3 T=vec3(1.), acc=vec3(0.);
+      /* the samples' spacing, u → s: s0 is the previous step's s1, so each step needs two powers, not three */
+      float fN=float(N), s1=0.;
       for(int i=0;i<48;i++){ if(i>=N) break;
-        float fN=float(N), u0=float(i)/fN, u1=float(i+1)/fN, um=(float(i)+jit)/fN;
-        float s0=denseB>.5?1.-pow(1.-u0,pw):pow(u0,pw);
-        float s1=denseB>.5?1.-pow(1.-u1,pw):pow(u1,pw);
+        float u1=float(i+1)/fN, um=(float(i)+jit)/fN;
+        float s0=s1;
+        s1=denseB>.5?1.-pow(1.-u1,pw):pow(u1,pw);
         float sm=denseB>.5?1.-pow(1.-um,pw):pow(um,pw);
         float t=ta+L*sm, dt=L*(s1-s0);
         vec3 p=ro+rd*t;
@@ -446,11 +460,12 @@ void main(){
         vec4 m=mapAt(p.xy,max(t*uPix,dt*.3)+abs(p.z)*.35);        /* softer away from the middle */
         if(m.r+m.g+m.b+m.a<1e-4) continue;
         vec3 q=p*vec3(3.,3.,7.)+uSeed;
-        float n1=textureLod(uNoise,q,0.).r, n2=textureLod(uNoise,q*2.63+vec3(.31,.17,.53),0.).r;
+        float n1=clouds(q), n2=clouds(q*2.63+vec3(.31,.17,.53));
         float n=n1*.62+n2*.38;
         float hy=hz*.28*(1.+.4*r);
-        float co=cosh(p.z/(hz*fl)), cy=cosh(p.z/hy), cd=cosh(p.z/(hd*fl));
-        float so=1./(co*co*2.*hz*fl), sy=1./(cy*cy*2.*hy), sd=1./(cd*cd*2.*hd*fl);
+        /* the three layers' profiles, 1/cosh²(z/h) = 4e/(1+e)² with e=exp(-2|z|/h): one exponential each */
+        vec3 ez=exp(-2.*abs(p.z)/vec3(hz*fl,hy,hd*fl)), sech2=4.*ez/((1.+ez)*(1.+ez));
+        float so=sech2.x/(2.*hz*fl), sy=sech2.y/(2.*hy), sd=sech2.z/(2.*hd*fl);
         vec3 em=(m.r*uCOld*so*(.72+.56*n2)+(m.g*uGains.x*uCYoung+m.b*uGains.y*uCHii)*sy*(.3+1.4*n1))*uZ.w;
         /* dust: clouds (brownish at their thin edges: blue light is dimmed a little more) */
         float k=m.a*uZ.z*sd*(.12+2.4*n*n);
@@ -769,14 +784,19 @@ void main(){
     bloomA=target(bw,bh,fmt); bloomB=target(bw,bh,fmt);
   }
 
-  /* ---------- 3D clouds: a small cube of smooth noise that repeats, made once ----------
-     (three layers of smoothly blended random values, from coarse to fine) */
+  /* ---------- 3D clouds: smooth noise that repeats, made once ----------
+     (three layers of smoothly blended random values, from coarse to fine).
+     Only the three grids of random values go to the graphics card (4³, 8³ and 16³: a
+     few kilobytes, always at hand in its cache) and it blends them itself for every
+     sample: a 64³ cube of the finished noise was read all over at random by the rays
+     and cost most of the frame. Here the cube is only measured, for its range. */
   function buildNoise(S){
-    const r=rng(777), out=new Uint8Array(S*S*S), acc=new Float32Array(S*S*S);
+    const r=rng(777), acc=new Float32Array(S*S*S), lats=[];
     const fade=t=>t*t*(3-2*t);
     let amp=1, tot=0;
     for(const c of [4,8,16]){
       const lat=new Float32Array(c*c*c); for(let i=0;i<lat.length;i++) lat[i]=r();
+      lats.push({c,lat});
       const L=(x,y,z)=>lat[((z%c)*c+(y%c))*c+(x%c)];
       for(let z=0;z<S;z++){ const fz=z*c/S, z0=Math.floor(fz), wz=fade(fz-z0);
         for(let y=0;y<S;y++){ const fy=y*c/S, y0=Math.floor(fy), wy=fade(fy-y0);
@@ -790,15 +810,16 @@ void main(){
     }
     /* stretch the values over the whole range, so clouds have clear edges */
     let lo=1e9, hi=-1e9; for(const v of acc){ if(v<lo) lo=v; if(v>hi) hi=v; }
-    for(let i=0;i<acc.length;i++) out[i]=Math.round((acc[i]-lo)/(hi-lo)*255);
-    const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_3D,t);
-    gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);
-    gl.texImage3D(gl.TEXTURE_3D,0,gl.R8,S,S,S,0,gl.RED,gl.UNSIGNED_BYTE,out);
-    gl.pixelStorei(gl.UNPACK_ALIGNMENT,4);
-    gl.texParameteri(gl.TEXTURE_3D,gl.TEXTURE_MIN_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_3D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
-    [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T,gl.TEXTURE_WRAP_R].forEach(k=>gl.texParameteri(gl.TEXTURE_3D,k,gl.REPEAT));
+    const tex=lats.map(({c,lat})=>{
+      const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_3D,t);
+      gl.texImage3D(gl.TEXTURE_3D,0,gl.R16F,c,c,c,0,gl.RED,gl.FLOAT,lat);
+      gl.texParameteri(gl.TEXTURE_3D,gl.TEXTURE_MIN_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_3D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+      [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T,gl.TEXTURE_WRAP_R].forEach(k=>gl.texParameteri(gl.TEXTURE_3D,k,gl.REPEAT));
+      return t;
+    });
     gl.bindTexture(gl.TEXTURE_3D,null);
-    return t;
+    /* where the grids sit (the cube's texel centres) and how to stretch the sum over 0..1 */
+    return {tex,off:.5/S,lo,k:1/(hi-lo)};
   }
 
   /* ---------- the far sky: built once ---------- */
@@ -1105,7 +1126,8 @@ void main(){
       gl.uniform1f(u.uPat,pat); gl.uniform1f(u.uSide,side); gl.uniform1f(u.uFade,fade); gl.uniform1f(u.uFrame,frameNo%64);
       gl.uniform2f(u.uSteps,TIER.steps[0],TIER.steps[1]); gl.uniform1f(u.uSeed,(g.seed||1)*.173%1*9.);
       const hl=g.halo||{I:d?.07:.04,R:d?.34:.4}; gl.uniform2f(u.uHalo,hl.I,hl.R);
-      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_3D,noiseTex); gl.uniform1i(u.uNoise,1); gl.activeTexture(gl.TEXTURE0);
+      ["uN4","uN8","uN16"].forEach((k,j)=>{ gl.activeTexture(gl.TEXTURE1+j); gl.bindTexture(gl.TEXTURE_3D,noiseTex.tex[j]); gl.uniform1i(u[k],1+j); });
+      gl.activeTexture(gl.TEXTURE0); gl.uniform3f(u.uNz,noiseTex.off,noiseTex.lo,noiseTex.k);
       const b=g.bulge, n=b.n, bn=2*n-.327, reach=Math.min(1.6,b.Rb*Math.pow(1+Math.log(b.I/.0008)/bn,n));
       gl.uniform4f(u.uBul,b.I*(g.gain.bulge||1),b.Rb,n,reach); gl.uniform3f(u.uBQ,b.q[0],b.q[1],b.q[2]);
       gl.uniform3fv(u.uCCore,g.col.core);
@@ -1180,8 +1202,10 @@ void main(){
     skyEvents();
     const busy=!!anim||appearing()||meteors.length>0||!!comet;
     if(!busy&&!live&&!dirty) return;
-    /* life alone: every frame on a computer, about 30 a second on a phone (10 under automated tests) */
-    const every=robot?(anim?60:100):anim?0:phone?31:0;
+    /* life alone: about 60 a second on a computer (every frame of a 60 Hz screen, every other
+       one of a 120 or 144 Hz screen: the drift is far too slow to need more), about 30 on a
+       phone (10 under automated tests) */
+    const every=robot?(anim?60:100):anim?0:phone?31:13;
     if(busy||dirty||now-lastDraw>=every){
       dirty=false;
       render(boost);
