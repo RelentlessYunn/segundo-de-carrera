@@ -96,7 +96,8 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     ok(await p.evaluate(()=>!document.getElementById("portal").hidden),"the app starts at home");
     await p.waitForTimeout(3500); await p.click("#homeUc3m"); await p.waitForTimeout(1200);
     ok(await p.evaluate(()=>Universe.busy()&&Universe.scene()==="uc3m"),"UC3M: the camera flies to the UC3M galaxy");
-    await p.waitForTimeout(3200);
+    /* (a slow software graphics card can stretch the flight: wait for it to land, not a fixed time) */
+    await p.waitForFunction(()=>document.getElementById("portal").hidden&&!Universe.busy(),null,{timeout:10000}).catch(()=>{});
     ok(await p.evaluate(()=>document.getElementById("portal").hidden&&location.hash==="#schedule"&&!Universe.busy()&&Universe.scene()==="uc3m"),
       "…and lands on the timetable, inside that galaxy");
     await p.click('header a[href="#notes"]'); await p.waitForTimeout(600);
@@ -133,8 +134,16 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
   for(const mobile of [false,true]){
     const p=await open(b,{hash:"home",mobile});
     await p.waitForFunction(()=>Universe.ready(),null,{timeout:20000}).catch(()=>{});
-    const s=await p.evaluate(()=>Universe.gl()?Universe.sights():{bh:true,qso:true});
-    ok(s.bh&&s.qso&&!p.errors.length,`${mobile?"mobile":"desktop"}: the black hole and the quasar are in the sky of home ${p.errors.join(" | ")}`);
+    const seen=await p.evaluate(()=>!Universe.gl()||Universe.hole());
+    ok(seen&&!p.errors.length,`${mobile?"mobile":"desktop"}: the black hole is in the sky of home ${p.errors.join(" | ")}`);
+    /* its own window: the camera flies up close, the text sits below it */
+    await p.click('.p-card[data-galaxy="blackhole"]');
+    await p.waitForFunction(()=>location.hash==="#blackhole"&&!Universe.busy(),null,{timeout:12000}).catch(()=>{});
+    const r=await p.evaluate(()=>({scene:Universe.scene(),hash:location.hash,view:!document.getElementById("holeView").hidden,
+      top:getComputedStyle(document.querySelector("#portal .p-top")).display,seen:!Universe.gl()||Universe.hole()}));
+    ok(r.scene==="blackhole"&&r.hash==="#blackhole"&&r.view&&r.top==="none"&&r.seen,`${mobile?"mobile":"desktop"}: the black hole card flies up close to it (${JSON.stringify(r)})`);
+    await p.click("#holeView .p-back"); await p.waitForTimeout(3200);
+    ok(await p.evaluate(()=>Universe.scene()==="home"&&location.hash==="#home"),`${mobile?"mobile":"desktop"}: and back home`);
     await p.context().close();
   }
 
@@ -238,7 +247,7 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     ok(await p.evaluate(()=>!document.getElementById("settings").hidden&&document.querySelectorAll("#settingsList .seg").length===3&&!document.querySelector(".seg[data-key=theme]")),"#settings shows language, animations and quality (no light theme any more)");
     const nav=p.waitForEvent("framenavigated");
     await p.click('.seg[data-key=lang] button[data-value=en]'); await p.waitForTimeout(250);
-    ok(await p.evaluate(()=>document.getElementById("shift").classList.contains("on")&&/idioma/i.test(document.querySelector(".shift-msg").textContent)),"changing a setting dives into the passage before reloading");
+    ok(await p.evaluate(()=>document.getElementById("shift").classList.contains("on")&&!document.querySelector("#shift canvas")),"changing a setting fades softly before reloading (no tunnel of stars)");
     await nav; await p.waitForLoadState("domcontentloaded");
     ok(await p.evaluate(()=>document.documentElement.classList.contains("shifting")||document.getElementById("shift").classList.contains("on")),"after reloading, the passage still covers the page");
     await p.waitForLoadState("load");

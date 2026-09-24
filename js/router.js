@@ -1,7 +1,7 @@
 /* ==========================================================
    router.js — routes and tabs.
    · #schedule, #subjects, #exams, #tasks, #faculty: UC3M tabs
-   · #home, #notes, #settings and #nolan (or #nolan/…): the home screen
+   · #home, #notes, #settings, #blackhole and #nolan (or #nolan/…): the home screen
      and its pages (home.js); an
      address without a route (the app's start) also opens home
    · #debug: debug panel (debug.js); it does not change tab
@@ -70,7 +70,7 @@ const Router=(function(){
   }
 
   /* ---------- routes ---------- */
-  const isHome=r=>r==="home"||r==="notes"||r==="settings"||r==="nolan"||r.startsWith("nolan/")||r.startsWith("soon/");
+  const isHome=r=>r==="home"||r==="notes"||r==="settings"||r==="blackhole"||r==="nolan"||r.startsWith("nolan/")||r.startsWith("soon/");
   function handle(){
     let r=decodeURIComponent(location.hash.slice(1));
     if(r.includes("debug")) return;                    /* handled by debug.js */

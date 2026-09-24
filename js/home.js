@@ -31,7 +31,7 @@ const Home=(function(){
   const PAGES=["notes","settings"];
   const SOON_NAMES={andromeda:"Andrómeda",sombrero:"Sombrero"};   /* the galaxies kept for what comes next */
   const here=()=>{ const s=Universe.scene(); return !s||s==="gate"?"home":s; };
-  const sceneOf=(view,sub)=>PAGES.includes(view)?here():view==="nolan"?"forge":view==="soon"?(Object.prototype.hasOwnProperty.call(SOON_NAMES,sub)?sub:"home"):"home";
+  const sceneOf=(view,sub)=>PAGES.includes(view)?here():view==="nolan"?"forge":view==="blackhole"?"blackhole":view==="soon"?(Object.prototype.hasOwnProperty.call(SOON_NAMES,sub)?sub:"home"):"home";
   let current="home";                                  /* the scene of what home shows now */
   let lastView="home";                                 /* the last view of home that is not Notes or Settings */
   function renderSoon(id){

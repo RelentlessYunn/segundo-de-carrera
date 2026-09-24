@@ -32,26 +32,26 @@
 <!-- the font does not block the first paint: it applies as soon as it arrives -->
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
-<link rel="stylesheet" href="css/base.css?v=0.59">
-<link rel="stylesheet" href="css/sky.css?v=0.59">
-<link rel="stylesheet" href="css/header.css?v=0.59">
-<link rel="stylesheet" href="css/tabbar.css?v=0.59">
-<link rel="stylesheet" href="css/today.css?v=0.59">
-<link rel="stylesheet" href="css/schedule.css?v=0.59">
-<link rel="stylesheet" href="css/planner.css?v=0.59">
-<link rel="stylesheet" href="css/subjects.css?v=0.59">
-<link rel="stylesheet" href="css/exams.css?v=0.59">
-<link rel="stylesheet" href="css/tasks.css?v=0.59">
-<link rel="stylesheet" href="css/home.css?v=0.59">
-<link rel="stylesheet" href="css/nolan.css?v=0.59">
-<link rel="stylesheet" href="css/settings.css?v=0.59">
-<link rel="stylesheet" href="css/effects.css?v=0.59">
-<link rel="stylesheet" href="css/astral.css?v=0.59">
-<link rel="stylesheet" href="css/cinema.css?v=0.59">
+<link rel="stylesheet" href="css/base.css?v=0.60">
+<link rel="stylesheet" href="css/sky.css?v=0.60">
+<link rel="stylesheet" href="css/header.css?v=0.60">
+<link rel="stylesheet" href="css/tabbar.css?v=0.60">
+<link rel="stylesheet" href="css/today.css?v=0.60">
+<link rel="stylesheet" href="css/schedule.css?v=0.60">
+<link rel="stylesheet" href="css/planner.css?v=0.60">
+<link rel="stylesheet" href="css/subjects.css?v=0.60">
+<link rel="stylesheet" href="css/exams.css?v=0.60">
+<link rel="stylesheet" href="css/tasks.css?v=0.60">
+<link rel="stylesheet" href="css/home.css?v=0.60">
+<link rel="stylesheet" href="css/nolan.css?v=0.60">
+<link rel="stylesheet" href="css/settings.css?v=0.60">
+<link rel="stylesheet" href="css/effects.css?v=0.60">
+<link rel="stylesheet" href="css/astral.css?v=0.60">
+<link rel="stylesheet" href="css/cinema.css?v=0.60">
 </head>
 <body>
 <!-- the passage between two looks, when a setting reloads the page (js/shift.js) -->
-<div id="shift" aria-hidden="true"><canvas></canvas><p class="shift-msg"></p></div>
+<div id="shift" aria-hidden="true"></div>
 <!-- the sea of stars behind the page (sky.js draws it) -->
 <div id="sky" aria-hidden="true">
   <div class="sky-par" data-depth=".03" data-tile="520"><i class="sky-layer l-dust"></i></div>
@@ -253,7 +253,7 @@
 
 </main>
 
-<footer><div class="wrap"><p class="version">v0.59</p></div></footer>
+<footer><div class="wrap"><p class="version">v0.60</p></div></footer>
 </div>
 <div id="debug"></div>
 
@@ -318,11 +318,22 @@
           <span class="p-info"><span data-i18n="s.soonInfo">Una galaxia reservada para lo que venga.</span></span>
           <span class="p-go"><span data-i18n="s.view">Ver</span> <em>→</em></span>
         </a>
+        <a class="p-card hole" href="#blackhole" data-galaxy="blackhole" style="--ac:#FFB36B">
+          <span class="p-ic"><svg class="i-hole" viewBox="0 0 48 48" aria-hidden="true"><ellipse class="disk" cx="24" cy="25" rx="21" ry="5.5"/><path class="arc" d="M11.5 23.5a12.5 12.5 0 0 1 25 0"/><circle class="shadow" cx="24" cy="24" r="8.2"/><path class="front" d="M3.4 25.8C9 29 39 29 44.6 25.8"/></svg></span>
+          <span class="p-txt"><b data-i18n="s.hole">Agujero negro</b><span class="soon-tag hole-tag" data-i18n="s.holeTag">De cerca</span></span>
+          <span class="p-info"><span data-i18n="s.holeInfo">Acércate al horizonte de sucesos.</span></span>
+          <span class="p-go"><span data-i18n="s.view">Ver</span> <em>→</em></span>
+        </a>
       </div>
     </div>
 
     <div class="p-view p-nolan" data-view="nolan" id="nolanView" hidden></div>
     <div class="p-view p-nolan p-soon" data-view="soon" id="soonView" hidden></div>
+    <div class="p-view p-hole" data-view="blackhole" id="holeView" hidden>
+      <h2 data-i18n="s.hole">Agujero negro</h2>
+      <p data-i18n="hole.text">Aquí la luz se curva: el arco que ves sobre la sombra es la parte de atrás del disco, doblada hacia ti. El lado que gira hacia ti brilla más.</p>
+      <a class="p-back" href="#home" data-i18n="nolan.back">← Volver al inicio</a>
+    </div>
     <div class="p-view p-page" data-view="notes" id="notes" hidden>
       <a class="p-back p-back-top" href="#home" data-i18n="s.back">← Volver</a>
       <div class="shead"><h2 data-i18n="s.notes.title">Notas para Claude</h2><p data-i18n-html="s.notes.lead">Texto plano que se guarda solo. Claude no puede abrir la nube por su cuenta: cuando quieras que aplique algo, pulsa <b>Copiar notas</b> y pégaselas en el chat.</p></div>
@@ -337,35 +348,35 @@
     </div>
   </div>
 </div>
-<script src="config.js?v=0.59" onerror="void 0"></script>
-<script src="data.js?v=0.59"></script>
-<script src="eval.js?v=0.59"></script>
-<script src="js/prefs.js?v=0.59"></script>
-<script src="js/i18n.js?v=0.59"></script>
-<script src="js/core.js?v=0.59"></script>
-<script src="js/shift.js?v=0.59"></script>
-<script src="js/gate.js?v=0.59"></script>
-<script src="js/universe.js?v=0.59"></script>
-<script src="js/sky.js?v=0.59"></script>
-<script src="js/validate.js?v=0.59"></script>
-<script src="js/derived.js?v=0.59"></script>
-<script src="js/cloud.js?v=0.59"></script>
-<script src="js/header.js?v=0.59"></script>
-<script src="js/astro.js?v=0.59"></script>
-<script src="js/weather.js?v=0.59"></script>
-<script src="js/schedule.js?v=0.59"></script>
-<script src="js/today.js?v=0.59"></script>
-<script src="js/subjects.js?v=0.59"></script>
-<script src="js/faculty.js?v=0.59"></script>
-<script src="js/exams.js?v=0.59"></script>
-<script src="js/tasks.js?v=0.59"></script>
-<script src="js/notes.js?v=0.59"></script>
-<script src="js/planner.js?v=0.59"></script>
-<script src="js/settings.js?v=0.59"></script>
-<script src="js/nolan.js?v=0.59"></script>
-<script src="js/home.js?v=0.59"></script>
-<script src="js/router.js?v=0.59"></script>
-<script src="js/debug.js?v=0.59"></script>
-<script src="js/effects.js?v=0.59"></script>
+<script src="config.js?v=0.60" onerror="void 0"></script>
+<script src="data.js?v=0.60"></script>
+<script src="eval.js?v=0.60"></script>
+<script src="js/prefs.js?v=0.60"></script>
+<script src="js/i18n.js?v=0.60"></script>
+<script src="js/core.js?v=0.60"></script>
+<script src="js/shift.js?v=0.60"></script>
+<script src="js/gate.js?v=0.60"></script>
+<script src="js/universe.js?v=0.60"></script>
+<script src="js/sky.js?v=0.60"></script>
+<script src="js/validate.js?v=0.60"></script>
+<script src="js/derived.js?v=0.60"></script>
+<script src="js/cloud.js?v=0.60"></script>
+<script src="js/header.js?v=0.60"></script>
+<script src="js/astro.js?v=0.60"></script>
+<script src="js/weather.js?v=0.60"></script>
+<script src="js/schedule.js?v=0.60"></script>
+<script src="js/today.js?v=0.60"></script>
+<script src="js/subjects.js?v=0.60"></script>
+<script src="js/faculty.js?v=0.60"></script>
+<script src="js/exams.js?v=0.60"></script>
+<script src="js/tasks.js?v=0.60"></script>
+<script src="js/notes.js?v=0.60"></script>
+<script src="js/planner.js?v=0.60"></script>
+<script src="js/settings.js?v=0.60"></script>
+<script src="js/nolan.js?v=0.60"></script>
+<script src="js/home.js?v=0.60"></script>
+<script src="js/router.js?v=0.60"></script>
+<script src="js/debug.js?v=0.60"></script>
+<script src="js/effects.js?v=0.60"></script>
 </body>
 </html>

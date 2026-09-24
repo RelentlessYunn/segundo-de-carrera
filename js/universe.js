@@ -25,7 +25,7 @@
    · The far sky: thousands of stars, a faint nebula (painted once on the
      graphics card), dozens of tiny far galaxies, stars scattered through
      space that stretch into streaks when the camera flies, shooting stars
-     and now and then a slow comet with its two tails.
+     and comets with their two tails, sometimes several at once.
    · The camera floats and slowly turns around what it looks at (and, with a
      mouse, leans a little towards the pointer), so every galaxy is seen from
      changing angles and near things move against far ones: the depth shows.
@@ -124,14 +124,13 @@ const Universe=(function(){
       bulge:{I:.12,Rb:.45,n:1.6,q:[1,.6,.55]}, col:{old:[1,.9,.76],core:[1,.9,.78]}, rot:{vmax:.006,ac:.3,pat:0}, stars:{bulge:2600}, gain:{bulge:.8,stars:1}}
   ];
   const IDS=Object.keys(GALAXIES);
-  /* a black hole and a quasar, seen from home (at and z as for the galaxies; not scenes).
-     bh: R radius of its shadow; its disk is seen from home a little from above (open: radians
-       out of edge-on) and turned roll on the screen
-     qso: L length of each jet, jet their direction */
+  /* the black hole, seen from home (at and z as for the galaxies) and a scene of its own
+     ("blackhole": the camera flies straight up to it). R radius of its shadow; its disk leans
+     open radians out of edge-on and turns roll on the screen, so it is seen a little from above
+     both from home and up close */
   const unit=v=>{ const l=Math.hypot(...v); return v.map(x=>x/l); };
   const SIGHTS={
-    bh:{at:{d:[-.37,-.3],m:[.62,-.62]}, z:90, R:2, open:.14, roll:-.12},
-    qso:{at:{d:[-.86,-.2],m:[-.8,-.92]}, z:620, L:34, jet:unit([.42,-.82,.38])}};
+    bh:{at:{d:[-.37,-.3],m:[-.5,-.06]}, z:90, R:2.4, open:.25, roll:-.1}};
 
   /* ---------- the camera and the scenes ---------- */
   let W=0,H=0,F=1;                   /* css px, focal length in px */
@@ -154,10 +153,8 @@ const Universe=(function(){
       world[c.id]=frame(c,h.cx+o[0],h.cy+o[1],h.cz+o[2],h.R*c.size,c.tilt,c.roll);
     });
     Object.values(SIGHTS).forEach(s=>{ const at=small?s.at.m:s.at.d; s.p=[at[0]*(W/2)/F*s.z, at[1]*(H/2)/F*s.z, s.z]; });
-    /* the black hole's axis, from the line of sight from home (not the screen's centre: it sits off it) */
-    const bh=SIGHTS.bh, v=unit(bh.p), up=[Math.sin(bh.roll),-Math.cos(bh.roll),0], k=up[0]*v[0]+up[1]*v[1]+up[2]*v[2];
-    const u0=unit([up[0]-k*v[0],up[1]-k*v[1],up[2]-k*v[2]]);
-    bh.n=u0.map((x,i)=>x*Math.cos(bh.open)-v[i]*Math.sin(bh.open));
+    const bh=SIGHTS.bh, co=Math.cos(bh.open), so=Math.sin(bh.open);
+    bh.n=unit([co*Math.sin(bh.roll),-co*Math.cos(bh.roll),-so]);
   }
   /* a galaxy's frame: local (u,v,w) → world = centre + R · aim · roll · tilt · (u,v,w).
      tilt and roll say how it looks seen from home; "aim" turns it towards home's
@@ -191,6 +188,11 @@ const Universe=(function(){
 
   function camFor(s){
     if(s==="gate") return {x:0,y:0,z:-430};
+    if(s==="blackhole"&&SIGHTS.bh.p){
+      /* straight in front of it, so it sits in the middle of the screen (the text sits below) */
+      const b=SIGHTS.bh, d=b.R*(W<760?6.5:8.5);
+      return {x:b.p[0], y:b.p[1], z:b.p[2]-d};
+    }
     if(s==="home"||!GALAXIES[s]||!world[s]) return {x:0,y:0,z:0};
     const w=world[s], r=w.R;
     /* close to the galaxy, a little off its centre: the core glows high on the right, over the header;
@@ -200,6 +202,7 @@ const Universe=(function(){
   function startScene(){
     if(root.hasAttribute("data-locked")) return "gate";
     const h=location.hash.slice(1);
+    if(/^blackhole/.test(h)) return "blackhole";
     return !h||/^(home|notes|settings|nolan|soon|inicio|notas|ajustes|configuracion)/.test(h)?"home":"uc3m";
   }
 
@@ -208,7 +211,8 @@ const Universe=(function(){
   let scrolledAt=0;
   /* the passage of shift.js covers the whole screen (fully opaque): nothing here can be seen */
   const hidden=()=>root.classList.contains("shift-dark");
-  window.addEventListener("scroll",()=>{ scrolledAt=performance.now(); },{passive:true,capture:true});
+  let scrollEnd=0;
+  window.addEventListener("scroll",()=>{ scrolledAt=performance.now(); clearTimeout(scrollEnd); scrollEnd=setTimeout(()=>kick(),280); },{passive:true,capture:true});
   /* (automated tests: no life, so their fake clocks never have to draw thousands of frames) */
   const alive=()=>!robot&&fancy()&&!document.hidden&&!hidden()&&!document.body.classList.contains("idle")&&performance.now()-scrolledAt>250;
   /* the camera turns slowly around what it looks at, so the galaxies are seen from
@@ -232,10 +236,11 @@ const Universe=(function(){
   }
   function pivotFor(s){
     if(GALAXIES[s]&&world[s]) return [world[s].cx,world[s].cy,world[s].cz];
+    if(s==="blackhole"&&SIGHTS.bh.p) return SIGHTS.bh.p;
     return [base.x,base.y,base.z+80];
   }
   function orbit(){
-    const t=life, a=Math.min(1,life/10)*orbitK, sec=GALAXIES[orbitAt]?1:0;
+    const t=life, a=Math.min(1,life/10)*orbitK, sec=GALAXIES[orbitAt]||orbitAt==="blackhole"?1:0;
     if(orbitAt==="gate") return null;
     const yaw=a*(sec?.15:.075)*(Math.sin(t*.052)*.8+Math.sin(t*.021+1.3)*.2)-ptr.x*.045*orbitK;
     const pitch=a*(sec?.07:.04)*Math.sin(t*.039+.7)+ptr.y*.03*orbitK;
@@ -398,7 +403,9 @@ void main(){
     s=clamp(1.25+1.5*sqrt(flux),1.25,min(5.5,uLook.y));
     peak=flux*2.2/(s*s);
   }
-  gl_PointSize=s; vCol=aCol.rgb; vI=peak*uFade;
+  /* capped: close up a star's value could overflow the half-float picture on a phone's graphics card, and
+     infinity times the dust in front (0) is NaN, which shows black (the edge-on Sombrero, first of all) */
+  gl_PointSize=s; vCol=aCol.rgb; vI=min(peak,250.)*uFade;
 }`;
   const PART_FS=HEAD+`in vec3 vCol; in float vI; out vec4 o;
 void main(){ vec2 d=gl_PointCoord*2.-1.; float r2=dot(d,d); if(r2>1.) discard; o=vec4(vCol*vI*exp(-r2*4.),0.); }`;
@@ -456,7 +463,7 @@ void main(){
     float hz=uZ.x, hd=uDust.y, mu=abs(rd.z), Hs=hz*9.;
     float sg=camSide*uSide;                               /* this half: z has this sign */
     float zlo=sg>0.?0.:-Hs, zhi=sg>0.?Hs:0.;
-    vec3 inv=1./(rd+vec3(1e-7));
+    vec3 inv=1./mix(rd,vec3(1e-6),lessThan(abs(rd),vec3(1e-6)));   /* never 1/0 along the disk */
     vec3 t0s=(vec3(-uB,-uB,zlo)-ro)*inv, t1s=(vec3(uB,uB,zhi)-ro)*inv;
     vec3 tn=min(t0s,t1s), tx=max(t0s,t1s);
     float ta=max(max(tn.x,tn.y),max(tn.z,0.)), tb=min(min(tx.x,tx.y),tx.z);
@@ -519,7 +526,7 @@ void main(){
       col+=(uCCore*uBul.x*acc+uCOld*uHalo.x*hal)*(uSide<0.?Tb:1.);
     }
   }
-  o=vec4(col,1.-Tb)*uFade;
+  o=vec4(clamp(col,0.,3e3),clamp(1.-Tb,0.,1.))*uFade;              /* always finite (see the stars) */
 }`;
 
   /* --- far stars: fixed on the sky (infinitely far), a few twinkle slowly --- */
@@ -614,7 +621,7 @@ void main(){
   const FIELD_FS=HEAD+`in vec2 vQ; in float vLen, vW, vI; out vec4 o;
 void main(){ float u=vQ.x, v=vQ.y; float d=length(vec2(max(0.,max(-u,u-vLen)),v))/vW; o=vec4(vec3(.9,.93,1.)*vI*exp(-d*d*3.2),0.); }`;
 
-  /* --- shooting stars and the comet: drawn on the screen, over everything --- */
+  /* --- shooting stars and comets: drawn on the screen, over everything --- */
   const MET_VS=HEAD+`
 layout(location=0) in vec4 aA;   /* start x,y (css px), speed x,y (px/s) */
 layout(location=1) in vec4 aB;   /* start time, duration, tail length, brightness */
@@ -624,7 +631,7 @@ void main(){
   float age=uNow-aB.x, k=age/aB.y;
   if(age<0.||k>1.){ gl_Position=vec4(2.,2.,2.,1.); return; }
   /* it lights up fast, burns, flares a little and dies away */
-  float env=smoothstep(0.,.1,k)*(1.-smoothstep(.72,1.,k))*(1.+.35*exp(-pow((k-.62)/.08,2.)));
+  float env=smoothstep(0.,.22,k)*(1.-smoothstep(.58,1.,k))*(1.+.3*exp(-pow((k-.5)/.09,2.)));
   vec2 v=aA.zw, dir=normalize(v), nrm=vec2(-dir.y,dir.x), head=aA.xy+v*age;
   /* the tail grows as it enters the air and stays behind the head */
   float len=aB.z*(.25+.75*smoothstep(0.,.3,k)), G=14.+10.*aB.w;
@@ -683,32 +690,6 @@ void main(){
   o=vec4(c*uA,0.);
 }`;
 
-  /* --- the quasar: a blazing point with two thin jets; the one coming towards us is brighter,
-     knots of matter run out along them and they end in soft lobes --- */
-  const QSO_VS=HEAD+`uniform vec2 uCss, uHead, uDir; uniform float uLen, uCore; out vec2 vQ;
-void main(){
-  vec2 c=vec2(float(gl_VertexID&1),float(gl_VertexID>>1));
-  float hw=max(uCore*16.,uLen*.32), hl=uLen*1.2+hw;
-  vec2 nrm=vec2(-uDir.y,uDir.x);
-  float u=(c.x*2.-1.)*hl, v=(c.y*2.-1.)*hw;
-  vec2 p=uHead+uDir*u+nrm*v;
-  gl_Position=vec4(p.x/uCss.x*2.-1.,1.-p.y/uCss.y*2.,0.,1.);
-  vQ=vec2(u,v);
-}`;
-  const QSO_FS=HEAD+`in vec2 vQ; out vec4 o; uniform float uLen, uCore, uT, uA, uFlick;
-void main(){
-  float u=vQ.x, v=vQ.y, r=length(vQ), c=uCore;
-  float core=exp(-r*r/(c*c))*9.+exp(-r/(c*1.6))*1.1+exp(-r/(c*6.))*.16;
-  float au=abs(u)/uLen, w=c*.3+abs(u)*.045;
-  float jet=exp(-v*v/(w*w))*smoothstep(0.,.08,au)*(1.-smoothstep(.72,1.05,au))*(.35+.65*exp(-au*1.4));
-  float knots=.55+.9*pow(.5+.5*sin(au*26.-uT*.9+(u<0.?1.7:0.)),6.);
-  float lobe=exp(-pow((au-1.02)/.13,2.)-v*v/(uLen*uLen*.018))*.32;
-  float side=u>0.?1.:.35;
-  vec3 col=vec3(.78,.87,1.)*core*uFlick+vec3(.46,.56,1.)*(jet*knots+lobe)*side
-          +vec3(1.,.8,.6)*exp(-r*r/(c*c*30.))*.05;          /* its host galaxy, lost in the glare */
-  o=vec4(col*uA,0.);
-}`;
-
   /* --- the glow around bright things, and developing the picture --- */
   const BRIGHT_FS=HEAD+`in vec2 vUv; out vec4 o; uniform sampler2D uTex; uniform vec2 uTexel; uniform float uThr;
 void main(){ vec3 c=vec3(0.);
@@ -725,46 +706,61 @@ void main(){ vec3 c=texture(uTex,vUv).rgb*.227;
 void main(){ o=texture(uTex,gl_FragCoord.xy*uK); }`;
   /* the black hole lives here, in the last step: it bends the light of everything behind it.
      Seen from a little above its disk: the near half of the disk crosses in front of the
-     shadow, the far half is bent up over the top of it (and a thin image under it), the side
-     turning towards us is brighter, and a thin ring of light that went round it hugs the shadow */
+     shadow, the far half is bent up over the top of it (and a thin image under it), and two
+     thin rings of light that went round it hug the shadow. The side of the disk turning
+     towards us is brighter and bluer, the other side dimmer and redder, and the gas right at
+     the inner edge is dimmed and reddened by the pull of the hole itself */
   const COMP_FS=HEAD+NOISE+`in vec2 vUv; out vec4 o;
 uniform sampler2D uHdr, uBloom; uniform float uExp, uBloomK, uTime, uOutK; uniform vec2 uRes;
 uniform vec4 uBH;         /* centre (px of the picture), radius of the shadow (px), strength (0: none) */
 uniform vec4 uBHd;        /* far side of the disk on the screen (unit), how open it is seen (cos), time */
 float h(vec2 p){ vec3 p3=fract(vec3(p.xyx)*.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
-vec3 diskCol(float rho){ return mix(vec3(1.,.48,.2),vec3(1.,.93,.82),smoothstep(3.2,1.3,rho)); }
-float diskI(float rho){ return pow(1.3/rho,2.3)*smoothstep(1.2,1.45,rho)*(1.-smoothstep(3.4,4.8,rho)); }
+float diskI(float rho){ return pow(1.3/rho,2.3)*smoothstep(1.2,1.45,rho)*(1.-smoothstep(3.6,5.2,rho)); }
+/* the colour of the gas: hotter inside; shifted by its motion towards or away from us (g) and by the hole's pull */
+vec3 diskCol(float rho,float g){
+  vec3 c=mix(vec3(1.,.46,.18),vec3(1.,.92,.8),smoothstep(3.4,1.3,rho));
+  c=mix(c,vec3(.8,.88,1.),clamp((g-1.)*1.1,0.,.55));
+  c=mix(c,c*vec3(1.,.5,.3),clamp((1.-g)*1.8,0.,.75));
+  return c*sqrt(max(0.,1.-.8/rho))*1.25;
+}
 /* the gas turns faster inside than outside; two phases blended, so it swirls for ever without winding up */
-float swirl(vec2 p,float rho){
+float swirl(vec2 p,float rho,int oc){
   float w=1.6/pow(rho,1.5), ph=fract(uBHd.w*.04), f=abs(ph*2.-1.);
   float a1=w*ph*8., a2=w*fract(ph+.5)*8.;
   vec2 q1=mat2(cos(a1),sin(a1),-sin(a1),cos(a1))*p, q2=mat2(cos(a2),sin(a2),-sin(a2),cos(a2))*p;
-  float n=mix(fbm(q1*2.4+vec2(0.,rho*.8),3),fbm(q2*2.4+vec2(5.3,rho*.8),3),1.-f);
-  return .35+1.1*n*n*1.6;
+  float n=mix(fbm(q1*2.4+vec2(0.,rho*.8),oc),fbm(q2*2.4+vec2(5.3,rho*.8),oc),1.-f);
+  float lanes=.86+.14*sin(rho*17.+n*11.+fbm(p*.7,2)*6.);  /* fine, uneven streaks along the orbits */
+  return (.3+1.9*n*n)*lanes;
 }
+/* how much brighter the gas looks for coming towards us: g³ */
+float beam(float xr,float rho,float si){ float g=1./max(.3,1.+.58/sqrt(max(rho,1.))*si*xr); return g; }
 void main(){
   vec2 uv=vUv; vec3 add=vec3(0.); float hole=0.;
   if(uBH.w>0.){
     vec2 d=gl_FragCoord.xy-uBH.xy; float r=length(d)/uBH.z;
     if(r<16.){
+      int oc=uBH.z>50.?4:3;                              /* up close: finer detail */
       /* a point lens: what is seen here comes from further out (inside the ring, from the other side) */
       float k=2.9/max(r*r,.3)*(1.-smoothstep(9.,16.,r))*uBH.w;
       uv=(uBH.xy+d*(1.-k))/uRes;
-      hole=(1.-smoothstep(.97,1.03,r))*uBH.w;
+      hole=(1.-smoothstep(.975,1.02,r))*uBH.w;
       vec2 Fd=uBHd.xy, Md=vec2(-Fd.y,Fd.x);
       float x=dot(d,Md)/uBH.z, y=dot(d,Fd)/uBH.z, s=max(uBHd.z,.06), si=sqrt(1.-s*s);
       /* the disk itself: its far half hides behind the shadow */
       vec2 X=vec2(x,y/s); float rho=max(length(X),1e-3);
-      float dop=1./max(.3,1.+.55/sqrt(max(rho,1.))*si*X.x/rho);
-      vec3 direct=diskCol(rho)*diskI(rho)*swirl(X,rho)*dop*dop*dop*(1.-step(0.,y)*hole);
+      float g=beam(X.x/rho,rho,si);
+      vec3 direct=diskCol(rho,g)*diskI(rho)*swirl(X,rho,oc)*g*g*g*(1.-step(0.,y)*hole);
       /* the far half again, bent over the shadow; under it, a thinner and dimmer image */
       float up=y/max(r,1e-3), rr=max(1.2,1.25+(r-1.03)*3.6);   /* (never below the disk's edge: a power of a negative is NaN, and NaN·0 is still NaN) */
-      float dl=1./max(.3,1.+.55/sqrt(rr)*si*x/max(r,1e-3));
-      vec3 lensed=diskCol(rr)*diskI(rr)*swirl(vec2(x,up*r)/max(r,1e-3)*rr,rr)*dl*dl*dl
-                 *mix(.3,1.,smoothstep(-.7,.7,up))*smoothstep(1.,1.07,r)*1.5;
-      float ring=exp(-pow((r-1.04)/.028,2.))*1.6;
-      vec3 glow=vec3(1.,.7,.42)*.07*exp(-(r-1.)*.5)*step(1.,r);
-      add=(direct*1.25+lensed+vec3(1.,.86,.72)*ring+glow)*uBH.w;
+      float gb=beam(x/max(r,1e-3),rr,si);
+      vec3 lensed=diskCol(rr,gb)*diskI(rr)*swirl(vec2(x,up*r)/max(r,1e-3)*rr,rr,oc)*gb*gb*gb
+                 *mix(.3,1.,smoothstep(-.7,.7,up))*smoothstep(1.,1.06,r)*2.2;
+      /* light that went round once, and round again: two thin rings, the inner one fainter */
+      float ring=exp(-pow((r-1.035)/.022,2.))*1.7+exp(-pow((r-1.012)/.008,2.))*.8;
+      ring*=mix(.7,1.25,smoothstep(-1.,1.,-x/max(r,1e-3)*si));   /* brighter on the side coming at us */
+      /* a haze of warm light around the disk, strongest along its plane */
+      vec3 glow=vec3(1.,.66,.38)*(.06*exp(-(r-1.)*.5)+.05*exp(-abs(y)*4.)*exp(-rho*.3))*step(1.,r);
+      add=(direct+lensed+vec3(1.,.88,.76)*ring+glow)*uBH.w;
     }
   }
   vec3 c=(texture(uHdr,uv).rgb*uOutK+texture(uBloom,uv).rgb*uBloomK*uOutK)*(1.-hole)+add*uOutK;
@@ -850,7 +846,6 @@ void main(){
     P.field=compile(FIELD_VS,FIELD_FS);
     P.met=compile(MET_VS,MET_FS);
     P.comet=compile(COMET_VS,COMET_FS);
-    P.qso=compile(QSO_VS,QSO_FS);
     P.bright=compile(FULL_VS,BRIGHT_FS);
     P.blur=compile(FULL_VS,BLUR_FS);
     P.comp=compile(FULL_VS,COMP_FS);
@@ -1125,15 +1120,17 @@ void main(){
     return new Float32Array([sx*X[0],-sy*Y[0],A*Z[0],Z[0], sx*X[1],-sy*Y[1],A*Z[1],Z[1], sx*X[2],-sy*Y[2],A*Z[2],Z[2], -sx*dX, sy*dY, -A*dZ+Bv, -dZ]);
   }
 
-  /* ---------- shooting stars and the comet ---------- */
+  /* ---------- shooting stars and comets ---------- */
   const meteors=[];            /* {x,y,vx,vy,t0,dur,len,b} (seconds of the page clock) */
-  let nextMeteor=0, comet=null, nextComet=0;
+  const comets=[];             /* several can cross at once, each on its own path */
+  let nextMeteor=0, nextComet=0;
+  const smooth=(a,b,x)=>{ const t=Math.min(1,Math.max(0,(x-a)/(b-a))); return t*t*(3-2*t); };
   const clock=()=>performance.now()/1000;
   const epoch=Math.floor(clock());
   function skyEvents(){
     const now=clock();
     for(let i=meteors.length-1;i>=0;i--) if(now>meteors[i].t0+meteors[i].dur) meteors.splice(i,1);
-    if(comet&&now>comet.t0+comet.dur){ comet=null; nextComet=now+60+Math.random()*80; }
+    for(let i=comets.length-1;i>=0;i--) if(now>comets[i].t0+comets[i].dur) comets.splice(i,1);
     /* only while the universe is alive: otherwise what is in the sky finishes and nothing new comes */
     if(!fancy()||!alive()){ nextMeteor=Math.max(nextMeteor,now+2); nextComet=Math.max(nextComet,now+10); return; }
     if(!nextMeteor) nextMeteor=now+2+Math.random()*3;
@@ -1141,8 +1138,11 @@ void main(){
       newMeteor(now);
       nextMeteor=now+(Math.random()<.18?.35+Math.random()*.6:3+Math.random()*5.5);
     }
-    if(!nextComet) nextComet=now+18+Math.random()*20;
-    if(!comet&&now>=nextComet) newComet(now,0);
+    if(!nextComet) nextComet=now+6+Math.random()*10;
+    if(now>=nextComet&&comets.length<3){
+      newComet(now,0);
+      nextComet=now+(Math.random()<.3?2+Math.random()*6:14+Math.random()*26);   /* now and then two or three together */
+    }
   }
 
   /* a shooting star anywhere, heading anywhere */
@@ -1154,14 +1154,18 @@ void main(){
     const b=.55+Math.pow(Math.random(),2)*1.1;                  /* most are faint, a few bright */
     meteors.push({x:x0,y:y0,vx:(x1-x0)/L*dist/dur,vy:(y1-y0)/L*dist/dur,t0:now,dur,len:(110+Math.random()*170)*(.7+b*.35),b});
   }
-  /* a slow comet: it drifts across for about a minute, its tails pointing away from a far sun.
-     at: how far along it starts (0 = entering the screen) */
+  /* a comet crossing the screen in any direction, from beyond one edge to beyond the other, its
+     tails pointing away from a far sun. Most drift for about a minute; some shoot across in
+     ten or fifteen seconds. at: how far along it starts (0 = still off the screen) */
   function newComet(now,at){
-    const fromLeft=Math.random()<.5, y=H*(.12+Math.random()*.5);
-    const x0=fromLeft?-W*.1:W*1.1, x1=fromLeft?W*1.1:-W*.1, y1=y+H*(Math.random()-.5)*.35;
-    const ang=Math.atan2(y1-y,x1-x0)+Math.PI+(Math.random()-.5)*1.2;   /* roughly behind it */
-    const dur=55+Math.random()*30;
-    comet={t0:now-dur*at,dur,x0,y0:y,x1,y1,dir:[Math.cos(ang),Math.sin(ang)],L:Math.min(W,H)*(.34+Math.random()*.16),seed:Math.random()*50};
+    const th=Math.random()*TAU, dx=Math.cos(th), dy=Math.sin(th), D=Math.hypot(W,H)*1.35;
+    const off=(Math.random()-.5)*Math.min(W,H)*.8, cx=W/2-dy*off, cy=H/2+dx*off;
+    const fast=Math.random()<.4;
+    const dur=fast?9+Math.random()*9:45+Math.random()*35;
+    const ang=th+Math.PI+(Math.random()-.5)*(fast?.5:1.2);           /* roughly behind it */
+    const L=Math.min(W,H)*(fast?.22+Math.random()*.14:.32+Math.random()*.18);
+    comets.push({t0:now-dur*at,dur,x0:cx-dx*D/2,y0:cy-dy*D/2,x1:cx+dx*D/2,y1:cy+dy*D/2,
+      dir:[Math.cos(ang),Math.sin(ang)],L,seed:Math.random()*50,b:fast?.75+Math.random()*.35:.85});
   }
 
   /* ---------- drawing one frame ---------- */
@@ -1203,13 +1207,11 @@ void main(){
     gl.uniformMatrix4fv(u.uVP,false,VP); gl.uniformMatrix4fv(u.uVPp,false,VPp);
     gl.uniform2f(u.uCss,W,H); gl.uniform1f(u.uScale,scale); gl.uniform1f(u.uBoost,boost||0); gl.uniform1f(u.uFade,starsFade);
     gl.bindVertexArray(field.vao); gl.drawArraysInstanced(gl.TRIANGLE_STRIP,0,4,field.n);
-    /* the quasar, far behind every galaxy (their dust can hide it) */
-    drawQuasar(t);
     /* the galaxies, far to near */
     const list=Object.keys(G).map(id=>world[id]&&{id,w:world[id],e:G[id]}).filter(Boolean)
       .sort((a,b)=>(b.w.cz-cam.z)-(a.w.cz-cam.z));
     for(const it of list) drawGalaxy(it.w,it.e,VP,t);
-    /* shooting stars and the comet */
+    /* shooting stars and comets */
     drawSkyEvents(now);
     gl.bindVertexArray(null);
     /* the glow */
@@ -1252,22 +1254,7 @@ void main(){
     const l=Math.hypot(fx,fy); if(l<1e-6){ fx=0; fy=-1; } else { fx/=l; fy/=l; }
     return [a[0]*scale,(H-a[1])*scale,rs*scale, fx,-fy, Math.abs(nv)];
   }
-  function drawQuasar(t){
-    const s=SIGHTS.qso, a=onScreen(s.p);
-    if(!a) return;
-    const b=onScreen([s.p[0]+s.jet[0]*s.L, s.p[1]+s.jet[1]*s.L, s.p[2]+s.jet[2]*s.L]);
-    let dx=b?b[0]-a[0]:0, dy=b?b[1]-a[1]:-1; const len=Math.hypot(dx,dy)||1;
-    const L=Math.max(len,6), pad=L*1.3+60;
-    if(a[0]<-pad||a[1]<-pad||a[0]>W+pad||a[1]>H+pad) return;
-    const u=P.qso.u; gl.useProgram(P.qso.p);
-    gl.uniform2f(u.uCss,W,H); gl.uniform2f(u.uHead,a[0],a[1]); gl.uniform2f(u.uDir,dx/len,dy/len);
-    gl.uniform1f(u.uLen,L); gl.uniform1f(u.uCore,Math.min(8,Math.max(1.6,1800/a[2])));
-    gl.uniform1f(u.uT,t); gl.uniform1f(u.uA,starsFade);
-    /* quasars flicker slowly: their disk is small enough to change in days */
-    gl.uniform1f(u.uFlick,.85+.15*Math.sin(t*.37)*Math.sin(t*.11+1.3));
-    gl.blendFunc(gl.ONE,gl.ONE);
-    gl.bindVertexArray(emptyVAO); gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
-  }
+
 
   function drawGalaxy(w,e,VP,t){
     const g=w.g, d=g.disk, dz=w.cz-cam.z;
@@ -1370,13 +1357,17 @@ void main(){
       gl.uniform1f(u.uNow,now-epoch); gl.uniform2f(u.uCss,W,H);
       gl.bindVertexArray(meteorBuf.vao); gl.drawArraysInstanced(gl.TRIANGLE_STRIP,0,4,Math.min(8,meteors.length));
     }
-    if(comet){
-      const k=(now-comet.t0)/comet.dur, env=Math.min(1,k*8)*Math.min(1,(1-k)*8);
-      const x=comet.x0+(comet.x1-comet.x0)*k, y=comet.y0+(comet.y1-comet.y0)*k;
+    if(comets.length){
       const u=P.comet.u; gl.useProgram(P.comet.p);
-      gl.uniform2f(u.uCss,W,H); gl.uniform2f(u.uHead,x,y); gl.uniform2f(u.uDir,comet.dir[0],comet.dir[1]);
-      gl.uniform2f(u.uSize,comet.L,comet.L*.5); gl.uniform1f(u.uA,env*.9); gl.uniform1f(u.uSeed,comet.seed); gl.uniform1f(u.uNow,now-epoch);
-      gl.bindVertexArray(emptyVAO); gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+      gl.uniform2f(u.uCss,W,H); gl.uniform1f(u.uNow,now-epoch); gl.bindVertexArray(emptyVAO);
+      for(const c of comets){
+        /* they glow up and fade away slowly (they also start and end off the screen): never a pop */
+        const k=(now-c.t0)/c.dur, env=smooth(0,.2,k)*(1-smooth(.8,1,k));
+        if(env<=0) continue;
+        gl.uniform2f(u.uHead,c.x0+(c.x1-c.x0)*k,c.y0+(c.y1-c.y0)*k); gl.uniform2f(u.uDir,c.dir[0],c.dir[1]);
+        gl.uniform2f(u.uSize,c.L,c.L*.5); gl.uniform1f(u.uA,env*.9*c.b); gl.uniform1f(u.uSeed,c.seed);
+        gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+      }
     }
   }
 
@@ -1403,13 +1394,16 @@ void main(){
     let boost=0;
     if(anim) boost=anim.step(now);
     skyEvents();
-    const busy=!!anim||appearing()||meteors.length>0||!!comet;
+    const busy=!!anim||appearing()||meteors.length>0||comets.length>0;
     if(!busy&&!live&&!dirty) return;
+    /* while the page scrolls the sky holds still (flights aside): every frame goes to the scrolling */
+    if(!anim&&!dirty&&now-scrolledAt<250){ raf=requestAnimationFrame(loop); return; }
     /* life alone: about 60 a second on a computer (every frame of a 60 Hz screen, every other
        one of a 120 or 144 Hz screen: the drift is far too slow to need more), about 30 on a
        phone (10 under automated tests) */
     const every=robot?(anim?60:100):anim?0:phone?31:13;
-    if(busy||dirty||now-lastDraw>=every){
+    /* every frame for flights and galaxies fading in; shooting stars and comets are smooth at the pace of life */
+    if(anim||appearing()||dirty||now-lastDraw>=every){
       dirty=false;
       adapt(now);                /* before drawing: a new size wipes the canvas, so this frame must be drawn after it */
       render(boost);
@@ -1528,8 +1522,8 @@ void main(){
   const ready=()=>!gl||lost||dead||root.hasAttribute("data-locked")||settled>=1;
   return {go, skip, ready, seek:v=>{ life=v; need(); }, scene:()=>scene, busy:()=>!!anim, camera:()=>({...base}),
     painted:()=>IDS.filter(id=>G[id]).length, gl:()=>ok, built:()=>Object.keys(G),
-    /* sights(): which of the black hole and the quasar are on the screen now (tests) */
-    sights:()=>{ const q=ok&&onScreen(SIGHTS.qso.p); return {bh:ok&&!!blackHole(), qso:!!q&&q[0]>=0&&q[1]>=0&&q[0]<=W&&q[1]<=H}; },
+    /* hole(): whether the black hole is on the screen now (tests) */
+    hole:()=>ok&&!!blackHole(),
     /* shoot(): a shooting star and a comet right now (tests) */
     shoot:at=>{ newMeteor(clock()); newComet(clock(),at||0); need(); }, GALAXIES};
 })();

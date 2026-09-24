@@ -208,10 +208,25 @@ html,body,.portal,body>div.wrap,.m-day,.tbl{scrollbar-width:none;-ms-overflow-st
 html::-webkit-scrollbar,body::-webkit-scrollbar,.portal::-webkit-scrollbar,body>div.wrap::-webkit-scrollbar,.tbl::-webkit-scrollbar{display:none;width:0;height:0}
 
 /* ---------- the passage between two looks (shift.js) ---------- */
-#shift{position:fixed;inset:0;z-index:10000;display:none;background:#000;pointer-events:none}
+/* the colour of the universe's own empty sky (and its vignette), not a flat black: fading
+   to it and back reads as a soft dim, not a black flash */
+#shift{position:fixed;inset:0;z-index:10000;display:none;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 45%,#0A0B12 0%,#06070B 60%,#030407 100%)}
 #shift.on,html.shifting #shift{display:block;pointer-events:auto}
 html.shifting #shift{opacity:1}
-#shift canvas{position:absolute;inset:0;width:100%;height:100%}
-.shift-msg{position:absolute;left:0;right:0;bottom:calc(14vh + env(safe-area-inset-bottom,0px));margin:0;text-align:center;
-  font-size:.72rem;font-weight:700;letter-spacing:.32em;text-transform:uppercase;color:rgba(214,222,240,.7)}
-.shift-msg::after{content:"";display:block;width:34px;height:1px;margin:12px auto 0;background:linear-gradient(90deg,transparent,rgba(160,185,255,.8),transparent)}
+
+/* ---------- the black hole, up close (#blackhole) ----------
+   the hero steps aside and the text sits low, so the hole fills the sky above it */
+.portal[data-view=blackhole] .p-top{display:none}
+.portal[data-view=blackhole] .p-in{justify-content:flex-end;padding-bottom:calc(44px + env(safe-area-inset-bottom,0px))}
+.p-hole{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;max-width:520px;margin:0 auto}
+.p-hole h2{margin:0;font-size:1.9rem;font-weight:800;letter-spacing:-.03em;text-shadow:0 2px 20px #000}
+.p-hole p{margin:0 0 6px;color:var(--ink-2);font-size:.92rem;line-height:1.5;text-shadow:0 1px 12px #000}
+.p-card.hole{grid-column:1/-1;border-color:rgba(255,179,107,.28)}
+.i-hole .disk{stroke-width:1.5;opacity:.5}
+.i-hole .arc{stroke-width:2.2}
+.i-hole .shadow{fill:#05060A;stroke:#FFE2C2;stroke-width:1.2;filter:drop-shadow(0 0 3px rgba(255,200,150,.7))}
+.i-hole .front{stroke-width:2.6}
+.p-txt .hole-tag{color:#FFC98F;background:rgba(255,179,107,.1);border-color:rgba(255,179,107,.4)}
+.p-txt .hole-tag::before{background:#FFB36B;box-shadow:0 0 8px #FFB36B}
+.p-card.hole .p-txt b{display:block;font-size:1.7rem}
