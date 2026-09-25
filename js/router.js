@@ -79,8 +79,8 @@ const Router=(function(){
     /* the old "to explore" pages: their galaxies are sights now */
     if(r.startsWith("soon/")){ r=({"soon/andromeda":"ringgalaxy","soon/sombrero":"edgeon"})[r]||"home"; history.replaceState(null,"","#"+r); }
     if(ALIASES[r]){ r=ALIASES[r]; history.replaceState(null,"","#"+r); }
-    /* a guest sees home, its sights and Settings: none of the pages with data */
-    if(Gate.guest()&&!(r==="home"||r==="settings"||Home.isSight(r))){ r="home"; history.replaceState(null,"","#home"); }
+    /* a guest has the whole app with the demo's data, but not Nolan's own pages (Notes for Claude, Nolan) */
+    if(Gate.guest()&&(r==="notes"||r==="nolan"||r.startsWith("nolan/"))){ r="home"; history.replaceState(null,"","#home"); }
     if(isHome(r)){
       if(!shownOnce) show(last,{quiet:true});          /* behind home, the last tab */
       const [view,...sub]=r.split("/"); Home.open(view,sub.join("/"),last); return;
@@ -93,7 +93,6 @@ const Router=(function(){
   }
   /* go to a tab without filling the history (Back does not walk through tabs) */
   function goTo(tab){
-    if(Gate.guest()){ history.replaceState(null,"","#home"); handle(); return; }   /* (no app for a guest) */
     history.replaceState(null,"","#"+tab);
     Home.close();
     show(tab);
@@ -113,7 +112,7 @@ const Router=(function(){
      to the app; in the app it closes whichever detail panel is open */
   document.addEventListener("keydown",ev=>{
     if(ev.key!=="Escape") return;
-    if(Home.isOpen()){ const b=Home.back(); if(b){ history.replaceState(null,"",b); handle(); } else if(!Gate.guest()) goTo(last); return; }
+    if(Home.isOpen()){ const b=Home.back(); if(b){ history.replaceState(null,"",b); handle(); } else goTo(last); return; }
     ["today-detail","planner-detail","subjectPeek"].forEach(id=>{ const b=document.getElementById(id); if(b) b.hidden=true; });
   });
 

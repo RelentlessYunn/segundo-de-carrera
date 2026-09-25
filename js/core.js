@@ -70,7 +70,8 @@ function progressWeek(id,k){
 }
 
 /* ---------- campus, periods and holidays ---------- */
-const CAMPUS={GET:"Getafe",LEG:"Leganés"};
+/* the campuses; a data file may bring its own (CAMPUS_NAMES: the guest's demo does) */
+const CAMPUS=Object.assign({GET:"Getafe",LEG:"Leganés"},typeof CAMPUS_NAMES!=="undefined"?CAMPUS_NAMES:{});
 const campusOf=id=>CAMPUS[SUBJECTS[id].campus]||SUBJECTS[id].campus;
 const PERIOD_PRIORITY={break:0,exams:1,classes:2};
 /* the period that rules a day (break > exams > classes) */

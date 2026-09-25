@@ -57,7 +57,7 @@ body.portal-open{overflow:hidden}
 @keyframes sway{from{transform:rotate(-7deg)}to{transform:rotate(7deg)}}
 .p-txt b{display:block;font-size:1.7rem;font-weight:800;letter-spacing:-.035em;line-height:1}
 .p-txt span{display:block;margin-top:7px;font-size:.86rem;color:var(--ink-2)}
-.p-txt [data-term],.p-txt [data-i18n]:not(.wip-tag){display:inline;margin:0;font-size:inherit}
+.p-txt span [data-term],.p-txt span [data-i18n]:not(.wip-tag){display:inline;margin:0;font-size:inherit}
 .portal:focus{outline:none}
 .p-txt .wip-tag{
   display:inline-flex;align-items:center;gap:7px;padding:3px 10px 3px 8px;border-radius:99px;
@@ -91,44 +91,40 @@ body.portal-open{overflow:hidden}
 .portal:not([data-view=home]) .p-more{display:none}
 .portal.scrolled .p-more{opacity:0;pointer-events:none}
 
-/* ---------- the sights: a card each (home.js writes them) ---------- */
-.p-ask-sights{margin-top:34px}
-.p-sights{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.p-sight{
-  position:relative;overflow:hidden;display:flex;align-items:center;gap:13px;padding:14px 16px;border-radius:18px;
-  color:var(--ink);text-decoration:none;
-  background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.01)),rgba(6,7,11,.58);
-  border:1px solid rgba(255,255,255,.09);
-  transition:transform .3s var(--spring),border-color .3s ease,box-shadow .3s ease;
-  animation:rise .6s .2s var(--ease) backwards;
+/* ---------- the sights: one card, "Explore the universe", and a drop-down list of the places (home.js) ---------- */
+button.p-card{font:inherit;text-align:left;cursor:pointer;width:100%}
+.p-explore{grid-column:1/-1}
+.p-explore .p-go em{display:inline-block;transition:transform .3s var(--spring)}
+.p-explore[aria-expanded=true] .p-go em{transform:rotate(180deg)}
+.p-explore .p-info{min-height:0}
+.p-ic svg .dot{fill:currentColor;stroke:none}
+.p-ic svg .core{fill:#fff;stroke:none;filter:drop-shadow(0 0 3px currentColor)}
+.p-ic svg .haze{stroke-width:1.1;opacity:.4}
+.p-ic svg .rim{stroke-width:3.4}
+.p-ic svg .band{stroke:#1A1206;stroke-width:2.6;opacity:.85}
+.p-menu{
+  grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px;border-radius:20px;width:100%;
+  background:rgba(8,10,16,.82);border:1px solid rgba(255,255,255,.1);box-shadow:0 30px 70px -30px #000;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);animation:menu-in .28s var(--ease) backwards;
 }
-.p-sight::before{content:"";position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(110% 130% at 0% 50%,color-mix(in srgb,var(--ac) 17%,transparent),transparent 62%)}
-.p-sight>*:not(.ripple){position:relative}
-.p-sight .p-ic{width:48px;height:48px;border-radius:14px}
-.p-sight .p-ic svg{width:34px;height:34px;stroke-width:1.8}
-.p-sight .p-txt{flex:1;min-width:0}
-.p-sight .p-txt b{font-size:1.02rem;font-weight:700;letter-spacing:-.01em;line-height:1.2}
-.p-sight .p-txt .s-tag{margin-top:3px;font-size:.78rem;line-height:1.35}
-.s-go{flex:0 0 auto;font-style:normal;font-weight:700;color:var(--ac);opacity:.6;transition:transform .3s var(--spring),opacity .2s ease}
-.p-sight:focus-visible{outline:2px solid var(--ac);outline-offset:3px}
-.p-sight:active{transform:scale(.98)}
-@media (hover:hover){
-  .p-sight:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--ac) 50%,transparent);box-shadow:0 22px 44px -28px color-mix(in srgb,var(--ac) 60%,#000)}
-  .p-sight:hover .s-go{transform:translateX(4px);opacity:1}
+.p-menu[hidden]{display:none}
+@keyframes menu-in{from{opacity:0;transform:translateY(-6px)}}
+.p-place{
+  position:relative;display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:14px;
+  color:var(--ink);text-decoration:none;transition:background .2s ease;
 }
-.p-sight svg .dot{fill:currentColor;stroke:none}
-.p-sight svg .core{fill:#fff;stroke:none;filter:drop-shadow(0 0 3px currentColor)}
-.p-sight svg .haze{stroke-width:1.1;opacity:.4}
-.p-sight svg .rim{stroke-width:3.4}
-.p-sight svg .band{stroke:#1A1206;stroke-width:2.6;opacity:.85}
-.p-sight[data-sight=earth]{grid-column:span 2}      /* going back to the Earth leads the list */
+.p-place .p-ic{width:40px;height:40px;border-radius:12px;box-shadow:none}
+.p-place .p-ic svg{width:28px;height:28px;stroke-width:1.8}
+.p-place .p-txt{min-width:0}
+.p-place .p-txt b{font-size:.93rem;font-weight:700;letter-spacing:-.01em;line-height:1.2}
+.p-place .p-txt .s-tag{margin-top:2px;font-size:.74rem;line-height:1.3}
+.p-place[aria-current]{background:color-mix(in srgb,var(--ac) 16%,transparent)}
+@media (hover:hover){.p-place:hover{background:rgba(255,255,255,.07)}}
+.p-place:focus-visible{outline:2px solid var(--ac);outline-offset:-2px}
 /* the sights are places of the 3D universe: without it (Effects Medium or Minimal) there is nothing to fly to */
-html.nogl .p-ask-sights,html.nogl .p-sights{display:none}
-@media (max-width:820px){
-  .p-sights{grid-template-columns:repeat(2,1fr)}
-  .p-sight[data-sight=earth]{grid-column:1/-1}
-}
+html.nogl .p-explore,html.nogl .p-menu{display:none}
+@media (max-width:820px){.p-menu{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:420px){.p-menu{grid-template-columns:1fr}}
 
 /* ---------- a sight, up close (#earth, #orion…) ----------
    the hero steps aside and the words sit low, over a soft shade, so the sight fills the sky above them */
@@ -141,20 +137,36 @@ html.nogl .p-ask-sights,html.nogl .p-sights{display:none}
 .p-sight-view{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;max-width:600px;margin:0 auto}
 .p-sight-view .s-fact{margin:0;font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
   color:color-mix(in srgb,var(--ac) 80%,#fff);text-shadow:0 1px 10px #000}
-.s-head{display:flex;align-items:center;justify-content:center;gap:16px;width:100%}
+/* its name opens the list of places */
+.s-title{display:inline-flex;align-items:center;gap:8px;padding:4px 10px 4px 14px;border-radius:14px;border:1px solid transparent;
+  background:none;color:inherit;font:inherit;cursor:pointer;transition:background .2s ease,border-color .2s ease}
+.s-title svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;opacity:.7;transition:transform .3s var(--spring)}
+.s-title[aria-expanded=true] svg{transform:rotate(180deg)}
+@media (hover:hover){.s-title:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12)}}
+.s-title:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 .p-sight-view h2{margin:0;font-size:clamp(1.55rem,5vw,2.2rem);font-weight:800;letter-spacing:-.03em;line-height:1.1;text-shadow:0 2px 20px #000}
+.p-sight-view .p-menu{text-align:left;max-width:640px}
+/* the arrows: always at the two edges of the screen, level with the sight, for every sight */
+.s-nav{position:fixed;inset:0;z-index:3;pointer-events:none}
+.s-nav[hidden]{display:none}
 .s-arrow{
-  flex:0 0 auto;display:grid;place-items:center;width:42px;height:42px;border-radius:50%;
-  color:#DCE1EC;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.13);
-  transition:color .2s ease,background .2s ease,border-color .2s ease,transform .15s var(--spring);
+  position:absolute;top:38%;transform:translateY(-50%);pointer-events:auto;
+  display:grid;place-items:center;width:56px;height:56px;border-radius:50%;
+  color:#DCE1EC;background:rgba(8,10,16,.35);border:1px solid rgba(255,255,255,.16);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  transition:color .2s ease,background .2s ease,border-color .2s ease,transform .15s var(--spring),opacity .4s ease;
 }
-.s-arrow svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-@media (hover:hover){.s-arrow:hover{color:#fff;background:color-mix(in srgb,var(--ac) 22%,transparent);border-color:color-mix(in srgb,var(--ac) 55%,transparent)}}
-.s-arrow:active{transform:scale(.92)}
+.s-prev{left:max(18px,env(safe-area-inset-left,0px))} .s-next{right:max(18px,env(safe-area-inset-right,0px))}
+.s-arrow svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+@media (hover:hover){.s-arrow:hover{color:#fff;background:color-mix(in srgb,var(--ac) 26%,rgba(8,10,16,.5));border-color:color-mix(in srgb,var(--ac) 60%,transparent)}}
+.s-arrow:active{transform:translateY(-50%) scale(.92)}
 .s-arrow:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.portal.entering .s-nav{opacity:0}
+.portal.entering .s-arrow{pointer-events:none}
+.s-nav{transition:opacity .4s ease}
 .p-sight-view .s-text{margin:2px 0 4px;color:var(--ink-2);font-size:.92rem;line-height:1.55;max-width:58ch;text-shadow:0 1px 12px #000}
 /* a short screen (a phone on its side): the words would cover the sight, only its name stays */
-@media (max-height:620px){.p-sight-view .s-text{display:none}.p-sight-view h2{font-size:1.4rem}.s-arrow{width:36px;height:36px}}
+@media (max-height:620px){.p-sight-view .s-text{display:none}.p-sight-view h2{font-size:1.4rem}.s-arrow{width:44px;height:44px}}
 .s-dots{display:flex;gap:7px;margin:2px 0 0}
 .s-dots i{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.22);transition:background .3s ease,transform .3s var(--spring)}
 .s-dots i.on{background:var(--ac);box-shadow:0 0 8px var(--ac);transform:scale(1.35)}
@@ -171,10 +183,6 @@ html.nogl .p-ask-sights,html.nogl .p-sights{display:none}
   .p-ic{width:56px;height:56px;border-radius:16px}
   .p-ic svg{width:38px;height:38px}
   .p-info{min-height:0}
-  .p-sights{gap:10px}
-  .p-sight{flex-direction:column;align-items:flex-start;gap:10px;padding:14px}
-  .p-sight[data-sight=earth]{flex-direction:row;align-items:center}
-  .p-sight .s-go{display:none}
-  .s-head{gap:10px}
-  .s-arrow{width:40px;height:40px}
+  .s-arrow{width:46px;height:46px;top:36%}
+  .s-prev{left:10px} .s-next{right:10px}
 }

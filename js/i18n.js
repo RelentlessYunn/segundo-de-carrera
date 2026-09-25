@@ -92,7 +92,7 @@ es:{
   "weather.drizzle":"Llovizna", "weather.rain_":"Lluvia", "weather.showers":"Chubascos", "weather.snow":"Nieve", "weather.storm":"Tormenta",
   "s.viewSky":"Ver el cielo", "s.viewSkyExit":"Volver",
   /* the sights (home.js): name, a few words on the card, what it is, and a little more */
-  "s.explore":"Explora el universo", "s.sight.prev":"Anterior: {name}", "s.sight.next":"Siguiente: {name}", "s.sight.count":"{n} de {total}",
+  "s.explore":"Explora el universo", "s.exploreSub":"Vuela a la Tierra, la Luna, un agujero negro, galaxias y nebulosas", "s.choose":"Elige a dónde ir", "s.exploreCount":"{n} lugares, uno tras otro o el que elijas", "s.sight.prev":"Anterior: {name}", "s.sight.next":"Siguiente: {name}", "s.sight.count":"{n} de {total}",
   "sight.earth.name":"La Tierra", "sight.earth.tag":"Volver a casa", "sight.earth.fact":"Nuestro planeta · donde empieza el viaje",
   "sight.earth.text":"Aquí empezó todo: cada viaje por este universo despega de este planeta azul. En la cara de día, océanos, costas y nubes; en la de noche, las luces de las ciudades y las auroras sobre los polos.",
   "sight.moon.name":"La Luna", "sight.moon.tag":"Esta noche: {phase}", "sight.moon.fact":"A 384 400 km de la Tierra",
@@ -145,7 +145,9 @@ es:{
   "s.notes.lead":"Texto plano que se guarda solo. Claude no puede abrir la nube por su cuenta: cuando quieras que aplique algo, pulsa <b>Copiar notas</b> y pégaselas en el chat.",
   "s.notes.placeholder":"Ejemplo:\n- El parcial de IS es el 8 de octubre a las 12:30 en el aula 4.0.E04\n- Cambiar el aula del viernes de ED a 2.2.C05",
   "s.footer":"Montado a partir de tu horario personal de la UC3M, el horario del grupo 1081, las guías docentes 2026/27 y los materiales de presentación de cada asignatura. Los datos de profesorado proceden del directorio público de la universidad. Lo que en los documentos originales estaba marcado como provisional sigue estándolo aquí.",
-  "s.hello":"Hola, Nolan", "s.whereTo":"¿A dónde vamos?", "s.secondYear":"Segundo de carrera · ", "s.enter":"Entrar",
+  "s.hello":"Hola, Nolan", "s.uc3m":"UC3M", "s.uc3m@guest":"Universidad", "s.secondYear@guest":"Demo · ", "s.brand@guest":"Nolan · Demo · ",
+  "s.faculty.lead@guest":"Profesorado inventado para la demo, con correos de ejemplo.", "s.planner.lead@guest":"Todo el curso. Pulsa cualquier evento para ver el detalle.",
+  "s.tasks.lead@guest":"En la demo se quedan mientras la página esté abierta.", "s.whereTo":"¿A dónde vamos?", "s.secondYear":"Segundo de carrera · ", "s.enter":"Entrar",
   "s.wip":"En construcción", "s.nolanSoon":"Pronto, con lo que me vayas contando.", "s.view":"Ver",
   /* settings */
   "s.settings.lead":"Se guarda en este dispositivo.",
@@ -217,7 +219,7 @@ en:{
   "weather.clear":"Clear", "weather.partly":"Partly cloudy", "weather.cloudy":"Cloudy", "weather.fog":"Fog",
   "weather.drizzle":"Drizzle", "weather.rain_":"Rain", "weather.showers":"Showers", "weather.snow":"Snow", "weather.storm":"Thunderstorm",
   "s.viewSky":"View the sky", "s.viewSkyExit":"Back",
-  "s.explore":"Explore the universe", "s.sight.prev":"Previous: {name}", "s.sight.next":"Next: {name}", "s.sight.count":"{n} of {total}",
+  "s.explore":"Explore the universe", "s.exploreSub":"Fly to the Earth, the Moon, a black hole, galaxies and nebulae", "s.choose":"Choose where to go", "s.exploreCount":"{n} places, one after another or the one you choose", "s.sight.prev":"Previous: {name}", "s.sight.next":"Next: {name}", "s.sight.count":"{n} of {total}",
   "sight.earth.name":"Earth", "sight.earth.tag":"Back home", "sight.earth.fact":"Our planet · where the journey begins",
   "sight.earth.text":"Where it all began: every journey through this universe takes off from this blue planet. On the day side, oceans, coasts and clouds; on the night side, city lights and auroras over the poles.",
   "sight.moon.name":"The Moon", "sight.moon.tag":"Tonight: {phase}", "sight.moon.fact":"384,400 km from Earth",
@@ -269,7 +271,9 @@ en:{
   "s.notes.lead":"Plain text that saves itself. Claude cannot open the cloud on its own: when you want something applied, press <b>Copy notes</b> and paste them into the chat.",
   "s.notes.placeholder":"Example:\n- The SE midterm is on 8 October at 12:30 in room 4.0.E04\n- Change Friday's DS room to 2.2.C05",
   "s.footer":"Built from your personal UC3M timetable, the group 1081 timetable, the 2026/27 course guides and each subject's introduction materials. Faculty data comes from the university's public directory. Whatever was marked as provisional in the original documents is still provisional here.",
-  "s.hello":"Hi, Nolan", "s.whereTo":"Where to?", "s.secondYear":"Second year · ", "s.enter":"Enter",
+  "s.hello":"Hi, Nolan", "s.uc3m":"UC3M", "s.uc3m@guest":"University", "s.secondYear@guest":"Demo · ", "s.brand@guest":"Nolan · Demo · ",
+  "s.faculty.lead@guest":"Invented faculty for the demo, with example addresses.", "s.planner.lead@guest":"The whole year. Tap any event to see its details.",
+  "s.tasks.lead@guest":"In the demo they stay while the page is open.", "s.whereTo":"Where to?", "s.secondYear":"Second year · ", "s.enter":"Enter",
   "s.wip":"Under construction", "s.nolanSoon":"Coming soon, with whatever you tell me.", "s.view":"View",
   "s.settings.lead":"Saved on this device.",
   "s.set.lang":"Language", "s.set.langHelp":"The whole interface. Subject texts (grading, advice, syllabus) stay in Spanish.",
@@ -280,8 +284,10 @@ en:{
 }};
 
 /* ---------- lookup ---------- */
+/* a guest sees the demo organizer: a text may have its own "@guest" version (no UC3M, no Nolan's own words) */
+const GUEST_TEXT=document.documentElement.hasAttribute("data-guest");
 function t(key,vars){
-  let s=STRINGS[LANG][key];
+  let s=GUEST_TEXT&&STRINGS[LANG][key+"@guest"]!==undefined?STRINGS[LANG][key+"@guest"]:STRINGS[LANG][key];
   if(s===undefined){ I18N_MISSING.add(LANG+":"+key); s=STRINGS.es[key]; if(s===undefined) return key; }
   if(s&&typeof s==="object") s=vars&&vars.n===1?s.one:s.other;
   return vars?s.replace(/\{(\w+)\}/g,(m,k)=>vars[k]!==undefined?vars[k]:m):s;

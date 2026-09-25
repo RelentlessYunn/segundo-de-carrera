@@ -5,7 +5,7 @@
    There is only the dark, starry look: the light theme was removed in v0.52.
    ========================================================== */
 const SETTINGS_KEY="settings";
-const SETTINGS_DEFAULTS={lang:"es",motion:"full",quality:"high"};
+const SETTINGS_DEFAULTS={lang:"en",motion:"full",quality:"high"};          /* English by default; Spanish in Settings */
 const SETTINGS_OPTIONS={lang:["es","en"],motion:["full","basic","none"],quality:["high","medium","low"]};
 const SETTINGS=Object.assign({},SETTINGS_DEFAULTS,window.SETTINGS||{});
 Object.keys(SETTINGS_OPTIONS).forEach(k=>{ if(!SETTINGS_OPTIONS[k].includes(SETTINGS[k])) SETTINGS[k]=SETTINGS_DEFAULTS[k]; });

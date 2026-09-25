@@ -8,10 +8,12 @@
    · Once the right PIN is typed on a device, that device remembers it
      (localStorage "nolan-device") and never asks again. Changing the PIN
      (a new hash here) makes every device ask again.
-   · A guest sees the universe (home and its sights) and none of the data:
-     no UC3M, no notes, no tasks, nothing read from the cloud, no location
-     asked. It lasts this visit (sessionStorage "nolan-guest"); Settings has
-     the way out, back to this screen.
+   · A guest (the button, or a link with ?guest) sees the whole site with a
+     demo organizer instead of Nolan's data: index.html loads demo.js
+     instead of data.js, eval.js and config.js, so nothing of Nolan's is
+     loaded, read from the cloud or shown; no location is asked. It lasts
+     this visit (sessionStorage "nolan-guest"); Settings has the way out,
+     back to this screen. Coming in or out reloads the page.
    · index.html marks the page as locked (or guest) in <head> before
      painting, so nothing behind the gate ever flashes.
    · Right PIN (or guest): the keypad drifts away and the camera flies from
@@ -83,6 +85,8 @@ const Gate=(function(){
   /* ---------- in: the keypad drifts away and we travel into a galaxy ---------- */
   function open(){
     leaving=true;
+    /* nothing of the keypad keeps its focus ring while it drifts away */
+    if(document.activeElement&&box.contains(document.activeElement)) document.activeElement.blur();
     box.classList.add("granted");
     const done=()=>{ root.removeAttribute("data-locked"); box.hidden=true; box.classList.remove("granted","leaving"); leaving=false; listeners.forEach(fn=>fn()); };
     /* where the camera belongs: home's galaxy, or UC3M if a tab of the app was asked for */
@@ -93,17 +97,24 @@ const Gate=(function(){
     root.classList.add("flying");                       /* the far stars fade in during the flight (css) */
     Universe.go(to,{duration:5600,arriveAt:.8,onArrive:()=>{ done(); setTimeout(()=>root.classList.remove("flying"),1500); }});
   }
-  /* a guest: only home and its sights (router.js keeps every other page away), nothing remembered but this visit */
+  /* a guest: the page loads again with the demo organizer (demo.js) instead of Nolan's data, and the
+     camera flies in from the Earth as after the PIN. Nothing is remembered but this visit */
   function enterAsGuest(){
     if(busy||leaving) return;
-    try{ sessionStorage.setItem(GUEST,"1"); }catch(e){}
-    root.setAttribute("data-guest","");
-    Router.route();                                     /* back to home if the address asked for a page of the app */
-    open();
+    leaving=true;
+    try{ sessionStorage.setItem(GUEST,"1"); sessionStorage.setItem("nolan-fly","1"); }catch(e){}
+    if(fancy()) box.classList.add("leaving");
+    setTimeout(()=>{ location.hash="#home"; location.reload(); },fancy()?650:0);
   }
 
   /* ---------- log out (or leave guest mode): forget this device and show the entry again ---------- */
   function lock(){
+    /* leaving guest mode: the page loads again, without the demo, at this screen */
+    if(guest()){
+      try{ sessionStorage.removeItem(GUEST); }catch(e){}
+      /* (a change after # alone is no new page: it must load again) */
+      history.replaceState(null,"",location.pathname+location.search.replace(/([?&])guest&?/,"$1").replace(/[?&]$/,"")+"#home"); location.reload(); return;
+    }
     try{ localStorage.removeItem(KEY); sessionStorage.removeItem(GUEST); }catch(e){}
     root.removeAttribute("data-guest");
     busy=false; leaving=false; pad(false);

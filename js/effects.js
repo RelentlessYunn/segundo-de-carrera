@@ -12,7 +12,7 @@
   if(lowMotion()) return;
 
   /* ripple born where you tap */
-  const RIPPLE=".p-card,.p-sight,.s-arrow,.p-back,.trow.tap,.n7-card,nav.bar a[data-tab],.d-nav,.d-today,.m-nav,.m-today,.ag-btn,.icon,#examFilters button,.mailbtn,.mailcopy,.seg button";
+  const RIPPLE=".p-card,.p-place,.s-arrow,.p-back,.trow.tap,.n7-card,nav.bar a[data-tab],.d-nav,.d-today,.m-nav,.m-today,.ag-btn,.icon,#examFilters button,.mailbtn,.mailcopy,.seg button";
   document.addEventListener("pointerdown",e=>{
     const tgt=e.target.closest(RIPPLE); if(!tgt||tgt.disabled) return;
     const r=tgt.getBoundingClientRect(), d=Math.max(r.width,r.height)*2.2;
@@ -52,8 +52,8 @@
     }
   });
 
-  /* idle: after 45 s without input the decorations pause */
-  const IDLE=45000;
+  /* idle: after 2 minutes without input the decorations pause (long enough to just watch the sky) */
+  const IDLE=120000;
   let timer=0;
   /* (not while just looking at the sky: that is the point of it) */
   const nap=()=>{ if(document.documentElement.classList.contains("viewing")){ timer=setTimeout(nap,IDLE); return; } document.body.classList.add("idle"); };

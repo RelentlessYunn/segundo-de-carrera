@@ -65,7 +65,8 @@ async function open(b,{hash="",time="2026-09-21T13:06:00",mobile=false,viewport,
   await p.route("https://api.jsonbin.io/**",r=>r.abort());
   await p.route(/open-meteo\.com|bigdatacloud\.net/,r=>r.abort());
   if(routes) await routes(p);
-  if(settings) await p.addInitScript(s=>localStorage.setItem("settings",s),JSON.stringify(settings));
+  /* the checks read the Spanish texts: Spanish unless a test asks otherwise (English is the site's default) */
+  await p.addInitScript(s=>{ if(!localStorage.getItem("settings")) localStorage.setItem("settings",s); },JSON.stringify(Object.assign({lang:"es"},settings||{})));
   /* this device already knows the PIN, unless the test is about the gate */
   if(!locked) await p.addInitScript(k=>{ if(!sessionStorage.getItem("keep")) localStorage.setItem("nolan-device",k); },DEVICE);
   if(before) await p.addInitScript(before);
@@ -207,11 +208,19 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.click("header .home-btn"); await p.waitForTimeout(200);
     ok(await p.evaluate(()=>Universe.scene()==="home"&&!!document.querySelector("header .home-btn .logo-mark")),"the logo takes you home, flying back to the home galaxy");
     await p.waitForTimeout(2800);
-    await p.click('.p-sight[data-sight="orion"]'); await p.waitForFunction(()=>location.hash==="#orion"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
+    await p.click("#homeExplore"); await p.click('#placeMenu .p-place[data-sight="orion"]'); await p.waitForFunction(()=>location.hash==="#orion"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
     ok(await p.evaluate(()=>Universe.scene()==="orion"&&!document.getElementById("sightView").hidden&&/Orión/.test(document.querySelector("#sightView h2").textContent)),"a sight's card flies up to it and shows what it is");
     /* (clicked as soon as the camera stops: the sight is on screen, so its arrows must answer) */
-    await p.click('#sightView .s-arrow[data-dir="next"]'); await p.waitForFunction(()=>location.hash==="#pleiades"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
+    const at=await p.evaluate(()=>{ const r=document.querySelector('#sightNav .s-arrow[data-dir="next"]').getBoundingClientRect(); return [Math.round(r.x),Math.round(r.y)]; });
+    await p.click('#sightNav .s-arrow[data-dir="next"]'); await p.waitForFunction(()=>location.hash==="#pleiades"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
     const nx=await p.evaluate(()=>({hash:location.hash,scene:Universe.scene(),h:document.querySelector("#sightView h2").textContent}));
+    const at2=await p.evaluate(()=>{ const r=document.querySelector('#sightNav .s-arrow[data-dir="next"]').getBoundingClientRect(); return [Math.round(r.x),Math.round(r.y)]; });
+    ok(at.join()===at2.join(),`the arrows stay in the same place from one sight to the next (${at} ${at2})`);
+    await p.click("#sightTitle"); await p.waitForTimeout(200);
+    const dd=await p.evaluate(()=>({open:!document.getElementById("placeMenu").hidden,inside:!!document.querySelector("#sightView #placeMenu"),here:(document.querySelector('#placeMenu .p-place[aria-current]')||{}).dataset}));
+    await p.keyboard.press("Escape"); await p.waitForTimeout(150);
+    ok(dd.open&&dd.inside&&dd.here&&dd.here.sight==="pleiades"&&await p.evaluate(()=>document.getElementById("placeMenu").hidden&&location.hash==="#pleiades"),
+      `a sight's name opens the list of places (the one you are at marked), and Escape closes it first (${JSON.stringify(dd)})`);
     ok(nx.scene==="pleiades"&&/Pléyades/.test(nx.h),`its arrow flies on to the next one, as soon as you have landed (${JSON.stringify(nx)})`);
     /* the keys on their own (not after a failed click): from the Pleiades, once everything has settled */
     if(nx.hash!=="#pleiades"){ await p.evaluate(()=>{ location.hash="#pleiades"; }); await p.waitForFunction(()=>location.hash==="#pleiades"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{}); }
@@ -267,7 +276,7 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     const seen=await p.evaluate(()=>!Universe.gl()||Universe.hole());
     ok(seen&&!p.errors.length,`${mobile?"mobile":"desktop"}: the black hole is in the sky of home ${p.errors.join(" | ")}`);
     /* its own window: the camera flies up close, the text sits below it */
-    await p.click('.p-sight[data-sight="blackhole"]');
+    await p.click("#homeExplore"); await p.click('#placeMenu .p-place[data-sight="blackhole"]');
     await p.waitForFunction(()=>location.hash==="#blackhole"&&!Universe.busy(),null,{timeout:12000}).catch(()=>{});
     const r=await p.evaluate(()=>({scene:Universe.scene(),hash:location.hash,view:!document.getElementById("sightView").hidden,
       top:getComputedStyle(document.querySelector("#portal .p-top")).display,seen:!Universe.gl()||Universe.hole()}));
@@ -389,7 +398,8 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.waitForFunction(()=>document.getElementById("portal").hidden,null,{timeout:3000}).catch(()=>{});
     ok(await p.evaluate(()=>document.getElementById("portal").hidden&&location.hash==="#subjects"),"Escape closes it and you are back on the same tab");
     /* just the sky: the interface hides, the way back stays, Escape returns */
-    await p.click('header [data-view-sky]'); await p.waitForTimeout(800);
+    await p.click('header [data-view-sky]'); await p.waitForTimeout(300);
+    await p.waitForFunction(()=>getComputedStyle(document.querySelector("body > div.wrap")).opacity==="0",null,{timeout:3000}).catch(()=>{});
     const v=await p.evaluate(()=>({on:document.documentElement.classList.contains("viewing"),exit:!document.getElementById("viewExit").hidden,
       page:getComputedStyle(document.querySelector("body > div.wrap")).opacity,header:getComputedStyle(document.querySelector("header.top")).pointerEvents}));
     await p.keyboard.press("Escape"); await p.waitForTimeout(800);
@@ -406,10 +416,10 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     const p=await open(b,{hash:"home",mobile});
     const r=await p.evaluate(()=>{ const list=document.querySelector('#portal .p-view[data-view="home"]'), top=document.querySelector("#portal .p-top").getBoundingClientRect();
       return {list:Math.round(list.getBoundingClientRect().top),h:innerHeight,hero:Math.round(top.bottom),more:!!document.getElementById("homeMore").offsetWidth,
-        sights:document.querySelectorAll("#homeSights .p-sight").length}; });
+        sights:document.querySelectorAll("#placeMenu .p-place").length,menu:document.getElementById("placeMenu").hidden}; });
     await p.click("#homeMore"); await p.waitForTimeout(900);
     const after=await p.evaluate(()=>{ const r=document.querySelector("#homeUc3m").getBoundingClientRect(); return r.top>=0&&r.top<innerHeight; });
-    ok(r.list>=r.h&&r.more&&r.sights===11&&after,`${mobile?"mobile":"desktop"}: home's first screen is only the hero; the sections and the eleven sights come when you scroll (${JSON.stringify(r)})`);
+    ok(r.list>=r.h&&r.more&&r.sights===11&&r.menu&&after,`${mobile?"mobile":"desktop"}: home's first screen is only the hero; the sections and "Explore the universe" (eleven places in its list) come when you scroll (${JSON.stringify(r)})`);
     await p.context().close();
   }
   {
@@ -423,6 +433,16 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.context().close();
   }
 
+  {
+    /* English is the site's language unless Spanish is chosen */
+    const ctx=await b.newContext({viewport:{width:1280,height:900}}); const p=await ctx.newPage();
+    await p.route(/fonts\.(googleapis|gstatic)\.com|jsonbin|open-meteo|bigdatacloud/,r=>r.abort());
+    await p.addInitScript(k=>localStorage.setItem("nolan-device",k),DEVICE);
+    await p.goto(PAGE+"#schedule",{waitUntil:"load"}); await p.waitForTimeout(300);
+    ok(await p.evaluate(()=>document.documentElement.lang==="en"&&document.querySelector("a[data-tab=schedule] .tab-label").textContent==="Schedule"),"English by default");
+    await ctx.close();
+  }
+
   section("Guest");
   {
     const writes=[];
@@ -430,29 +450,36 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     const p=await open(b,{locked:true,time:"2026-09-23T16:05:00",before:FAKE_CONFIG,routes:async p=>{
       await fakeCloud({hechas:["gk_0"],notas:"private"},"normal",writes)(p); await fakeWeather()(p);
       await p.context().grantPermissions(["geolocation"]); await p.context().setGeolocation({latitude:48.857,longitude:2.352}); }});
-    await p.click("#gateGuest");
-    await p.waitForFunction(()=>!document.documentElement.hasAttribute("data-locked")&&!Universe.busy(),null,{timeout:20000}).catch(()=>{});
+    /* the guest button: the page loads again with the demo organizer, and flies in */
+    p.requests.length=0;                                  /* (what the entry screen itself loaded does not count) */
+    await Promise.all([p.waitForNavigation({waitUntil:"load"}),p.click("#gateGuest")]);
+    await p.waitForFunction(()=>!Universe.busy(),null,{timeout:20000}).catch(()=>{});
     const r=await p.evaluate(()=>({guest:document.documentElement.hasAttribute("data-guest"),home:!document.getElementById("portal").hidden,
-      greeting:document.getElementById("homeGreeting").textContent,cards:getComputedStyle(document.querySelector("#portal .p-cards")).display,
-      app:getComputedStyle(document.querySelector("header.top")).display,notes:getComputedStyle(document.querySelector('#portal .p-tool[href="#notes"]')).display,
-      sights:getComputedStyle(document.getElementById("homeSights")).display,
-      device:localStorage.getItem("nolan-device")}));
+      greeting:document.getElementById("homeGreeting").textContent,demo:!!SUBJECTS.alg&&!SUBJECTS.ed,card:document.querySelector("#homeUc3m b").textContent,
+      nolan:getComputedStyle(document.querySelector("#portal .p-card.wip")).display,notes:getComputedStyle(document.querySelector('#portal .p-tool[href="#notes"]')).display,
+      explore:getComputedStyle(document.getElementById("homeExplore")).display,device:localStorage.getItem("nolan-device"),errors:CHECK.errors.length,warnings:CHECK.warnings.length}));
     r.cloud=p.requests.filter(u=>/jsonbin/.test(u)).length;
+    r.files=p.requests.filter(u=>/\/(data|eval|config|demo)\.js/.test(u)).map(u=>u.replace(/^.*\//,"").replace(/\?.*/,""));
     await p.waitForFunction(()=>/24°/.test(document.getElementById("homeWeather").textContent),null,{timeout:5000}).catch(()=>{});
     const w=await p.evaluate(()=>({text:document.getElementById("homeWeather").textContent,kept:localStorage.getItem("weather")}));
     w.located=p.requests.some(u=>/bigdatacloud|latitude=48\.857/.test(u));
     ok(/24°/.test(w.text)&&/Getafe/.test(w.text)&&!w.kept&&!w.located,`a guest sees the weather of Getafe, without the device's location, and it is not kept (${JSON.stringify(w)})`);
-    ok(r.guest&&r.home&&/invitado/.test(r.greeting)&&r.cards==="none"&&r.app==="none"&&r.notes==="none"&&r.sights!=="none"&&!r.cloud&&!r.device,
-      `the guest button opens the universe with none of the data: no UC3M, no Nolan, no notes, nothing read from the cloud (${JSON.stringify(r)})`);
+    ok(r.guest&&r.home&&/invitado/.test(r.greeting)&&r.demo&&r.card==="Universidad"&&r.nolan==="none"&&r.notes==="none"&&r.explore!=="none"&&!r.cloud&&!r.device&&!r.errors&&!r.warnings
+      &&r.files.join()==="demo.js",
+      `the guest button opens the same site with a demo organizer: demo.js only (not Nolan's data or the cloud's key), nothing read from the cloud (${JSON.stringify(r)})`);
+    await p.goto(PAGE+"#schedule"); await p.waitForTimeout(500);
+    const app=await p.evaluate(()=>({hash:location.hash,brand:document.querySelector("header .brand").textContent,rows:document.querySelectorAll("#calbody .ev").length,
+      ag:getComputedStyle(document.querySelector(".ag-btn")).display,portal:document.getElementById("portal").hidden}));
     const routes={};
-    for(const h of ["schedule","tasks","notes","nolan","exams"]){ await p.goto(PAGE+"#"+h); await p.waitForTimeout(300); routes[h]=await p.evaluate(()=>location.hash); }
+    for(const h of ["notes","nolan"]){ await p.goto(PAGE+"#"+h); await p.waitForTimeout(300); routes[h]=await p.evaluate(()=>location.hash); }
+    ok(app.hash==="#schedule"&&app.portal&&/Demo/.test(app.brand)&&app.rows>5&&app.ag==="none"&&routes.notes==="#home"&&routes.nolan==="#home",
+      `a guest can use the whole organizer with the demo data, but not Nolan's own pages (${JSON.stringify(app)} ${JSON.stringify(routes)})`);
     await p.reload(); await p.waitForTimeout(600);
-    const again=await p.evaluate(()=>({guest:document.documentElement.hasAttribute("data-guest"),locked:document.documentElement.hasAttribute("data-locked"),hash:location.hash}));
-    ok(Object.values(routes).every(h=>h==="#home")&&again.guest&&!again.locked&&again.hash==="#home"&&!p.requests.some(u=>/jsonbin/.test(u)),
-      `a guest cannot open the pages with data, and stays a guest on reload, still without the cloud (${JSON.stringify(routes)} ${JSON.stringify(again)})`);
+    const again=await p.evaluate(()=>({guest:document.documentElement.hasAttribute("data-guest"),locked:document.documentElement.hasAttribute("data-locked")}));
+    ok(again.guest&&!again.locked&&!p.requests.some(u=>/jsonbin/.test(u)),`a guest stays a guest on reload, still without the cloud (${JSON.stringify(again)})`);
     await p.goto(PAGE+"#settings"); await p.waitForTimeout(400);
     const label=await p.evaluate(()=>document.getElementById("logout").innerText);
-    await p.click("#logout"); await p.waitForTimeout(400);
+    await Promise.all([p.waitForNavigation({waitUntil:"load"}),p.click("#logout")]); await p.waitForTimeout(400);
     ok(/invitado/i.test(label)&&await p.evaluate(()=>document.documentElement.hasAttribute("data-locked")&&!document.documentElement.hasAttribute("data-guest")&&!sessionStorage.getItem("nolan-guest")&&!document.getElementById("gateStart").hidden),
       "Settings has the way out of guest mode, back to the entry screen");
     await p.context().close();
@@ -621,8 +648,10 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
   section("Idle");
   {
     const p=await open(b,{clock:"live"});
-    await p.clock.runFor(46000);
-    ok(await p.evaluate(()=>document.body.classList.contains("idle")),"after 45 s without touching anything the decorations stop");
+    await p.clock.runFor(60000);
+    ok(await p.evaluate(()=>!document.body.classList.contains("idle")),"a minute without touching anything: the sky still lives");
+    await p.clock.runFor(61000);
+    ok(await p.evaluate(()=>document.body.classList.contains("idle")),"after 2 minutes without touching anything the decorations stop");
     await p.mouse.click(100,400); await p.clock.runFor(100);
     ok(await p.evaluate(()=>!document.body.classList.contains("idle")),"touching brings them back");
     await p.context().close();

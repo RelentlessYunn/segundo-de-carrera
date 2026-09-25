@@ -71,7 +71,9 @@ function subjectCard(k,opts){
     x+=`</dl>`;
     if(p.note) x+=`<p class='nodata' style='margin:9px 0 0'>${esc(p.note)}</p>`;
     if(p.email){
-      const subject=encodeURIComponent(`Shengyu Chen — Doble Grado Informática + ADE — ${S.name} — grupo ${S.group}`);
+      /* who writes: Nolan, or the demo's student (MAIL_FROM in demo.js) */
+      const from=typeof MAIL_FROM!=="undefined"?MAIL_FROM:"Shengyu Chen — Doble Grado Informática + ADE";
+      const subject=encodeURIComponent(`${from} — ${S.name} — grupo ${S.group}`);
       /* mailto only works with a mail app set up: also Gmail on the web and copy */
       x+=`<div class="mailrow">`+
          `<a class="mailbtn" target="_blank" rel="noopener" href="https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(p.email)}&su=${subject}">${esc(t("subject.gmail"))}</a>`+

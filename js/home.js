@@ -61,26 +61,58 @@ const Home=(function(){
     const m=Astro.moon(new Date());
     return t("sight.moon."+key,{phase:t("moon."+m.name),pct:Math.round(m.fraction*100)});
   }
-  /* the list on home: a card per sight */
+  /* ---------- where to go: one card on home ("Explore the universe") and a drop-down list of the
+     places; on a sight the list opens from its name. It is one list, moved to where it opens ---------- */
+  const menu=$("#placeMenu"), explore=$("#homeExplore");
   function drawSights(){
-    const box=$("#homeSights"); if(!box) return;
-    if(!box.children.length){
-      box.innerHTML=SIGHTS.map(s=>`<a class="p-sight" href="#${s.id}" data-scene="${s.id}" data-sight="${s.id}" style="--ac:${s.ac}">`+
-        `<span class="p-ic">${s.icon}</span><span class="p-txt"><b></b><span class="s-tag"></span></span><em class="s-go" aria-hidden="true">→</em></a>`).join("");
+    if(!menu) return;
+    if(!menu.children.length){
+      menu.innerHTML=SIGHTS.map(s=>`<a class="p-place" role="menuitem" href="#${s.id}" data-scene="${s.id}" data-sight="${s.id}" style="--ac:${s.ac}">`+
+        `<span class="p-ic">${s.icon}</span><span class="p-txt"><b></b><span class="s-tag"></span></span></a>`).join("");
     }
-    SIGHTS.forEach(s=>{ const a=box.querySelector(`[data-sight="${s.id}"]`); put(a.querySelector("b"),nameOf(s.id)); put(a.querySelector(".s-tag"),words(s.id,"tag")); });
+    SIGHTS.forEach(s=>{ const a=menu.querySelector(`[data-sight="${s.id}"]`); put(a.querySelector("b"),nameOf(s.id)); put(a.querySelector(".s-tag"),words(s.id,"tag")); });
+    put($("#homeExploreInfo"),t("s.exploreCount",{n:SIGHTS.length}));
   }
-  const ARROW={prev:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg>`,next:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg>`};
-  /* a sight's own page: what it is, a few words, the way to the one before and after, and home */
+  let menuFrom=null;                                   /* the button the list is open under */
+  function openMenu(btn){
+    if(!menu||!btn) return;
+    btn.after(menu); menu.hidden=false; menuFrom=btn;
+    btn.setAttribute("aria-expanded","true"); menu.setAttribute("aria-labelledby",btn.id);
+    const here=P.dataset.view==="sight"?current:"";
+    menu.querySelectorAll(".p-place").forEach(a=>{ if(a.dataset.sight===here) a.setAttribute("aria-current","true"); else a.removeAttribute("aria-current"); });
+    if(!lowMotion()&&menu.scrollIntoView) menu.scrollIntoView({block:"nearest",behavior:"smooth"});
+  }
+  function closeMenu(){
+    if(!menu||menu.hidden) return;
+    menu.hidden=true; if(menuFrom) menuFrom.setAttribute("aria-expanded","false"); menuFrom=null;
+  }
+  P.addEventListener("click",ev=>{
+    const btn=ev.target.closest("#homeExplore,#sightTitle");
+    if(btn){ ev.preventDefault(); if(menuFrom===btn) closeMenu(); else { closeMenu(); openMenu(btn); } return; }
+    if(!ev.target.closest("#placeMenu")) closeMenu();
+  });
+  /* Escape closes the list first (before it can take you anywhere) */
+  document.addEventListener("keydown",ev=>{ if(ev.key==="Escape"&&menu&&!menu.hidden){ ev.stopImmediatePropagation(); ev.preventDefault(); closeMenu(); } },true);
+
+  /* a sight's own page: what it is, a few words, and home; its name opens the list; the arrows to the
+     one before and after stay in the same place on the screen for every sight (#sightNav) */
   function renderSight(id){
+    closeMenu(); if(menu) P.appendChild(menu);        /* (the list lives outside the page it is about to replace) */
     const i=SIGHTS.findIndex(s=>s.id===id), n=SIGHTS.length, prev=SIGHTS[(i+n-1)%n].id, next=SIGHTS[(i+1)%n].id;
-    const box=$("#sightView"), arrow=(dir,to)=>`<a class="s-arrow" href="#${to}" data-scene="${to}" data-dir="${dir}" aria-label="${esc(t("s.sight."+dir,{name:nameOf(to)}))}" title="${esc(nameOf(to))}">${ARROW[dir]}</a>`;
+    const box=$("#sightView");
     box.style.setProperty("--ac",SIGHTS[i].ac);
     box.innerHTML=`<p class="s-fact">${esc(words(id,"fact"))}</p>`+
-      `<div class="s-head">${arrow("prev",prev)}<h2>${esc(nameOf(id))}</h2>${arrow("next",next)}</div>`+
+      `<button type="button" class="s-title" id="sightTitle" aria-haspopup="menu" aria-expanded="false" aria-controls="placeMenu" title="${esc(t("s.choose"))}">`+
+        `<h2>${esc(nameOf(id))}</h2><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg></button>`+
       `<p class="s-text">${esc(words(id,"text"))}</p>`+
       `<div class="s-dots" aria-label="${esc(t("s.sight.count",{n:i+1,total:n}))}">${SIGHTS.map(s=>`<i${s.id===id?' class="on"':""}></i>`).join("")}</div>`+
       backLink("#home","nolan.backAria");
+    [["prev",prev],["next",next]].forEach(([dir,to])=>{
+      const a=$(`#sightNav .s-arrow[data-dir="${dir}"]`);
+      a.setAttribute("href","#"+to); a.dataset.scene=to;
+      a.setAttribute("aria-label",t("s.sight."+dir,{name:nameOf(to)})); a.title=nameOf(to);
+      a.style.setProperty("--ac",SIGHTS[dir==="prev"?(i+n-1)%n:(i+1)%n].ac);
+    });
   }
 
   /* which galaxy (or sight) each view of home lives in */
@@ -113,6 +145,8 @@ const Home=(function(){
     if(!fresh&&before==="home"&&shown!=="home") homeScroll=P.scrollTop;
     views.forEach(v=>v.hidden=v.dataset.view!==shown);
     P.dataset.view=shown;
+    $("#sightNav").hidden=!sight;
+    if(!sight){ closeMenu(); if(menu&&explore) explore.after(menu); }
     clearTimeout(closeTimer);
     if(fresh) returnFocus=document.activeElement;
     P.classList.remove("leaving"); P.hidden=false;
@@ -206,7 +240,7 @@ const Home=(function(){
   P.addEventListener("click",ev=>{
     const a=ev.target.closest("a[data-scene]");
     if(!a||a.id==="homeUc3m"||ev.defaultPrevented||ev.button||ev.metaKey||ev.ctrlKey||ev.shiftKey||ev.altKey) return;
-    ev.preventDefault();
+    ev.preventDefault(); closeMenu();
     const h=a.getAttribute("href").slice(1);
     enter(a.dataset.scene,()=>{ history.replaceState(null,"","#"+h); const [v,...rest]=h.split("/"); open(v,rest.join("/")); });
   });
@@ -214,7 +248,8 @@ const Home=(function(){
   document.addEventListener("keydown",ev=>{
     if(P.hidden||P.dataset.view!=="sight"||entering||ev.altKey||ev.ctrlKey||ev.metaKey||(ev.key!=="ArrowLeft"&&ev.key!=="ArrowRight")) return;
     if(ev.target.closest&&ev.target.closest("input,textarea,select,[contenteditable]")) return;
-    const a=$(`#sightView .s-arrow[data-dir="${ev.key==="ArrowLeft"?"prev":"next"}"]`);
+    if(menu&&!menu.hidden) return;
+    const a=$(`#sightNav .s-arrow[data-dir="${ev.key==="ArrowLeft"?"prev":"next"}"]`);
     if(a){ ev.preventDefault(); a.click(); }
   });
   drawSights();

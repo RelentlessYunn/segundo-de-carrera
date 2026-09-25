@@ -456,7 +456,7 @@ void main(){
   }
   /* capped: close up a star's value could overflow the half-float picture on a phone's graphics card, and
      infinity times the dust in front (0) is NaN, which shows black (an edge-on disk, first of all) */
-  gl_PointSize=s; vCol=aCol.rgb; vI=min(peak,250.)*uFade;
+  gl_PointSize=s; vCol=aCol.rgb; vI=min(peak,120.)*uFade;
 }`;
   const PART_FS=HEAD+`in vec3 vCol; in float vI; out vec4 o;
 void main(){ vec2 d=gl_PointCoord*2.-1.; float r2=dot(d,d); if(r2>1.) discard; o=vec4(vCol*vI*exp(-r2*4.),0.); }`;
@@ -577,7 +577,10 @@ void main(){
       col+=(uCCore*uBul.x*acc+uCOld*uHalo.x*hal)*(uSide<0.?Tb:1.);
     }
   }
-  o=vec4(clamp(col,0.,3e3),clamp(1.-Tb,0.,1.))*uFade;              /* always finite (see the stars) */
+  /* always finite (see the stars), and never quite opaque: a phone's half-float picture can hold infinity where
+     hundreds of bright core stars pile up, and infinity times an opacity of exactly 1 (0 let through) is NaN,
+     which showed as black dots in the edge-on galaxy's dust */
+  o=vec4(clamp(col,0.,3e3),clamp(1.-Tb,0.,.985))*uFade;
 }`;
 
   /* --- far stars: fixed on the sky (infinitely far), a few twinkle slowly --- */
@@ -816,7 +819,8 @@ void main(){
 void main(){ vec3 c=vec3(0.);
   c+=texture(uTex,vUv+uTexel*vec2(-1.,-1.)).rgb; c+=texture(uTex,vUv+uTexel*vec2(1.,-1.)).rgb;
   c+=texture(uTex,vUv+uTexel*vec2(-1.,1.)).rgb; c+=texture(uTex,vUv+uTexel*vec2(1.,1.)).rgb;
-  c*=.25; o=vec4(max(c-uThr,0.),1.); }`;
+  c*=.25; if(any(isnan(c))||any(isinf(c))) c=vec3(0.);   /* (a broken pixel must not spread through the glow) */
+  o=vec4(max(c-uThr,0.),1.); }`;
   const BLUR_FS=HEAD+`in vec2 vUv; out vec4 o; uniform sampler2D uTex; uniform vec2 uStep;
 void main(){ vec3 c=texture(uTex,vUv).rgb*.227;
   c+=(texture(uTex,vUv+uStep*1.385).rgb+texture(uTex,vUv-uStep*1.385).rgb)*.316;
@@ -842,6 +846,7 @@ uniform sampler2D uHdr, uBloom; uniform float uExp, uBloomK, uTime, uOutK; unifo
 uniform vec4 uBH;         /* the hole seen from the camera (x right, y up, z ahead; in its radii), strength (0: none) */
 uniform vec4 uBHn;        /* the axis of its disk (same axes), time */
 uniform float uFpx;       /* focal length in px of the picture */
+uniform vec4 uOcc[2];     /* things in front of the hole (the Earth, the Moon): centre and radius in px of the picture, w: on */
 float h(vec2 p){ vec3 p3=fract(vec3(p.xyx)*.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
 float h31(vec3 p){ p=fract(p*.1031); p+=dot(p,p.zyx+31.32); return fract((p.x+p.y)*p.z); }
 float vn3(vec3 p){ vec3 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
@@ -893,7 +898,10 @@ float knots(float r,vec2 xy){
 }
 void main(){
   vec2 uv=vUv; vec3 add=vec3(0.); float hole=0., bgT=1.;
-  if(uBH.w>0.){
+  /* the hole is traced over everything: not where something nearer stands in front of it */
+  float bhk=uBH.w;
+  for(int i=0;i<2;i++) if(uOcc[i].w>.5&&length(gl_FragCoord.xy-uOcc[i].xy)<uOcc[i].z) bhk=0.;
+  if(bhk>0.){
     vec3 rd=normalize(vec3((gl_FragCoord.xy-uRes*.5)/uFpx,1.));
     vec3 Q=uBH.xyz, ro=-Q;                                 /* the camera, seen from the hole */
     float tc=dot(Q,rd), b=length(cross(Q,rd));             /* how close the straight ray passes */
@@ -961,6 +969,8 @@ void main(){
   }
   /* where the bent ray points off the picture there is nothing to show: the unbent sky, faded in at the border */
   vec3 bgc=texture(uHdr,vUv).rgb*uOutK+texture(uBloom,vUv).rgb*uBloomK*uOutK;
+  /* a pixel the half-float picture could not hold (NaN or infinity): the glow around it instead of a black dot */
+  if(any(isnan(bgc))||any(isinf(bgc))) bgc=texture(uBloom,vUv).rgb*(1.+uBloomK)*uOutK;
   if(uv!=vUv){
     float inside=uv.x<0.?0.:smoothstep(0.,.03,min(min(uv.x,1.-uv.x),min(uv.y,1.-uv.y)));
     if(inside>0.) bgc=mix(bgc,texture(uHdr,uv).rgb*uOutK+texture(uBloom,uv).rgb*uBloomK*uOutK,inside);
@@ -1494,7 +1504,7 @@ void main(){
   let frameNo=0, starsFade=1, flightFromGate=0, settled=0, dead=false;
   function render(boost){
     if(!gl||lost||!ok) return;
-    frameNo++;
+    frameNo++; occluders.length=0;
     if(!queue.length&&Object.keys(G).length===IDS.length+COMPANIONS.length) settled++;
     const f=float(); cam={x:base.x+f.x,y:base.y+f.y,z:base.z+f.z};
     camR=base.yaw||base.pitch?turn(base.yaw||0,base.pitch||0):[1,0,0, 0,1,0, 0,0,1];
@@ -1576,6 +1586,9 @@ void main(){
     gl.uniform4f(u.uBH,bh?bh.q[0]:0,bh?bh.q[1]:0,bh?bh.q[2]:1,bh?starsFade*bh.a:0);
     gl.uniform4f(u.uBHn,bh?bh.n[0]:0,bh?bh.n[1]:1,bh?bh.n[2]:0,t);
     gl.uniform1f(u.uFpx,F*scale);
+    /* the Earth and the Moon, when nearer than the hole: it is not traced where they stand */
+    const occ=bh?occluders.filter(o=>o.d<bh.d).sort((a,b)=>b.r-a.r):[];
+    for(let i=0;i<2;i++){ const o=occ[i]; gl.uniform4f(gl.getUniformLocation(P.comp.p,"uOcc["+i+"]"),o?o.x*scale:0,o?(H-o.y)*scale:0,o?o.r*scale:0,o?1:0); }
     full();
     gl.activeTexture(gl.TEXTURE0);
   }
@@ -1584,8 +1597,10 @@ void main(){
   const api={
     get gl(){ return gl; }, get W(){ return W; }, get H(){ return H; }, get F(){ return F; }, get scale(){ return scale; },
     get fade(){ return starsFade; }, get phone(){ return phone; }, get robot(){ return robot; }, get scene(){ return scene; },
-    get cam(){ return cam; },
+    get cam(){ return cam; }, get camR(){ return camR; },
     alive:()=>alive(), onScreen:p=>onScreen(p), need:()=>need(),
+    /* something solid drawn this frame (css px, depth): the black hole is not traced through it */
+    occlude:(x,y,r,d)=>{ occluders.push({x,y,r,d}); },
     /* how far a wonder has faded in since it became ready (0 to 1; it asks for frames until 1) */
     appear(x){ const k=Math.min(1,Math.max(0,(performance.now()-(x.readyAt||0))/1400)); if(k<1) need(); return k*k*(3-2*k); },
     /* a place seen from home (at: fraction of the half screen, computer d / phone m), at depth z */
@@ -1600,6 +1615,7 @@ void main(){
     add:()=>gl.blendFunc(gl.ONE,gl.ONE), over:()=>gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA)
   };
   let extraFailed=false;
+  const occluders=[];
   function extras(phase,t,now){
     gl.enable(gl.BLEND);
     for(const x of EXTRAS){
@@ -1622,7 +1638,7 @@ void main(){
     /* only a few pixels across (far away, from the Earth or the Moon), it fades out: it is traced
        over everything, so a speck of it would show through whatever stands in front */
     const k=Math.min(1,Math.max(0,(rpx-3)/4));
-    return k>0?{q:[q[0]/rh,-q[1]/rh,q[2]/rh], n:[nc[0],-nc[1],nc[2]], a:k*k*(3-2*k)}:null;
+    return k>0?{q:[q[0]/rh,-q[1]/rh,q[2]/rh], n:[nc[0],-nc[1],nc[2]], a:k*k*(3-2*k), d:q[2]}:null;
   }
 
   function drawGalaxy(w,e,VP,t){
@@ -1876,7 +1892,8 @@ void main(){
     startBuilding();
     need();
     /* the first opening of the app at home (once per visit): it leaves the Earth and flies out to home */
-    let first=false; try{ first=!sessionStorage.getItem("nolan-launched"); sessionStorage.setItem("nolan-launched","1"); }catch(e){}
+    let first=false; try{ first=!sessionStorage.getItem("nolan-launched")||!!sessionStorage.getItem("nolan-fly"); sessionStorage.setItem("nolan-launched","1"); sessionStorage.removeItem("nolan-fly"); }catch(e){}
+    /* (and when a guest has just come in: gate.js reloads the page with the demo, "nolan-fly") */
     if(first&&scene==="home"&&!robot&&fullMotion()&&!root.hasAttribute("data-locked")&&!covering()){
       scene="gate"; base={...camFor("gate")}; go("home",{duration:4200});
     }
