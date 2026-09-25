@@ -57,8 +57,8 @@ const Universe=(function(){
   const phone=matchMedia("(max-width:760px),(pointer:coarse)").matches;
   const TIERS={
     robot:{k:.07,map:256,scale:.4,maxScale:.5,steps:[4,8],far:1500,field:500,bloom:false,neb:256,band:256,bandStars:300,gc:20,vol:1},
-    phone:{k:.36,map:1024,scale:.8,maxScale:1.5,steps:[8,20],far:5000,field:900,bloom:true,neb:640,band:1100,bandStars:3500,gc:60,vol:.5},
-    desk:{k:1,map:2048,scale:1,maxScale:1.5,steps:[12,30],far:9000,field:1400,bloom:true,neb:1024,band:2048,bandStars:9000,gc:130,vol:.5}};
+    phone:{k:.36,map:1024,scale:.8,maxScale:1.5,steps:[8,20],far:5000,field:900,bloom:true,neb:640,band:2048,bandStars:3500,gc:60,vol:.5},
+    desk:{k:1,map:2048,scale:1,maxScale:1.5,steps:[12,30],far:9000,field:1400,bloom:true,neb:1024,band:2800,bandStars:9000,gc:130,vol:.5}};
   const asked=(location.search.match(/[?&]tier=(robot|phone|desk)\b/)||[])[1];
   const robot=!asked&&!!navigator.webdriver;
   const TIER=TIERS[asked||(robot?"robot":phone?"phone":"desk")];
@@ -495,7 +495,9 @@ vec4 mapAt(vec2 xy,float foot){
   vec2 p=vec2(pat.x*xy.x+pat.y*xy.y,-pat.y*xy.x+pat.x*xy.y);
   vec2 uv=p/(2.*uB)+.5;
   if(uv.x<0.||uv.y<0.||uv.x>1.||uv.y>1.) return vec4(0.);
-  vec4 m=textureLod(uMap,uv,max(0.,log2(foot/uTexel))); return m*m*uMax;
+  /* faded out round the edge of the map, so a blurred map never shows its square border (a straight edge in the sky) */
+  float edge=1.-smoothstep(.84,.98,length(p)/uB);
+  vec4 m=textureLod(uMap,uv,max(0.,log2(foot/uTexel))); return m*m*uMax*edge;
 }
 void main(){
   vec2 fc=vec2(gl_FragCoord.x,uRes.y-gl_FragCoord.y)/uScale;
@@ -659,7 +661,9 @@ void main(){
   vec3 sc=mix(vec3(1.,.8,.6),vec3(.75,.85,1.),step(.6,h2));
   L=L*.7+sc*grain*.9;
   L*=1.-dust*.9;
-  o=vec4(L*.5,dust);
+  /* it thins away before the picture's edge, so flying to a sight never shows where it ends */
+  vec2 ef=abs(f)/uHalf; float endf=(1.-smoothstep(.62,.97,ef.x))*(1.-smoothstep(.62,.97,ef.y));
+  o=vec4(L*.5,dust)*endf;
 }`;
   const DUST_FS=HEAD+`in vec2 vUv; out vec4 o; uniform sampler2D uTex; uniform float uGain;
 void main(){ vec2 e=min(vUv,1.-vUv); float f=smoothstep(0.,.1,min(e.x,e.y)); o=vec4(0.,0.,0.,texture(uTex,vUv).a*uGain*f); }`;
@@ -828,8 +832,19 @@ void main(){ vec3 c=texture(uTex,vUv).rgb*.227;
   c+=(texture(uTex,vUv+uStep*3.231).rgb+texture(uTex,vUv-uStep*3.231).rgb)*.07;
   o=vec4(c,1.); }`;
   /* a galaxy's volume, drawn at a lower resolution, spread over the full picture (it is soft light and dust) */
-  const UP_FS=HEAD+`out vec4 o; uniform sampler2D uTex; uniform vec2 uK;
-void main(){ o=texture(uTex,gl_FragCoord.xy*uK); }`;
+  /* It filters by itself (a smooth cubic B-spline over 4×4 texels read exactly), never trusting the graphics
+     card to blend a half-float picture: some phones cannot, and then every texel of the volume showed as a
+     hard square (a staircase of black blocks along an edge-on galaxy's dust ring). */
+  const UP_FS=HEAD+`out vec4 o; uniform sampler2D uTex; uniform vec2 uK, uSize;
+vec4 bs(float t){ float t2=t*t, t3=t2*t; return vec4(1.-3.*t+3.*t2-t3,4.-6.*t2+3.*t3,1.+3.*t+3.*t2-3.*t3,t3)/6.; }
+void main(){
+  vec2 q=gl_FragCoord.xy*uK*uSize-.5, i=floor(q), f=q-i;
+  vec4 wx=bs(f.x), wy=bs(f.y), s=vec4(0.); ivec2 hi=ivec2(uSize)-1, b=ivec2(i)-1;
+  for(int y=0;y<4;y++){ vec4 row=vec4(0.);
+    for(int x=0;x<4;x++) row+=texelFetch(uTex,clamp(b+ivec2(x,y),ivec2(0),hi),0)*wx[x];
+    s+=row*wy[y]; }
+  o=max(s,vec4(0.));
+}`;
   /* the black hole lives here, in the last step, and it is traced, not painted: for every pixel
      near it, the ray of light is followed backwards along its real path in the curved space
      around the hole (Schwarzschild; the step is the one of Riccardo Antonelli's "Starless":
@@ -1080,9 +1095,10 @@ void main(){
     P.comp=compile(FULL_VS,COMP_FS);
     P.up=compile(FULL_VS,UP_FS);
     /* the wonders wait until the universe is on the screen (compiling them all at once held the
-       page back), except the Earth on a first visit, where the opening starts */
-    let firstVisit=false; try{ firstVisit=!sessionStorage.getItem("nolan-launched"); }catch(e){}
-    EXTRAS.forEach(x=>{ x.ready=false; x.prog={}; if(x.early&&firstVisit) compileExtra(x,P); });
+       page back), except the Earth, where every way in starts */
+    /* (always: every way in, the PIN, a guest's reload, the first opening, flies from the Earth, and it
+       used to wait at the end of the queue after a reload, so the flight passed an empty sky) */
+    EXTRAS.forEach(x=>{ x.ready=false; x.prog={}; if(x.early) compileExtra(x,P); });
     laterExtras();
   }
   function compileExtra(x,into){
@@ -1172,7 +1188,7 @@ void main(){
      both sides and under the clock; on a phone a long diagonal. In shares of half the screen */
   function bandShape(){
     const asp=W/H, narrow=W<760;
-    return narrow?{curve:[-.05,-.45,.04,0],w:.12,heart:.45,asp}:{curve:[.12,-.2,.16,1],w:.16,heart:-.85*asp,asp};
+    return narrow?{curve:[-.05,-.45,.04,0],w:.12,heart:.45,asp,hb:2.8}:{curve:[.12,-.2,.16,1],w:.16,heart:-.85*asp,asp,hb:2};
   }
   function buildSky(){
     noiseTex=buildNoise(robot?24:phone?48:64);
@@ -1234,13 +1250,13 @@ void main(){
   }
   /* the band, painted once (again only if the screen changes shape), a little larger than the screen around home */
   function paintBand(){
-    const bs=bandShape(), HB=1.45, bw=W>=H?TIER.band:Math.round(TIER.band*W/H), bh=W>=H?Math.round(TIER.band*H/W):TIER.band;
+    const bs=bandShape(), HB=bs.hb, side=Math.min(TIER.band,gl.getParameter(gl.MAX_TEXTURE_SIZE)||2048), bw=W>=H?side:Math.round(side*W/H), bh=W>=H?Math.round(side*H/W):side;
     if(band) gl.deleteTexture(band.t);
     const tb=target(bw,bh,"rgba8");
     gl.viewport(0,0,bw,bh); gl.disable(gl.BLEND);
     const u=P.bandgen.u; gl.useProgram(P.bandgen.p);
     gl.uniform2f(u.uHalf,HB,HB); gl.uniform4f(u.uCurve,...bs.curve); gl.uniform3f(u.uBand,bs.w,bs.heart,bs.asp); full();
-    band={t:tb.t,hx:HB*(W/2)/F*1400,hy:HB*(H/2)/F*1400,W,H}; gl.deleteFramebuffer(tb.f);
+    band={t:tb.t,hb:HB,hx:HB*(W/2)/F*1400,hy:HB*(H/2)/F*1400,W,H}; gl.deleteFramebuffer(tb.f);
   }
 
   /* ---------- a galaxy: its stars and its map, built when its turn comes ----------
@@ -1531,7 +1547,7 @@ void main(){
     /* the band of our galaxy */
     if(band){
       if((band.W!==W||band.H!==H)&&(Math.abs(band.W/band.H-W/H)>.15)){ paintBand(); gl.bindFramebuffer(gl.FRAMEBUFFER,hdr.f); gl.viewport(0,0,RW,RH); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE,gl.ONE); gl.useProgram(P.neb.p); }
-      band.hx=1.45*(W/2)/F*1400; band.hy=1.45*(H/2)/F*1400;           /* (it follows small changes of size) */
+      band.hx=band.hb*(W/2)/F*1400; band.hy=band.hb*(H/2)/F*1400;           /* (it follows small changes of size) */
       gl.uniform4f(u.uQuad,0,0,band.hx,band.hy); gl.uniform1f(u.uGain,1.6*starsFade);
       gl.bindTexture(gl.TEXTURE_2D,band.t); gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
     }
@@ -1595,7 +1611,37 @@ void main(){
   }
 
   /* what wonders.js can use to place and draw its wonders */
+  /* pictures a wonder may use (the real Earth and Moon): loaded once, mipmapped; null until ready, or for good
+     if they cannot be used (a page opened from a file: the browser forbids drawing its pictures) */
+  let images={};
+  function image(url){
+    let e=images[url];
+    if(!e){
+      e=images[url]={t:null};
+      const im=new Image(); im.decoding="async";
+      im.onload=()=>{
+        if(!gl||lost||images[url]!==e) return;
+        try{
+          const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t);
+          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+          gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,im);
+          gl.generateMipmap(gl.TEXTURE_2D);
+          gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);
+          gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+          const an=gl.getExtension("EXT_texture_filter_anisotropic");
+          if(an) gl.texParameterf(gl.TEXTURE_2D,an.TEXTURE_MAX_ANISOTROPY_EXT,Math.min(4,gl.getParameter(an.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
+          gl.bindTexture(gl.TEXTURE_2D,null);
+          e.t=t; need();
+        }catch(err){ /* (the procedural one stays) */ }
+      };
+      im.src=url;
+    }
+    return e.t;
+  }
   const api={
+    image, bind(unit,t){ gl.activeTexture(gl.TEXTURE0+unit); gl.bindTexture(gl.TEXTURE_2D,t); gl.activeTexture(gl.TEXTURE0); },
     get gl(){ return gl; }, get W(){ return W; }, get H(){ return H; }, get F(){ return F; }, get scale(){ return scale; },
     get fade(){ return starsFade; }, get phone(){ return phone; }, get robot(){ return robot; }, get scene(){ return scene; },
     get cam(){ return cam; }, get camR(){ return camR; },
@@ -1710,7 +1756,7 @@ void main(){
         gl.enable(gl.BLEND); gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
         const v=P.up.u; gl.useProgram(P.up.p);
         gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,volT.t); gl.uniform1i(v.uTex,0);
-        gl.uniform2f(v.uK,k/volT.w,k/volT.h);
+        gl.uniform2f(v.uK,k/volT.w,k/volT.h); gl.uniform2f(v.uSize,volT.w,volT.h);
         full();
       }
       gl.disable(gl.SCISSOR_TEST);
@@ -1918,7 +1964,7 @@ void main(){
     if(gl){
       cv.addEventListener("webglcontextlost",e=>{ e.preventDefault(); lost=true; ok=false; });
       cv.addEventListener("webglcontextrestored",()=>{
-        lost=false; P={}; hdr=bloomA=bloomB=volT=null; RW=RH=1;
+        lost=false; P={}; hdr=bloomA=bloomB=volT=null; RW=RH=1; images={};
         Object.keys(G).forEach(k=>delete G[k]);
         try{ if(initGL()){ compileAll(); whenCompiled(()=>{ hdr=null; sizeTargets(); buildSky(); ok=true; startBuilding(); need(); },giveUp); } }catch(e){ giveUp(e); }
       });

@@ -61,58 +61,62 @@ const Home=(function(){
     const m=Astro.moon(new Date());
     return t("sight.moon."+key,{phase:t("moon."+m.name),pct:Math.round(m.fraction*100)});
   }
-  /* ---------- where to go: one card on home ("Explore the universe") and a drop-down list of the
-     places; on a sight the list opens from its name. It is one list, moved to where it opens ---------- */
-  const menu=$("#placeMenu"), explore=$("#homeExplore");
+  /* ---------- the journey: home's big button starts a tour through the sights; on each one a dock at the
+     foot of the screen holds every place (the one you are at lit: choose any to fly there), the autopilot
+     (on: it flies on to the next place by itself after a while, a bar filling as it waits) and home ---------- */
+  const tour=$("#tour"), tourList=$("#tourList"), tourAuto=$("#tourAuto");
+  const DWELL=16000;                                    /* how long the autopilot stays at each place */
+  let auto=false, autoTimer=0;
   function drawSights(){
-    if(!menu) return;
-    if(!menu.children.length){
-      menu.innerHTML=SIGHTS.map(s=>`<a class="p-place" role="menuitem" href="#${s.id}" data-scene="${s.id}" data-sight="${s.id}" style="--ac:${s.ac}">`+
-        `<span class="p-ic">${s.icon}</span><span class="p-txt"><b></b><span class="s-tag"></span></span></a>`).join("");
+    if(tourList&&!tourList.children.length){
+      tourList.innerHTML=SIGHTS.map(s=>`<a class="t-stop" role="listitem" href="#${s.id}" data-scene="${s.id}" data-sight="${s.id}" style="--ac:${s.ac}">`+
+        `<span class="t-ic p-ic">${s.icon}</span><span class="t-name"></span></a>`).join("");
     }
-    SIGHTS.forEach(s=>{ const a=menu.querySelector(`[data-sight="${s.id}"]`); put(a.querySelector("b"),nameOf(s.id)); put(a.querySelector(".s-tag"),words(s.id,"tag")); });
-    put($("#homeExploreInfo"),t("s.exploreCount",{n:SIGHTS.length}));
+    SIGHTS.forEach(s=>{ const a=tourList&&tourList.querySelector(`[data-sight="${s.id}"]`); if(a){ put(a.querySelector(".t-name"),nameOf(s.id)); a.title=words(s.id,"tag"); } });
+    put($("#tourCount"),t("s.tourCount",{n:SIGHTS.length}));
   }
-  let menuFrom=null;                                   /* the button the list is open under */
-  function openMenu(btn){
-    if(!menu||!btn) return;
-    btn.after(menu); menu.hidden=false; menuFrom=btn;
-    btn.setAttribute("aria-expanded","true"); menu.setAttribute("aria-labelledby",btn.id);
-    const here=P.dataset.view==="sight"?current:"";
-    menu.querySelectorAll(".p-place").forEach(a=>{ if(a.dataset.sight===here) a.setAttribute("aria-current","true"); else a.removeAttribute("aria-current"); });
-    if(!lowMotion()&&menu.scrollIntoView) menu.scrollIntoView({block:"nearest",behavior:"smooth"});
+  /* the autopilot: waits DWELL at a place, then flies on to the next (after the last, back to the first) */
+  function setAuto(on){
+    auto=!!on;
+    if(tourAuto){ tourAuto.setAttribute("aria-pressed",String(auto)); }
+    if(tour) tour.classList.toggle("auto",auto);
+    arm();
   }
-  function closeMenu(){
-    if(!menu||menu.hidden) return;
-    menu.hidden=true; if(menuFrom) menuFrom.setAttribute("aria-expanded","false"); menuFrom=null;
+  function arm(){
+    clearTimeout(autoTimer);
+    if(!tour) return;
+    tour.classList.remove("ticking");
+    if(!auto||P.hidden||P.dataset.view!=="sight") return;
+    void tour.offsetWidth; tour.classList.add("ticking");  /* (the bar starts again from nothing) */
+    tour.style.setProperty("--dwell",DWELL+"ms");
+    autoTimer=setTimeout(onward,DWELL);
   }
-  P.addEventListener("click",ev=>{
-    const btn=ev.target.closest("#homeExplore,#sightTitle");
-    if(btn){ ev.preventDefault(); if(menuFrom===btn) closeMenu(); else { closeMenu(); openMenu(btn); } return; }
-    if(!ev.target.closest("#placeMenu")) closeMenu();
-  });
-  /* Escape closes the list first (before it can take you anywhere) */
-  document.addEventListener("keydown",ev=>{ if(ev.key==="Escape"&&menu&&!menu.hidden){ ev.stopImmediatePropagation(); ev.preventDefault(); closeMenu(); } },true);
+  function onward(){
+    if(!auto||P.hidden||P.dataset.view!=="sight") return;
+    /* not while a trip is under way or nobody is looking: try again shortly */
+    if(entering||document.hidden){ autoTimer=setTimeout(onward,1000); return; }
+    const i=SIGHTS.findIndex(s=>s.id===current), next=SIGHTS[(i+1)%SIGHTS.length].id;
+    const a=tourList.querySelector(`[data-sight="${next}"]`); if(a) a.click();
+  }
+  if(tourAuto) tourAuto.addEventListener("click",()=>setAuto(!auto));
+  document.addEventListener("visibilitychange",()=>{ if(!document.hidden&&auto) arm(); });
 
-  /* a sight's own page: what it is, a few words, and home; its name opens the list; the arrows to the
-     one before and after stay in the same place on the screen for every sight (#sightNav) */
+  /* a sight's own page: what it is, and a few words; the dock below says where you are */
   function renderSight(id){
-    closeMenu(); if(menu) P.appendChild(menu);        /* (the list lives outside the page it is about to replace) */
-    const i=SIGHTS.findIndex(s=>s.id===id), n=SIGHTS.length, prev=SIGHTS[(i+n-1)%n].id, next=SIGHTS[(i+1)%n].id;
+    const i=SIGHTS.findIndex(s=>s.id===id);
     const box=$("#sightView");
     box.style.setProperty("--ac",SIGHTS[i].ac);
     box.innerHTML=`<p class="s-fact">${esc(words(id,"fact"))}</p>`+
-      `<button type="button" class="s-title" id="sightTitle" aria-haspopup="menu" aria-expanded="false" aria-controls="placeMenu" title="${esc(t("s.choose"))}">`+
-        `<h2>${esc(nameOf(id))}</h2><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg></button>`+
+      `<h2>${esc(nameOf(id))}</h2>`+
       `<p class="s-text">${esc(words(id,"text"))}</p>`+
-      `<div class="s-dots" aria-label="${esc(t("s.sight.count",{n:i+1,total:n}))}">${SIGHTS.map(s=>`<i${s.id===id?' class="on"':""}></i>`).join("")}</div>`+
-      backLink("#home","nolan.backAria");
-    [["prev",prev],["next",next]].forEach(([dir,to])=>{
-      const a=$(`#sightNav .s-arrow[data-dir="${dir}"]`);
-      a.setAttribute("href","#"+to); a.dataset.scene=to;
-      a.setAttribute("aria-label",t("s.sight."+dir,{name:nameOf(to)})); a.title=nameOf(to);
-      a.style.setProperty("--ac",SIGHTS[dir==="prev"?(i+n-1)%n:(i+1)%n].ac);
-    });
+      `<p class="s-step">${esc(t("s.sight.count",{n:i+1,total:SIGHTS.length}))}</p>`;
+    if(tour){
+      tour.style.setProperty("--ac",SIGHTS[i].ac);
+      tourList.querySelectorAll(".t-stop").forEach(a=>{ if(a.dataset.sight===id) a.setAttribute("aria-current","location"); else a.removeAttribute("aria-current"); });
+      /* the place you are at comes to the middle of the dock (a phone shows only some at a time) */
+      const on=tourList.querySelector(".t-stop[aria-current]");
+      if(on) requestAnimationFrame(()=>{ const x=on.offsetLeft+on.offsetWidth/2-tourList.clientWidth/2; tourList.scrollTo({left:x,behavior:lowMotion()?"auto":"smooth"}); });
+    }
   }
 
   /* which galaxy (or sight) each view of home lives in */
@@ -145,8 +149,8 @@ const Home=(function(){
     if(!fresh&&before==="home"&&shown!=="home") homeScroll=P.scrollTop;
     views.forEach(v=>v.hidden=v.dataset.view!==shown);
     P.dataset.view=shown;
-    $("#sightNav").hidden=!sight;
-    if(!sight){ closeMenu(); if(menu&&explore) explore.after(menu); }
+    if(tour) tour.hidden=!sight;
+    if(!sight&&auto) setAuto(false);                  /* leaving the tour ends it */
     clearTimeout(closeTimer);
     if(fresh) returnFocus=document.activeElement;
     P.classList.remove("leaving"); P.hidden=false;
@@ -159,9 +163,11 @@ const Home=(function(){
     behind.forEach(el=>el.inert=true);
     /* focus goes into the window (Tab continues through the cards), without marking any */
     P.focus({preventScroll:true});
+    if(sight) arm();
   }
   function close(){
     if(P.hidden) return;
+    if(auto) setAuto(false);
     Universe.go("uc3m");                                /* the app lives inside the UC3M galaxy */
     document.body.classList.remove("portal-open");
     behind.forEach(el=>el.inert=false);
@@ -220,7 +226,7 @@ const Home=(function(){
     P.classList.add("entering");                        /* nothing faded can be clicked meanwhile (css) */
     const reset=()=>{ if(me!==trip) return; inner.getAnimations().forEach(a=>a.cancel()); if(bar) bar.getAnimations().forEach(a=>a.cancel()); P.classList.remove("entering"); };
     /* the trip was interrupted (Escape, Back, another page): home comes back as it was */
-    const abort=()=>{ if(me!==trip) return; reset(); entering=false; };
+    const abort=()=>{ if(me!==trip) return; reset(); entering=false; if(auto) arm(); };
     Universe.go(id,{arriveAt:.82,onCancel:abort,onArrive:()=>{
       if(location.hash!==from){ abort(); return; }      /* you went somewhere else meanwhile */
       go();
@@ -236,25 +242,29 @@ const Home=(function(){
   document.addEventListener("keydown",ev=>{
     if(entering&&(ev.key==="Enter"||ev.key===" ")&&Universe.skip()) ev.preventDefault();
   },true);
-  /* Nolan, the sights and the arrows between them open inside home (router.js handles UC3M) */
-  P.addEventListener("click",ev=>{
+  /* Nolan, the journey and the places of its dock open inside home (router.js handles UC3M) */
+  const onScene=ev=>{
     const a=ev.target.closest("a[data-scene]");
     if(!a||a.id==="homeUc3m"||ev.defaultPrevented||ev.button||ev.metaKey||ev.ctrlKey||ev.shiftKey||ev.altKey) return;
-    ev.preventDefault(); closeMenu();
+    ev.preventDefault();
+    if(a.dataset.tour==="start") setAuto(true);       /* the journey: the autopilot takes you round */
     const h=a.getAttribute("href").slice(1);
+    clearTimeout(autoTimer); if(tour) tour.classList.remove("ticking");
     enter(a.dataset.scene,()=>{ history.replaceState(null,"","#"+h); const [v,...rest]=h.split("/"); open(v,rest.join("/")); });
-  });
+  };
+  P.addEventListener("click",onScene);                  /* (the dock too: it is inside home's window) */
   /* on a sight, the arrow keys go to the one before or after */
   document.addEventListener("keydown",ev=>{
     if(P.hidden||P.dataset.view!=="sight"||entering||ev.altKey||ev.ctrlKey||ev.metaKey||(ev.key!=="ArrowLeft"&&ev.key!=="ArrowRight")) return;
     if(ev.target.closest&&ev.target.closest("input,textarea,select,[contenteditable]")) return;
-    if(menu&&!menu.hidden) return;
-    const a=$(`#sightNav .s-arrow[data-dir="${ev.key==="ArrowLeft"?"prev":"next"}"]`);
+    const i=SIGHTS.findIndex(s=>s.id===current), n=SIGHTS.length, to=SIGHTS[(i+(ev.key==="ArrowLeft"?n-1:1))%n].id;
+    const a=tourList&&tourList.querySelector(`[data-sight="${to}"]`);
     if(a){ ev.preventDefault(); a.click(); }
   });
   drawSights();
 
   /* scene(): where the camera belongs for what is on screen (the app lives in UC3M) */
-  return {open, close, enter, intro, back, isSight, sights:()=>SIGHTS.map(s=>s.id),
+  /* tour: the autopilot's state, and its next hop now (tests) */
+  return {open, close, enter, intro, back, isSight, sights:()=>SIGHTS.map(s=>s.id), tour:{auto:()=>auto, onward},
     scene:()=>P.hidden||P.classList.contains("leaving")?"uc3m":current, isOpen:()=>!P.hidden&&!P.classList.contains("leaving")};
 })();

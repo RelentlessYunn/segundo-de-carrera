@@ -92,7 +92,7 @@ es:{
   "weather.drizzle":"Llovizna", "weather.rain_":"Lluvia", "weather.showers":"Chubascos", "weather.snow":"Nieve", "weather.storm":"Tormenta",
   "s.viewSky":"Ver el cielo", "s.viewSkyExit":"Volver",
   /* the sights (home.js): name, a few words on the card, what it is, and a little more */
-  "s.explore":"Explora el universo", "s.exploreSub":"Vuela a la Tierra, la Luna, un agujero negro, galaxias y nebulosas", "s.choose":"Elige a dónde ir", "s.exploreCount":"{n} lugares, uno tras otro o el que elijas", "s.sight.prev":"Anterior: {name}", "s.sight.next":"Siguiente: {name}", "s.sight.count":"{n} de {total}",
+  "s.tour":"Empieza el viaje", "s.tourSub":"Un recorrido por el universo: la Tierra, la Luna, un agujero negro, galaxias y nebulosas", "s.tourCount":"{n} destinos · elige a dónde ir", "s.tourNav":"Destinos del viaje", "s.tourAuto":"Piloto automático", "s.sight.count":"Destino {n} de {total}",
   "sight.earth.name":"La Tierra", "sight.earth.tag":"Volver a casa", "sight.earth.fact":"Nuestro planeta · donde empieza el viaje",
   "sight.earth.text":"Aquí empezó todo: cada viaje por este universo despega de este planeta azul. En la cara de día, océanos, costas y nubes; en la de noche, las luces de las ciudades y las auroras sobre los polos.",
   "sight.moon.name":"La Luna", "sight.moon.tag":"Esta noche: {phase}", "sight.moon.fact":"A 384 400 km de la Tierra",
@@ -219,7 +219,7 @@ en:{
   "weather.clear":"Clear", "weather.partly":"Partly cloudy", "weather.cloudy":"Cloudy", "weather.fog":"Fog",
   "weather.drizzle":"Drizzle", "weather.rain_":"Rain", "weather.showers":"Showers", "weather.snow":"Snow", "weather.storm":"Thunderstorm",
   "s.viewSky":"View the sky", "s.viewSkyExit":"Back",
-  "s.explore":"Explore the universe", "s.exploreSub":"Fly to the Earth, the Moon, a black hole, galaxies and nebulae", "s.choose":"Choose where to go", "s.exploreCount":"{n} places, one after another or the one you choose", "s.sight.prev":"Previous: {name}", "s.sight.next":"Next: {name}", "s.sight.count":"{n} of {total}",
+  "s.tour":"Start the journey", "s.tourSub":"A tour through the universe: the Earth, the Moon, a black hole, galaxies and nebulae", "s.tourCount":"{n} destinations · choose where to go", "s.tourNav":"Destinations", "s.tourAuto":"Autopilot", "s.sight.count":"Destination {n} of {total}",
   "sight.earth.name":"Earth", "sight.earth.tag":"Back home", "sight.earth.fact":"Our planet · where the journey begins",
   "sight.earth.text":"Where it all began: every journey through this universe takes off from this blue planet. On the day side, oceans, coasts and clouds; on the night side, city lights and auroras over the poles.",
   "sight.moon.name":"The Moon", "sight.moon.tag":"Tonight: {phase}", "sight.moon.fact":"384,400 km from Earth",

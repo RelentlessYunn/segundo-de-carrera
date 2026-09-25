@@ -91,86 +91,139 @@ body.portal-open{overflow:hidden}
 .portal:not([data-view=home]) .p-more{display:none}
 .portal.scrolled .p-more{opacity:0;pointer-events:none}
 
-/* ---------- the sights: one card, "Explore the universe", and a drop-down list of the places (home.js) ---------- */
-button.p-card{font:inherit;text-align:left;cursor:pointer;width:100%}
-.p-explore{grid-column:1/-1}
-.p-explore .p-go em{display:inline-block;transition:transform .3s var(--spring)}
-.p-explore[aria-expanded=true] .p-go em{transform:rotate(180deg)}
-.p-explore .p-info{min-height:0}
+/* ---------- the journey: one big button that starts a tour through the universe (home.js) ----------
+   a window onto space: a rim of light turning round it, stars twinkling behind, a small world with its
+   rings and moon, and the way in */
+@property --ta{syntax:"<angle>";inherits:false;initial-value:0deg}
+.tour-start{
+  grid-column:1/-1;position:relative;overflow:hidden;isolation:isolate;
+  display:flex;align-items:center;gap:30px;padding:40px 40px;border-radius:30px;margin-bottom:6px;
+  color:var(--ink);text-decoration:none;
+  background:
+    radial-gradient(90% 160% at 8% 50%,rgba(84,120,255,.30),transparent 60%),
+    radial-gradient(70% 120% at 100% 0%,rgba(255,110,200,.20),transparent 62%),
+    radial-gradient(60% 120% at 80% 110%,rgba(80,220,210,.14),transparent 60%),
+    rgba(9,11,22,.78);
+  box-shadow:0 26px 70px -28px rgba(90,120,255,.7),inset 0 1px 0 rgba(255,255,255,.08);
+  transition:transform .4s var(--spring),box-shadow .4s ease;
+}
+.tour-start::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;padding:1.5px;z-index:-1;pointer-events:none;
+  background:conic-gradient(from var(--ta),rgba(143,182,255,.08),#8FB6FF 12%,#FF8AD8 22%,rgba(255,255,255,.08) 34%,rgba(143,182,255,.08) 62%,#6CE0D0 76%,rgba(143,182,255,.08) 88%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;
+  animation:ts-spin 7s linear infinite;
+}
+@keyframes ts-spin{to{--ta:360deg}}
+.tour-start>*:not(.ripple){position:relative}
+.ts-sky{position:absolute!important;inset:0;z-index:-1;pointer-events:none}
+.ts-sky i{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;box-shadow:0 0 6px #fff;opacity:.2;animation:ts-tw 3.6s ease-in-out infinite}
+.ts-sky i:nth-child(1){left:22%;top:18%;animation-delay:-.4s}  .ts-sky i:nth-child(2){left:38%;top:78%;animation-delay:-1.9s}
+.ts-sky i:nth-child(3){left:57%;top:24%;animation-delay:-2.7s} .ts-sky i:nth-child(4){left:71%;top:70%;animation-delay:-.9s;width:3px;height:3px}
+.ts-sky i:nth-child(5){left:84%;top:30%;animation-delay:-3.1s} .ts-sky i:nth-child(6){left:92%;top:82%;animation-delay:-1.4s}
+.ts-sky i:nth-child(7){left:47%;top:52%;animation-delay:-2.2s} .ts-sky i:nth-child(8){left:12%;top:86%;animation-delay:-.2s}
+@keyframes ts-tw{0%,100%{opacity:.15;transform:scale(.7)}50%{opacity:.95;transform:scale(1.2)}}
+.ts-orb{flex:0 0 auto;width:120px;height:120px}
+.ts-planet{position:absolute;inset:30px;border-radius:50%;
+  background:radial-gradient(circle at 34% 30%,#d4ecff,#5b9cf0 30%,#1d4fa8 58%,#081634 82%);
+  box-shadow:0 0 28px rgba(108,184,255,.75),inset -9px -7px 14px rgba(0,0,0,.6)}
+.ts-ring{position:absolute;inset:6px;border-radius:50%;border:1.5px solid rgba(143,182,255,.6);transform:rotate(-22deg) scaleY(.34)}
+.ts-r2{inset:-4px;border-color:rgba(255,138,216,.4);transform:rotate(16deg) scaleY(.26)}
+.ts-moon{position:absolute;left:50%;top:50%;width:0;height:0;animation:ts-orbit 8s linear infinite}
+.ts-moon::after{content:"";position:absolute;left:50px;top:-4px;width:8px;height:8px;border-radius:50%;background:#EEF1F8;box-shadow:0 0 10px #fff}
+@keyframes ts-orbit{to{transform:rotate(360deg)}}
+.ts-txt{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1}
+.ts-txt b{font-size:clamp(1.7rem,3.8vw,2.6rem);font-weight:800;letter-spacing:-.035em;line-height:1.05;
+  background:linear-gradient(92deg,#fff 20%,#BFD3FF 55%,#FFC2EA);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ts-txt>span{font-size:.9rem;line-height:1.45;color:var(--ink-2)}
+.ts-txt em{font-style:normal;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#9DB8FF}
+.ts-go{flex:0 0 auto;display:grid;place-items:center;width:72px;height:72px;border-radius:50%;
+  color:#0A0E1C;background:radial-gradient(circle at 35% 30%,#fff,#C9D8FF 45%,#8FB6FF);
+  box-shadow:0 0 0 0 rgba(143,182,255,.55),0 10px 30px -8px rgba(143,182,255,.9);animation:ts-pulse 2.8s ease-out infinite}
+.ts-go svg{width:26px;height:26px;margin-left:3px;fill:currentColor}
+@keyframes ts-pulse{0%{box-shadow:0 0 0 0 rgba(143,182,255,.5),0 10px 30px -8px rgba(143,182,255,.9)}70%,100%{box-shadow:0 0 0 18px rgba(143,182,255,0),0 10px 30px -8px rgba(143,182,255,.9)}}
+@media (hover:hover){
+  .tour-start:hover{transform:translateY(-4px) scale(1.01);box-shadow:0 34px 80px -26px rgba(110,140,255,.9),inset 0 1px 0 rgba(255,255,255,.1)}
+  .tour-start:hover .ts-go{transform:scale(1.08)}
+}
+.ts-go{transition:transform .3s var(--spring)}
+.tour-start:active{transform:scale(.985)}
+.tour-start:focus-visible{outline:2px solid #8FB6FF;outline-offset:3px}
+/* the sights are places of the 3D universe: without it (Effects Medium or Minimal) there is nothing to fly to */
+html.nogl .tour-start{display:none}
+html:not([data-motion=full]) .tour-start::before,html:not([data-motion=full]) .ts-sky i,
+html:not([data-motion=full]) .ts-moon,html:not([data-motion=full]) .ts-go{animation:none}
 .p-ic svg .dot{fill:currentColor;stroke:none}
 .p-ic svg .core{fill:#fff;stroke:none;filter:drop-shadow(0 0 3px currentColor)}
 .p-ic svg .haze{stroke-width:1.1;opacity:.4}
 .p-ic svg .rim{stroke-width:3.4}
 .p-ic svg .band{stroke:#1A1206;stroke-width:2.6;opacity:.85}
-.p-menu{
-  grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px;border-radius:20px;width:100%;
-  background:rgba(8,10,16,.82);border:1px solid rgba(255,255,255,.1);box-shadow:0 30px 70px -30px #000;
-  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);animation:menu-in .28s var(--ease) backwards;
-}
-.p-menu[hidden]{display:none}
-@keyframes menu-in{from{opacity:0;transform:translateY(-6px)}}
-.p-place{
-  position:relative;display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:14px;
-  color:var(--ink);text-decoration:none;transition:background .2s ease;
-}
-.p-place .p-ic{width:40px;height:40px;border-radius:12px;box-shadow:none}
-.p-place .p-ic svg{width:28px;height:28px;stroke-width:1.8}
-.p-place .p-txt{min-width:0}
-.p-place .p-txt b{font-size:.93rem;font-weight:700;letter-spacing:-.01em;line-height:1.2}
-.p-place .p-txt .s-tag{margin-top:2px;font-size:.74rem;line-height:1.3}
-.p-place[aria-current]{background:color-mix(in srgb,var(--ac) 16%,transparent)}
-@media (hover:hover){.p-place:hover{background:rgba(255,255,255,.07)}}
-.p-place:focus-visible{outline:2px solid var(--ac);outline-offset:-2px}
-/* the sights are places of the 3D universe: without it (Effects Medium or Minimal) there is nothing to fly to */
-html.nogl .p-explore,html.nogl .p-menu{display:none}
-@media (max-width:820px){.p-menu{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:420px){.p-menu{grid-template-columns:1fr}}
 
 /* ---------- a sight, up close (#earth, #orion…) ----------
-   the hero steps aside and the words sit low, over a soft shade, so the sight fills the sky above them */
+   the hero steps aside and the words sit low, over a soft shade, above the dock, so the sight fills the sky */
 .portal[data-view=sight] .p-top{display:none}
-.portal[data-view=sight] .p-in{justify-content:flex-end;padding-bottom:calc(30px + env(safe-area-inset-bottom,0px))}
+.portal[data-view=sight] .p-in{justify-content:flex-end;padding-bottom:calc(128px + env(safe-area-inset-bottom,0px))}
 .portal[data-view=sight]::before{
-  content:"";position:fixed;left:0;right:0;bottom:0;height:52vh;z-index:1;pointer-events:none;
-  background:linear-gradient(to top,rgba(2,3,6,.78),rgba(2,3,6,.4) 45%,transparent);
+  content:"";position:fixed;left:0;right:0;bottom:0;height:56vh;z-index:1;pointer-events:none;
+  background:linear-gradient(to top,rgba(2,3,6,.82),rgba(2,3,6,.42) 45%,transparent);
 }
 .p-sight-view{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;max-width:600px;margin:0 auto}
 .p-sight-view .s-fact{margin:0;font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
   color:color-mix(in srgb,var(--ac) 80%,#fff);text-shadow:0 1px 10px #000}
-/* its name opens the list of places */
-.s-title{display:inline-flex;align-items:center;gap:8px;padding:4px 10px 4px 14px;border-radius:14px;border:1px solid transparent;
-  background:none;color:inherit;font:inherit;cursor:pointer;transition:background .2s ease,border-color .2s ease}
-.s-title svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;opacity:.7;transition:transform .3s var(--spring)}
-.s-title[aria-expanded=true] svg{transform:rotate(180deg)}
-@media (hover:hover){.s-title:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12)}}
-.s-title:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
-.p-sight-view h2{margin:0;font-size:clamp(1.55rem,5vw,2.2rem);font-weight:800;letter-spacing:-.03em;line-height:1.1;text-shadow:0 2px 20px #000}
-.p-sight-view .p-menu{text-align:left;max-width:640px}
-/* the arrows: always at the two edges of the screen, level with the sight, for every sight */
-.s-nav{position:fixed;inset:0;z-index:3;pointer-events:none}
-.s-nav[hidden]{display:none}
-.s-arrow{
-  position:absolute;top:38%;transform:translateY(-50%);pointer-events:auto;
-  display:grid;place-items:center;width:56px;height:56px;border-radius:50%;
-  color:#DCE1EC;background:rgba(8,10,16,.35);border:1px solid rgba(255,255,255,.16);
-  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-  transition:color .2s ease,background .2s ease,border-color .2s ease,transform .15s var(--spring),opacity .4s ease;
-}
-.s-prev{left:max(18px,env(safe-area-inset-left,0px))} .s-next{right:max(18px,env(safe-area-inset-right,0px))}
-.s-arrow svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-@media (hover:hover){.s-arrow:hover{color:#fff;background:color-mix(in srgb,var(--ac) 26%,rgba(8,10,16,.5));border-color:color-mix(in srgb,var(--ac) 60%,transparent)}}
-.s-arrow:active{transform:translateY(-50%) scale(.92)}
-.s-arrow:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
-.portal.entering .s-nav{opacity:0}
-.portal.entering .s-arrow{pointer-events:none}
-.s-nav{transition:opacity .4s ease}
-.p-sight-view .s-text{margin:2px 0 4px;color:var(--ink-2);font-size:.92rem;line-height:1.55;max-width:58ch;text-shadow:0 1px 12px #000}
+.p-sight-view h2{margin:0;font-size:clamp(1.7rem,5.4vw,2.5rem);font-weight:800;letter-spacing:-.035em;line-height:1.08;text-shadow:0 2px 20px #000;
+  animation:s-rise .6s var(--ease) backwards}
+.p-sight-view .s-text{margin:2px 0 0;color:var(--ink-2);font-size:.92rem;line-height:1.55;max-width:58ch;text-shadow:0 1px 12px #000;animation:s-rise .6s .08s var(--ease) backwards}
+.p-sight-view .s-step{margin:4px 0 0;font-size:.68rem;font-weight:700;letter-spacing:.14em;color:rgba(232,236,246,.45)}
+@keyframes s-rise{from{opacity:0;transform:translateY(8px)}}
 /* a short screen (a phone on its side): the words would cover the sight, only its name stays */
-@media (max-height:620px){.p-sight-view .s-text{display:none}.p-sight-view h2{font-size:1.4rem}.s-arrow{width:44px;height:44px}}
-.s-dots{display:flex;gap:7px;margin:2px 0 0}
-.s-dots i{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.22);transition:background .3s ease,transform .3s var(--spring)}
-.s-dots i.on{background:var(--ac);box-shadow:0 0 8px var(--ac);transform:scale(1.35)}
-.p-sight-view .p-back{margin-top:4px}
+@media (max-height:620px){.p-sight-view .s-text,.p-sight-view .s-step{display:none}.p-sight-view h2{font-size:1.4rem}
+  .portal[data-view=sight] .p-in{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}}
+
+/* ---------- the tour's dock: every place (the one you are at lit), the autopilot and home ---------- */
+.tour{
+  position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:3;
+  display:flex;align-items:center;gap:6px;padding:7px;width:max-content;max-width:calc(100vw - 20px);
+  border-radius:24px;background:rgba(8,10,18,.68);border:1px solid rgba(255,255,255,.12);
+  backdrop-filter:blur(16px) saturate(1.25);-webkit-backdrop-filter:blur(16px) saturate(1.25);
+  box-shadow:0 24px 60px -24px #000,inset 0 1px 0 rgba(255,255,255,.06);
+  transition:opacity .4s ease;animation:tour-in .55s var(--ease) backwards;
+}
+.tour[hidden]{display:none}
+@keyframes tour-in{from{opacity:0;transform:translate(-50%,16px)}}
+.portal.entering .tour{opacity:.55}
+.t-list{display:flex;gap:2px;min-width:0;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;overscroll-behavior-x:contain;
+  -webkit-mask:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 14px),transparent);mask:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 14px),transparent);padding:0 8px}
+.t-list::-webkit-scrollbar{display:none}
+.t-stop{
+  position:relative;overflow:hidden;flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:5px;width:78px;padding:8px 4px 10px;border-radius:16px;
+  color:rgba(222,228,240,.62);text-decoration:none;scroll-snap-align:center;transition:background .25s ease,color .25s ease;
+}
+.t-ic.p-ic{width:42px;height:42px;border-radius:13px;box-shadow:none;transition:transform .35s var(--spring),box-shadow .35s ease,background .25s ease}
+.t-ic.p-ic svg{width:28px;height:28px;stroke-width:1.8}
+.t-name{font-size:.66rem;font-weight:600;line-height:1.2;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.t-stop[aria-current]{color:#fff;background:color-mix(in srgb,var(--ac) 16%,transparent)}
+.t-stop[aria-current] .t-ic{transform:scale(1.08);background:color-mix(in srgb,var(--ac) 26%,transparent);box-shadow:0 0 22px -4px var(--ac)}
+/* the autopilot's wait at this place: a thin bar filling under it */
+.t-stop::after{content:"";position:absolute;left:14px;right:14px;bottom:4px;height:2px;border-radius:2px;background:var(--ac);opacity:0;transform:scaleX(0);transform-origin:left}
+.tour.auto.ticking .t-stop[aria-current]::after{opacity:.9;animation:t-fill var(--dwell,16s) linear forwards}
+@keyframes t-fill{to{transform:scaleX(1)}}
+@media (hover:hover){.t-stop:hover{color:#fff;background:rgba(255,255,255,.07)}.t-stop:hover .t-ic{transform:translateY(-2px) scale(1.06)}}
+.t-stop:focus-visible{outline:2px solid var(--ac);outline-offset:-2px}
+.t-auto,.t-exit{flex:0 0 auto;position:relative;display:grid;place-items:center;width:52px;height:52px;padding:0;border:0;border-radius:50%;
+  color:#E6EAF4;background:none;cursor:pointer;text-decoration:none}
+.t-auto svg{position:absolute;inset:0;margin:auto}
+.t-ring{width:44px;height:44px;transform:rotate(-90deg);fill:none;stroke-width:2.2}
+.t-ring circle{stroke:rgba(255,255,255,.16)}
+.t-ring .t-prog{stroke:var(--ac,#8FB6FF);stroke-linecap:round;stroke-dasharray:119.4;stroke-dashoffset:119.4}
+.tour.auto.ticking .t-prog{animation:t-ring var(--dwell,16s) linear forwards}
+@keyframes t-ring{to{stroke-dashoffset:0}}
+.t-play,.t-pause{width:20px;height:20px}
+.t-play{fill:currentColor} .t-pause{fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
+.t-auto .t-pause,.tour.auto .t-auto .t-play{display:none}
+.tour.auto .t-auto .t-pause{display:block}
+.t-exit .logo-mark{width:30px;height:30px;overflow:visible}
+@media (hover:hover){.t-auto:hover,.t-exit:hover{color:#fff}.t-exit:hover .logo-mark .lm-line{stroke:#fff;opacity:1}}
+.t-auto:focus-visible,.t-exit:focus-visible{outline:2px solid #fff;outline-offset:-2px}
+html:not([data-motion=full]) .tour{animation:none}
 
 @media (max-width:620px){
   .p-in{gap:26px;justify-content:flex-start;padding-top:calc(56px + env(safe-area-inset-top,0px))}
@@ -183,6 +236,13 @@ html.nogl .p-explore,html.nogl .p-menu{display:none}
   .p-ic{width:56px;height:56px;border-radius:16px}
   .p-ic svg{width:38px;height:38px}
   .p-info{min-height:0}
-  .s-arrow{width:46px;height:46px;top:36%}
-  .s-prev{left:10px} .s-next{right:10px}
+  .tour-start{flex-wrap:wrap;gap:14px 16px;padding:24px 22px 26px;border-radius:26px}
+  .ts-orb{width:92px;height:92px;order:1}
+  .ts-planet{inset:23px} .ts-moon::after{left:38px}
+  .ts-go{order:2;margin-left:auto;width:62px;height:62px}
+  .ts-txt{order:3;flex-basis:100%}
+  .tour{left:10px;right:10px;transform:none;width:auto;max-width:none;border-radius:22px;padding:6px;gap:2px}
+  @keyframes tour-in{from{opacity:0;transform:translateY(16px)}}
+  .t-stop{width:68px}
+  .t-auto,.t-exit{width:46px;height:46px}
 }

@@ -4,13 +4,13 @@
    Needs Playwright with Chromium (npm i playwright). It never touches the
    real cloud or the real weather: JSONBin and Open-Meteo calls are simulated
    or blocked (config.js may hold real keys).
-   119 checks (without NOLAN_PIN: 115, and 3 skipped), by section:
+   126 checks (without NOLAN_PIN: 122, and 3 skipped), by section:
    · Loading: no errors, nothing wider than a phone.
    · PIN and start: the entry screen (logo and guest button; the logo or a
      typed digit opens the keypad; nothing read from the cloud behind it),
      wrong and right PIN, the flight home, remembered device, Log out; the
      flights to UC3M and back, a second click during a trip, Notes and
-     Settings inside home; the sights (a card flies to one, its arrows and
+     Settings inside home; the journey (its button starts the tour, the dock and the autopilot, and
      the arrow keys go on, Escape goes home, old #soon/… links land home),
      every sight framed whole on four screens, the black hole's own window.
    · Tabs and old Spanish links · Today (the red line moved in place, the
@@ -208,22 +208,31 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.click("header .home-btn"); await p.waitForTimeout(200);
     ok(await p.evaluate(()=>Universe.scene()==="home"&&!!document.querySelector("header .home-btn .logo-mark")),"the logo takes you home, flying back to the home galaxy");
     await p.waitForTimeout(2800);
-    await p.click("#homeExplore"); await p.click('#placeMenu .p-place[data-sight="orion"]'); await p.waitForFunction(()=>location.hash==="#orion"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
-    ok(await p.evaluate(()=>Universe.scene()==="orion"&&!document.getElementById("sightView").hidden&&/Orión/.test(document.querySelector("#sightView h2").textContent)),"a sight's card flies up to it and shows what it is");
-    /* (clicked as soon as the camera stops: the sight is on screen, so its arrows must answer) */
-    const at=await p.evaluate(()=>{ const r=document.querySelector('#sightNav .s-arrow[data-dir="next"]').getBoundingClientRect(); return [Math.round(r.x),Math.round(r.y)]; });
-    await p.click('#sightNav .s-arrow[data-dir="next"]'); await p.waitForFunction(()=>location.hash==="#pleiades"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
-    const nx=await p.evaluate(()=>({hash:location.hash,scene:Universe.scene(),h:document.querySelector("#sightView h2").textContent}));
-    const at2=await p.evaluate(()=>{ const r=document.querySelector('#sightNav .s-arrow[data-dir="next"]').getBoundingClientRect(); return [Math.round(r.x),Math.round(r.y)]; });
-    ok(at.join()===at2.join(),`the arrows stay in the same place from one sight to the next (${at} ${at2})`);
-    await p.click("#sightTitle"); await p.waitForTimeout(200);
-    const dd=await p.evaluate(()=>({open:!document.getElementById("placeMenu").hidden,inside:!!document.querySelector("#sightView #placeMenu"),here:(document.querySelector('#placeMenu .p-place[aria-current]')||{}).dataset}));
-    await p.keyboard.press("Escape"); await p.waitForTimeout(150);
-    ok(dd.open&&dd.inside&&dd.here&&dd.here.sight==="pleiades"&&await p.evaluate(()=>document.getElementById("placeMenu").hidden&&location.hash==="#pleiades"),
-      `a sight's name opens the list of places (the one you are at marked), and Escape closes it first (${JSON.stringify(dd)})`);
-    ok(nx.scene==="pleiades"&&/Pléyades/.test(nx.h),`its arrow flies on to the next one, as soon as you have landed (${JSON.stringify(nx)})`);
-    /* the keys on their own (not after a failed click): from the Pleiades, once everything has settled */
-    if(nx.hash!=="#pleiades"){ await p.evaluate(()=>{ location.hash="#pleiades"; }); await p.waitForFunction(()=>location.hash==="#pleiades"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{}); }
+    /* the journey: home's big button flies to the Earth and starts the tour */
+    await p.click("#tourStart"); await p.waitForFunction(()=>location.hash==="#earth"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
+    const st=await p.evaluate(()=>({scene:Universe.scene(),view:!document.getElementById("sightView").hidden,tour:!document.getElementById("tour").hidden,
+      auto:document.getElementById("tourAuto").getAttribute("aria-pressed"),stops:document.querySelectorAll("#tourList .t-stop").length,
+      here:(document.querySelector("#tourList .t-stop[aria-current]")||{dataset:{}}).dataset.sight,arrows:!!document.querySelector(".s-arrow,#placeMenu")}));
+    ok(st.scene==="earth"&&st.view&&st.tour&&st.auto==="true"&&st.stops===11&&st.here==="earth"&&!st.arrows,
+      `"Start the journey" flies to the Earth and starts the tour: the dock holds the eleven places, the autopilot on, no arrows (${JSON.stringify(st)})`);
+    /* choosing where to go: any place in the dock (clicked as soon as the camera stops: it must answer) */
+    await p.waitForTimeout(800);                      /* (the dock has slid into place) */
+    const at=await p.evaluate(()=>{ const r=document.getElementById("tour").getBoundingClientRect(); return [Math.round(r.x),Math.round(r.y)]; });
+    await p.click('#tourList .t-stop[data-sight="orion"]'); await p.waitForFunction(()=>location.hash==="#orion"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
+    const nx=await p.evaluate(()=>({scene:Universe.scene(),h:document.querySelector("#sightView h2").textContent,here:(document.querySelector("#tourList .t-stop[aria-current]")||{dataset:{}}).dataset.sight}));
+    const at2=await p.evaluate(()=>{ const r=document.getElementById("tour").getBoundingClientRect(); return [Math.round(r.x),Math.round(r.y)]; });
+    ok(nx.scene==="orion"&&/Orión/.test(nx.h)&&nx.here==="orion",`a place chosen in the dock flies there, says what it is and is lit in the dock (${JSON.stringify(nx)})`);
+    ok(at.join()===at2.join(),`the dock stays in the same place from one sight to the next (${at} ${at2})`);
+    /* the autopilot: paused, it waits no more; on, it flies on to the next place by itself */
+    await p.click("#tourAuto");
+    ok(await p.evaluate(()=>document.getElementById("tourAuto").getAttribute("aria-pressed")==="false"&&!Home.tour.auto()&&!document.getElementById("tour").classList.contains("ticking")),"the autopilot can be paused");
+    await p.click("#tourAuto"); await p.evaluate(()=>Home.tour.onward());
+    await p.waitForFunction(()=>location.hash==="#pleiades"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
+    const on=await p.evaluate(()=>({hash:location.hash,auto:Home.tour.auto(),h:document.querySelector("#sightView h2").textContent}));
+    ok(on.hash==="#pleiades"&&on.auto&&/Pléyades/.test(on.h),`on, the autopilot flies on to the next place (${JSON.stringify(on)})`);
+    await p.click("#tourAuto");                       /* (paused: the keys below must not race it) */
+    /* the keys on their own: from the Pleiades, once everything has settled */
+    if(await p.evaluate(()=>location.hash!=="#pleiades")){ await p.evaluate(()=>{ location.hash="#pleiades"; }); await p.waitForFunction(()=>location.hash==="#pleiades"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{}); }
     await p.waitForTimeout(1500);
     await p.keyboard.press("ArrowLeft"); await p.waitForFunction(()=>location.hash==="#orion"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
     const back=await p.evaluate(()=>Universe.scene());
@@ -276,12 +285,12 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     const seen=await p.evaluate(()=>!Universe.gl()||Universe.hole());
     ok(seen&&!p.errors.length,`${mobile?"mobile":"desktop"}: the black hole is in the sky of home ${p.errors.join(" | ")}`);
     /* its own window: the camera flies up close, the text sits below it */
-    await p.click("#homeExplore"); await p.click('#placeMenu .p-place[data-sight="blackhole"]');
+    await p.evaluate(()=>{ location.hash="#blackhole"; });
     await p.waitForFunction(()=>location.hash==="#blackhole"&&!Universe.busy(),null,{timeout:12000}).catch(()=>{});
     const r=await p.evaluate(()=>({scene:Universe.scene(),hash:location.hash,view:!document.getElementById("sightView").hidden,
       top:getComputedStyle(document.querySelector("#portal .p-top")).display,seen:!Universe.gl()||Universe.hole()}));
     ok(r.scene==="blackhole"&&r.hash==="#blackhole"&&r.view&&r.top==="none"&&r.seen,`${mobile?"mobile":"desktop"}: the black hole card flies up close to it (${JSON.stringify(r)})`);
-    await p.click("#sightView .p-back"); await p.waitForTimeout(3200);
+    await p.click("#tour .t-exit"); await p.waitForTimeout(3200);
     ok(await p.evaluate(()=>Universe.scene()==="home"&&location.hash==="#home"),`${mobile?"mobile":"desktop"}: and back home`);
     await p.context().close();
   }
@@ -390,12 +399,16 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
   section("Home");
   {
     const p=await open(b,{hash:"subjects"});
+    /* (once the universe has finished starting: a software graphics card compiles the wonders one by one, and
+       each compile holds the page for a moment, timers too; a real one compiles them alongside) */
+    await p.waitForFunction(()=>Universe.ready()&&window.UNIVERSE_EXTRAS.every(x=>x.ready||x.broken),null,{timeout:60000}).catch(()=>{});
     await p.click(".home-btn"); await p.waitForTimeout(400);
     ok(await p.evaluate(()=>!document.getElementById("portal").hidden&&document.querySelector("nav.bar").inert),"the home button opens the window and blocks what is behind");
     ok(await p.evaluate(()=>{ const w=getComputedStyle(document.querySelector("body > div.wrap"));
       return w.visibility==="hidden"&&w.opacity==="0"&&w.contentVisibility==="hidden"; }),"while home is open, the page behind is not drawn at all (no lines of its tables through home)");
     await p.keyboard.press("Escape");
-    await p.waitForFunction(()=>document.getElementById("portal").hidden,null,{timeout:3000}).catch(()=>{});
+    /* (home fades out in 280 ms; under the whole suite a software graphics card has held that timer back up to ~11 s) */
+    await p.waitForFunction(()=>document.getElementById("portal").hidden,null,{timeout:15000}).catch(()=>{});
     ok(await p.evaluate(()=>document.getElementById("portal").hidden&&location.hash==="#subjects"),"Escape closes it and you are back on the same tab");
     /* just the sky: the interface hides, the way back stays, Escape returns */
     await p.click('header [data-view-sky]'); await p.waitForTimeout(300);
@@ -416,10 +429,10 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     const p=await open(b,{hash:"home",mobile});
     const r=await p.evaluate(()=>{ const list=document.querySelector('#portal .p-view[data-view="home"]'), top=document.querySelector("#portal .p-top").getBoundingClientRect();
       return {list:Math.round(list.getBoundingClientRect().top),h:innerHeight,hero:Math.round(top.bottom),more:!!document.getElementById("homeMore").offsetWidth,
-        sights:document.querySelectorAll("#placeMenu .p-place").length,menu:document.getElementById("placeMenu").hidden}; });
+        sights:document.querySelectorAll("#tourList .t-stop").length,menu:document.getElementById("tour").hidden,start:!!document.getElementById("tourStart").offsetWidth}; });
     await p.click("#homeMore"); await p.waitForTimeout(900);
     const after=await p.evaluate(()=>{ const r=document.querySelector("#homeUc3m").getBoundingClientRect(); return r.top>=0&&r.top<innerHeight; });
-    ok(r.list>=r.h&&r.more&&r.sights===11&&r.menu&&after,`${mobile?"mobile":"desktop"}: home's first screen is only the hero; the sections and "Explore the universe" (eleven places in its list) come when you scroll (${JSON.stringify(r)})`);
+    ok(r.list>=r.h&&r.more&&r.sights===11&&r.menu&&r.start&&after,`${mobile?"mobile":"desktop"}: home's first screen is only the hero; "Start the journey" (eleven places) and the sections come when you scroll (${JSON.stringify(r)})`);
     await p.context().close();
   }
   {
@@ -460,11 +473,12 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     /* the guest button: the page loads again with the demo organizer, and flies in */
     p.requests.length=0;                                  /* (what the entry screen itself loaded does not count) */
     await Promise.all([p.waitForNavigation({waitUntil:"load"}),p.click("#gateGuest")]);
-    await p.waitForFunction(()=>!Universe.busy(),null,{timeout:20000}).catch(()=>{});
+    /* (the page loads again: home opens once it has started, which a slow software graphics card stretches) */
+    await p.waitForFunction(()=>!document.getElementById("portal").hidden&&!Universe.busy(),null,{timeout:20000}).catch(()=>{});
     const r=await p.evaluate(()=>({guest:document.documentElement.hasAttribute("data-guest"),home:!document.getElementById("portal").hidden,
       greeting:document.getElementById("homeGreeting").textContent,demo:!!SUBJECTS.alg&&!SUBJECTS.ed,card:document.querySelector("#homeUc3m b").textContent,
       nolan:getComputedStyle(document.querySelector("#portal .p-card.wip")).display,notes:getComputedStyle(document.querySelector('#portal .p-tool[href="#notes"]')).display,
-      explore:getComputedStyle(document.getElementById("homeExplore")).display,device:localStorage.getItem("nolan-device"),errors:CHECK.errors.length,warnings:CHECK.warnings.length}));
+      explore:getComputedStyle(document.getElementById("tourStart")).display,device:localStorage.getItem("nolan-device"),errors:CHECK.errors.length,warnings:CHECK.warnings.length}));
     r.cloud=p.requests.filter(u=>/jsonbin/.test(u)).length;
     r.files=p.requests.filter(u=>/\/(data|eval|config|demo)\.js/.test(u)).map(u=>u.replace(/^.*\//,"").replace(/\?.*/,""));
     await p.waitForFunction(()=>/24°/.test(document.getElementById("homeWeather").textContent),null,{timeout:5000}).catch(()=>{});
@@ -474,7 +488,8 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     ok(r.guest&&r.home&&/invitado/.test(r.greeting)&&r.demo&&r.card==="Universidad"&&r.nolan==="none"&&r.notes==="none"&&r.explore!=="none"&&!r.cloud&&!r.device&&!r.errors&&!r.warnings
       &&r.files.join()==="demo.js",
       `the guest button opens the same site with a demo organizer: demo.js only (not Nolan's data or the cloud's key), nothing read from the cloud (${JSON.stringify(r)})`);
-    await p.goto(PAGE+"#schedule"); await p.waitForTimeout(500);
+    await p.goto(PAGE+"#schedule");
+    await p.waitForFunction(()=>document.getElementById("portal").hidden,null,{timeout:3000}).catch(()=>{});   /* (home fades out: 280 ms, stretched under load) */
     const app=await p.evaluate(()=>({hash:location.hash,brand:document.querySelector("header .brand").textContent,rows:document.querySelectorAll("#calbody .ev").length,
       ag:getComputedStyle(document.querySelector(".ag-btn")).display,portal:document.getElementById("portal").hidden}));
     const routes={};
@@ -538,7 +553,7 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     {
       /* before the weather arrives its card already has its full shape: nothing on home moves when it comes */
       const w=await open(b,{time:"2026-09-23T16:05:00",mobile:true,routes:fakeWeather(2500)});
-      const box=()=>w.evaluate(()=>({wait:!!document.querySelector("#homeWeather .w-card.w-wait"),h:Math.round(document.getElementById("homeWeather").getBoundingClientRect().height),
+      const box=()=>w.evaluate(()=>({wait:!!document.querySelector("#homeWeather .w-card.w-wait"),h:document.getElementById("homeWeather").offsetHeight,   /* (its layout: the intro animation scales it for a moment) */
         temp:(document.querySelector("#homeWeather .w-temp")||{}).textContent}));
       const before=await box();
       await w.waitForFunction(()=>!document.querySelector("#homeWeather .w-wait"),null,{timeout:10000}).catch(()=>{});

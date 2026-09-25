@@ -31,6 +31,9 @@
 window.UNIVERSE_EXTRAS=window.UNIVERSE_EXTRAS||[];
 const Wonders=(function(){
   const TAU=Math.PI*2;
+  /* the real Earth and Moon (img/): carrying this version in their address, like every file */
+  const VER=((document.currentScript&&document.currentScript.src.match(/[?&]v=([^&#]+)/))||[])[1]||"";
+  const IMG=n=>"img/"+n+(VER?"?v="+VER:"");
   /* 3D value noise, for the spheres (the Earth, the Moon) */
   const N3=`
 float h31(vec3 p){ p=fract(p*.1031); p+=dot(p,p.zyx+31.32); return fract((p.x+p.y)*p.z); }
@@ -306,13 +309,28 @@ void main(){
      sight of its own (its sphere and a little of its air) */
   const EARTH_P=[-21,13,-392], EARTH_R=15, MOON_P=[22,-16,-350], MOON_R=4.5;
   const earth={id:"earth",early:true,
+    /* its pictures start loading at once: the first flight begins beside it */
+    layout(api){ ["earth-day.jpg","earth-aux.jpg","moon.jpg"].forEach(n=>api.image(IMG(n))); },
     sights:[{id:"earth",p:EARTH_P,R:EARTH_R*1.05,k:.92},{id:"moon",p:MOON_P,R:MOON_R*1.02,k:.86}],
     shaders:{main:COMMON+N3+`
 uniform vec3 uL;      /* where the sunlight comes from */
 uniform float uSpin;
+uniform sampler2D uDay, uAux;  /* the real Earth (NASA's Blue Marble), and its night lights, seas and heights */
+uniform float uTex, uLod;      /* whether they are here; how blurred to read them (the Earth's size on the screen) */
 /* turned about its axis (by a), then its axis leant 23° */
 vec3 turnS(vec3 n,float a){ float c=cos(a), s=sin(a); vec3 m=vec3(c*n.x+s*n.z,n.y,-s*n.x+c*n.z);
   float t=.41, ct=cos(t), st=sin(t); return vec3(ct*m.x-st*m.y,st*m.x+ct*m.y,m.z); }
+/* the clouds at a point (their own frame, drifting): where the climate makes them, the tropics' line of
+   storms and the storm tracks of middle latitudes; few over the deserts of the belts between; wisps and
+   curling fronts rather than balls */
+float cloudAt(vec3 cs){
+  vec3 cw=vec3(fbm3(cs*2.6+1.,4),fbm3(cs*2.6+4.,4),fbm3(cs*2.6+8.,4))-.5;
+  float la=asin(clamp(cs.y,-1.,1.));
+  float belt=exp(-pow(la/.13,2.))*.75+exp(-pow((abs(la)-.9)/.28,2.));
+  float base=fbm3(cs*vec3(3.6,5.2,3.6)+cw*2.4,6);
+  float c=smoothstep(.56-.13*belt,.78-.1*belt,base);
+  return c*(.45+.55*fbm3(cs*22.+cw*4.,3))*.9;
+}
 /* the height of the ground: a few big continents with ragged, warped coasts */
 float ground(vec3 s){
   vec3 w=vec3(fbm3(s*1.4+uS,4),fbm3(s*1.4+uS+5.2,4),fbm3(s*1.4+uS+9.7,4))-.5;
@@ -325,12 +343,30 @@ void main(){
   if(r2<1.){
     vec3 n=vec3(p.x,p.y,-sqrt(1.-r2)), s=turnS(n,uSpin);
     float mu=dot(n,L), day=smoothstep(-.08,.14,mu);
-    float h=ground(s), sea=.545, landM=smoothstep(sea,sea+.01,h);
-    float lat=abs(s.y);
+    float lat=abs(s.y), landM, rmu=mu, lights=0., ice=0., desert=0.;
+    vec3 surf;
+    if(uTex>.5){
+      /* the real one: its colours by day, its cities by night, where its seas are, and its heights */
+      vec2 uv=vec2(.5+atan(s.x,-s.z)/6.2831853,.5+asin(clamp(s.y,-1.,1.))/3.1415927);
+      float lod=uLod+.5*log2(1./max(-n.z,.1));                        /* blurrier where it is seen slantwise */
+      surf=pow(textureLod(uDay,uv,lod).rgb,vec3(2.2))*.95;
+      vec3 ax=textureLod(uAux,uv,lod).rgb;
+      landM=1.-smoothstep(.3,.7,ax.g);
+      lights=pow(ax.r,1.8)*1.6;
+      /* the relief catches the low sun: mountains lit on one flank, shaded on the other */
+      vec2 dp=exp2(max(lod,0.))*vec2(1./2048.,1./1024.);
+      float tx=textureLod(uAux,uv+vec2(dp.x,0.),lod).b-textureLod(uAux,uv-vec2(dp.x,0.),lod).b;
+      float ty=textureLod(uAux,uv+vec2(0.,dp.y),lod).b-textureLod(uAux,uv-vec2(0.,dp.y),lod).b;
+      vec3 E=normalize(vec3(-s.z,0.,s.x)+vec3(1e-5,0.,0.)), Nn=normalize(vec3(0.,1.,0.)-s*s.y+vec3(0.,1e-5,0.));
+      vec3 sn=normalize(s-(E*tx+Nn*ty)*5.);
+      rmu=mix(mu,dot(sn,turnS(L,uSpin)),landM*smoothstep(-.1,.2,mu));
+      ice=smoothstep(.93,.97,lat);
+    } else {
+    float h=ground(s), sea=.545; landM=smoothstep(sea,sea+.01,h);
     /* the climate: hot and wet at the equator, deserts in the belts either side, cold towards the poles */
     float temp=1.-lat*1.2+.18*(fbm3(s*3.+2.,3)-.5)-max(h-sea,0.)*1.6;
     float wet=fbm3(s*2.2+7.,4)+.25*(1.-smoothstep(.0,.25,lat));
-    float desert=smoothstep(.5,.62,temp)*smoothstep(.56,.4,wet);
+    desert=smoothstep(.5,.62,temp)*smoothstep(.56,.4,wet);
     vec3 forest=mix(vec3(.05,.13,.04),vec3(.13,.2,.07),fbm3(s*9.,3)), jungle=vec3(.02,.1,.03);
     vec3 sand=mix(vec3(.6,.47,.3),vec3(.76,.6,.4),fbm3(s*13.,3)), tundra=mix(vec3(.3,.28,.22),vec3(.4,.38,.33),fbm3(s*7.,3));
     vec3 lc=mix(forest,jungle,smoothstep(.72,.9,temp));
@@ -342,31 +378,31 @@ void main(){
     /* the sea: deep blue far from the coast, turquoise shallows along it */
     vec3 oc=mix(vec3(.02,.12,.24),vec3(.004,.028,.09),smoothstep(sea-.01,sea-.14,h));
     oc=mix(oc,vec3(.03,.24,.3),smoothstep(sea-.035,sea,h)*.8);
-    vec3 surf=mix(oc,lc,landM);
-    float ice=smoothstep(.86,.92,lat+.04*fbm3(s*7.,3));
+    surf=mix(oc,lc,landM);
+    ice=smoothstep(.86,.92,lat+.04*fbm3(s*7.,3));
     surf=mix(surf,vec3(.88,.92,.97),max(ice,snow));
-    /* clouds: their own slow drift over the ground, in swirls and long bands */
-    vec3 cs=turnS(n,uSpin*1.18+uT*.004);
-    vec3 cw=vec3(fbm3(cs*2.1+1.,3),fbm3(cs*2.1+4.,3),fbm3(cs*2.1+8.,3))-.5;
-    float band=.55+.45*cos(asin(clamp(cs.y,-1.,1.))*6.);
-    float cl=smoothstep(.48,.72,fbm3(cs*3.4+cw*2.2,5)*(.75+.35*band))*(.7+.3*fbm3(cs*20.,3));
-    /* sunlight: reddened where it grazes the ground; the clouds' shadows fall just beside them */
-    float sunL=max(mu,0.);
-    vec3 sunC=mix(vec3(1.,.42,.18),vec3(1.,.97,.93),smoothstep(0.,.3,mu));
-    float shade=1.-.4*smoothstep(.48,.72,fbm3(turnS(n+L*.012,uSpin*1.18+uT*.004)*3.4+cw*2.2,4));
-    vec3 dayC=mix(surf*shade,vec3(.96,.97,1.),cl)*sunC*(sunL*1.2+.015);
-    /* the Sun's glint on the sea: a sharp spot in a wider sheen, hidden under clouds */
-    vec3 v=vec3(0.,0.,-1.), hv=normalize(L+v); float nh=max(dot(n,hv),0.);
-    dayC+=vec3(1.,.9,.75)*(pow(nh,900.)*.7+pow(nh,70.)*.05)*(1.-landM)*(1.-cl)*day;
-    /* the night side: nearly black, the clouds faintly seen by the Moon */
-    vec3 nightC=(surf*.03+vec3(.015,.02,.04)*cl)*(1.-day);
     /* city lights: towns scattered on land, thicker along the coasts, joined by roads */
     vec3 g=floor(s*95.), fr=fract(s*95.)-.5; float hs=h31(g+uS);
     float town=step(.9,hs)*exp(-dot(fr,fr)*30.)*(.3+hs);
     float roads=pow(1.-abs(fbm3(s*48.,3)*2.-1.),14.)*.18;
     float settled=smoothstep(.56,.7,fbm3(s*4.5+11.,4))*(1.+1.5*smoothstep(sea+.06,sea,h));
-    float cities=landM*(1.-ice)*(1.-desert*.7)*settled*(town+roads);
-    nightC+=vec3(1.,.66,.3)*cities*(1.-cl*.8)*(1.-day)*1.5;
+    lights=landM*(1.-ice)*(1.-desert*.7)*settled*(town+roads)*1.5;
+    }
+    /* clouds: their own slow drift over the ground, in swirls and long bands */
+    vec3 cs=turnS(n,uSpin*1.18+uT*.004);
+    float cl=cloudAt(cs);
+    /* sunlight: reddened where it grazes the ground; the clouds' shadows fall just beside them */
+    float sunL=max(rmu,0.);
+    vec3 sunC=mix(vec3(1.,.42,.18),vec3(1.,.97,.93),smoothstep(0.,.3,mu));
+    float shade=1.-.45*cloudAt(turnS(normalize(n+L*.01),uSpin*1.18+uT*.004));
+    vec3 dayC=mix(surf*shade*(sunL*1.2+.015),vec3(.96,.97,1.)*(max(mu,0.)*1.2+.015),cl)*sunC;
+    /* the Sun's glint on the sea: a sharp spot in a wider sheen, hidden under clouds */
+    vec3 v=vec3(0.,0.,-1.), hv=normalize(L+v); float nh=max(dot(n,hv),0.);
+    dayC+=vec3(1.,.9,.75)*(pow(nh,900.)*.7+pow(nh,70.)*.05)*(1.-landM)*(1.-cl)*day;
+    /* the night side: nearly black, the clouds faintly seen by the Moon */
+    vec3 nightC=(surf*.03+vec3(.015,.02,.04)*cl)*(1.-day);
+    /* city lights */
+    nightC+=vec3(1.,.66,.3)*lights*(1.-cl*.8)*(1.-day);
     /* auroras round the poles, over the night: thin green curtains, crimson at their tops */
     float ring=exp(-pow((lat-.87+.015*sin(atan(s.z,s.x)*5.+uT*.05))/.03,2.)), ray=pow(fbm3(s*vec3(22.,2.,22.)+vec3(0.,uT*.15,0.),4),2.5);
     nightC+=mix(vec3(.25,1.,.55),vec3(.95,.25,.45),smoothstep(.87,.91,lat))*ring*ray*(1.-day)*.6;
@@ -385,6 +421,7 @@ void main(){
   o=vec4(C*uA,a*uA);
 }`,moon:COMMON+N3+`
 uniform vec3 uL;
+uniform sampler2D uMoonT; uniform float uTex, uLod;
 /* a field of craters: cells of a 3D grid (s cells per unit), each holding at most one crater, at a
    random place and of a random size. h: the height (a bowl, a raised rim fading outwards), g: its
    slope (to shade the relief), br: how fresh (a few young craters are bright inside) */
@@ -419,6 +456,20 @@ void main(){
   vec2 p=vQ*1.03; float r2=dot(p,p);
   if(r2>=1.){ o=vec4(0.); return; }
   vec3 n=vec3(p.x,p.y,-sqrt(1.-r2)), L=normalize(uL);
+  vec3 nb, tint; float alb;
+  if(uTex>.5){
+    /* the real one (NASA's Lunar Reconnaissance Orbiter): its near side, which always faces the Earth */
+    vec2 uv=vec2(.5+atan(n.x,-n.z)/6.2831853,.5+asin(clamp(n.y,-1.,1.))/3.1415927);
+    float lod=uLod+.5*log2(1./max(-n.z,.1));
+    vec3 tx=textureLod(uMoonT,uv,lod).rgb;
+    alb=pow(tx.r,2.2)*1.35+.015;
+    vec2 dp=exp2(max(lod,0.))*vec2(1./2048.,1./1024.);
+    float bx=textureLod(uMoonT,uv+vec2(dp.x,0.),lod).g-textureLod(uMoonT,uv-vec2(dp.x,0.),lod).g;
+    float by=textureLod(uMoonT,uv+vec2(0.,dp.y),lod).g-textureLod(uMoonT,uv-vec2(0.,dp.y),lod).g;
+    vec3 E=normalize(vec3(-n.z,0.,n.x)+vec3(1e-5,0.,0.)), Nn=normalize(vec3(0.,1.,0.)-n*n.y+vec3(0.,1e-5,0.));
+    nb=normalize(n-(E*bx+Nn*by)*3.);
+    tint=mix(vec3(.86,.9,.96),vec3(.98,.95,.9),smoothstep(.08,.2,alb));    /* seas a little blue-grey, highlands warm */
+  } else {
   /* the seas: broad smooth plains of old dark lava, with soft ragged shores */
   float mf=fbm3(n*1.2+vec3(2.,.3,1.1),5)+.06*fbm3(n*6.,3);
   float maria=smoothstep(.5,.6,mf);
@@ -427,15 +478,16 @@ void main(){
   float w=1.-.7*maria;
   craters(n,2.6,1.,.9*w,h,g,br); craters(n,6.5,7.,.6*w,h,g,br); craters(n,15.,13.,.4*w,h,g,br); craters(n,34.,19.,.25*(1.-.4*maria),h,g,br);
   /* the relief tilts the surface (in its own plane) and so catches or loses the sunlight */
-  vec3 gt=g-dot(g,n)*n, nb=normalize(n-gt*.032);
+  vec3 gt=g-dot(g,n)*n; nb=normalize(n-gt*.032);
   /* two young craters with rays, where the real ones are (Tycho low in the south, Copernicus left of the middle) */
   float ry=rays(n,normalize(vec3(-.1,.62,-.78)),.42,1.)+rays(n,normalize(vec3(-.32,-.12,-.94)),.18,4.)*.5;
-  float alb=mix(.66,.3,maria)*(.9+.2*fbm3(n*24.,3))+br*.35+ry*.17;
+  alb=mix(.66,.3,maria)*(.9+.2*fbm3(n*24.,3))+br*.35+ry*.17;
+  /* the seas faintly blue-grey (titanium in the old lava), the highlands a warm grey */
+  tint=mix(vec3(.98,.95,.9),vec3(.86,.9,.96),maria*(.6+.4*fbm3(n*4.+9.,3)));
+  }
   /* how the Moon reflects: nearly as bright at its edge as in its middle (Lommel–Seeliger), not like a matte ball */
   float ci=dot(nb,L), ce=max(-n.z,.05);
   float lit=max(ci,0.)/(max(ci,0.)+ce)*2., term=smoothstep(-.03,.05,dot(n,L));
-  /* the seas faintly blue-grey (titanium in the old lava), the highlands a warm grey */
-  vec3 tint=mix(vec3(.98,.95,.9),vec3(.86,.9,.96),maria*(.6+.4*fbm3(n*4.+9.,3)));
   vec3 C=tint*alb*lit*term*1.05+vec3(.35,.45,.7)*.03*alb*(1.-term);   /* earthshine on the dark side */
   float e=smoothstep(1.,.985,sqrt(r2));
   o=vec4(C*uA*e,e*uA);
@@ -444,9 +496,14 @@ void main(){
       if(ph!=="near") return;
       api0=api;
       const a=api.appear(earth);
+      /* how blurred to read a map of 2048 texels round, for a ball of this many pixels across */
+      const lodFor=r=>Math.log2(2048/TAU/Math.max(1,r*api.scale));
       const drawEarth=e=>{
         const u=api.sprite(earth.prog.main,e.x,e.y,e.r*1.14,e.r*1.14,0);
         set(u,"uL",.72,-.3,-.62); set(u,"uSpin",t*.05); set(u,"uT",t); set(u,"uA",a); set(u,"uS",3.7);
+        const td=api.image(IMG("earth-day.jpg")), ta=api.image(IMG("earth-aux.jpg"));
+        if(td&&ta){ api.bind(4,td); api.bind(5,ta); api.gl.uniform1i(u.uDay,4); api.gl.uniform1i(u.uAux,5); }
+        set(u,"uTex",td&&ta?1:0); set(u,"uLod",lodFor(e.r));
         api.over(); api.draw();
       };
       const drawMoon=m=>{
@@ -454,6 +511,9 @@ void main(){
         const ph0=typeof Astro!=="undefined"&&Astro.moon?Astro.moon(new Date()).phase:.25, th=ph0*TAU;
         const u=api.sprite(earth.prog.moon,m.x,m.y,m.r*1.03,m.r*1.03,0);
         set(u,"uL",Math.sin(th),-.05,Math.cos(th)); set(u,"uA",a); set(u,"uT",t);
+        const tm=api.image(IMG("moon.jpg"));
+        if(tm){ api.bind(4,tm); api.gl.uniform1i(u.uMoonT,4); }
+        set(u,"uTex",tm?1:0); set(u,"uLod",lodFor(m.r));
         api.over(); api.draw();
       };
       /* the farther one first, so the nearer one covers it where they meet on the screen */
