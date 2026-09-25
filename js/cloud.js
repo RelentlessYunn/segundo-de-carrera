@@ -13,7 +13,8 @@
      below) and go up when the connection comes back, even after closing.
    Stored keys ("hechas", "grades", "notas") are kept as they were so old data still loads.
    Usage from other files:
-     Cloud.onLoad(rec=>…)            called with the data (and again if refreshed)
+     Cloud.onLoad((rec,info)=>…)     called with the data (and again if refreshed); first with
+                                     this device's last copy (info.copy) if there is one
      Cloud.change("key", {op,args})  queues a change kept on the device until saved
      Cloud.change("key", rec=>…)     the same, only in memory (one-off migrations)
      (the last change with the same key wins)
@@ -44,33 +45,37 @@ const Cloud=(function(){
   const remember=rec=>store(REC_KEY,rec);
   /* what was left pending last time (the app closed offline): back in the queue */
   (stored(PEND_KEY)||[]).forEach(([k,c])=>{ if(c&&OPS[c.op]){ kept.set(k,c); pending.set(k,rec=>OPS[c.op](rec,c.args)); } });
-  let shownCopy=false, loadTimer=0;
+  let shown="", loadTimer=0, started=false;       /* shown: "" · "copy" (the device's, read-only) · "offline" · "fresh" */
 
   async function read(){
     const r=await fetch(URL_BIN+"/latest",{headers,cache:"no-store"});
     if(!r.ok) throw new Error("HTTP "+r.status);
     return (await r.json()).record||{};
   }
-  /* what was read plus what is still queued: that is what the screen must show */
+  /* what was read plus what is still queued: that is what the screen must show.
+     info.copy: it is only this device's last copy, shown while the fresh one is read */
   function view(rec){ const v=copy(rec); pending.forEach(fn=>fn(v)); return v; }
-  function hand(rec){
+  function hand(rec,info){
     const v=view(rec);
-    listeners.forEach(fn=>{ try{ fn(v); }catch(e){ console.error(e); } });
+    listeners.forEach(fn=>{ try{ fn(v,info||{}); }catch(e){ console.error(e); } });
   }
 
   function load(){
     if(!enabled){ status("off",t("cloud.off")); return; }
     status("loading",t("cloud.loading"));
     clearTimeout(loadTimer);
+    /* the copy kept on this device shows at once, while the fresh one is read: your ticks, grades
+       and notes are there from the start, and the fresh read only changes what did change */
+    if(!shown){ const c=stored(REC_KEY); if(c){ shown="copy"; hand(c,{copy:true}); } }
     read().then(rec=>{
       record=rec; ready=true; retry=2000; remember(rec);
-      hand(rec);
+      shown="fresh"; hand(rec);
       status("ok",t("cloud.synced"));
       if(pending.size) schedule();
     }).catch(()=>{
-      /* no connection: show the copy kept on this device meanwhile */
+      /* no connection: the copy kept on this device, now to work with (it goes up when the connection is back) */
       const copyRec=stored(REC_KEY);
-      if(copyRec&&!shownCopy){ shownCopy=true; hand(copyRec); }
+      if(copyRec&&shown!=="offline"&&shown!=="fresh"){ shown="offline"; hand(copyRec); }
       status("error",navigator.onLine===false?t("cloud.offline"):t("cloud.retrying",{s:Math.round(retry/1000)}));
       loadTimer=setTimeout(load,retry); retry=Math.min(retry*2,60000);
     });
@@ -116,14 +121,19 @@ const Cloud=(function(){
   });
   window.addEventListener("pagehide",flushOnExit);
   /* the connection is back: read (or save) now, not at the next retry */
-  window.addEventListener("online",()=>{ if(!enabled) return; if(!ready){ retry=2000; load(); } else if(pending.size) schedule(); });
+  window.addEventListener("online",()=>{ if(!enabled||!started) return; if(!ready){ retry=2000; load(); } else if(pending.size) schedule(); });
 
-  /* read once every file has loaded and everyone is listening */
-  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",load); else setTimeout(load,0);
+  /* read once every file has loaded and everyone is listening, and only once the PIN is right:
+     nothing of yours is read behind the PIN screen, nor for a guest (gate.js) */
+  Gate.onOpen(()=>{
+    if(started||Gate.guest()) return;
+    started=true;
+    if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",load); else setTimeout(load,0);
+  });
   return {
     enabled,
     ready:()=>ready,
-    onLoad(fn){ listeners.push(fn); if(ready&&record) fn(view(record)); },
+    onLoad(fn){ listeners.push(fn); if(ready&&record) fn(view(record),{}); },
     change(key,fn){
       if(fn&&typeof fn==="object"){ const c=fn; if(!OPS[c.op]) return; fn=rec=>OPS[c.op](rec,c.args); kept.set(key,c); keep(); }
       else if(kept.delete(key)) keep();

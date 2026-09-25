@@ -4,6 +4,16 @@
 
 /* ---------- PIN gate: pitch black, strong blue, digits floating in the dark ---------- */
 html[data-locked] body>header.top,html[data-locked] body>nav.bar,html[data-locked] body>div.wrap,html[data-locked] #portal{visibility:hidden}
+/* starting: nothing but the sky until router.js has chosen the first view (index.html) */
+html[data-booting] body>header.top,html[data-booting] body>nav.bar,html[data-booting] body>div.wrap,html[data-booting] #portal{visibility:hidden}
+/* a guest: the universe and nothing of Nolan's own (gate.js): no app behind home, no UC3M or
+   Nolan cards, no Notes; the sights and Settings stay */
+html[data-guest] body>header.top,html[data-guest] body>nav.bar,html[data-guest] body>div.wrap{display:none}
+html[data-guest] #portal .p-view[data-view=home]>.p-ask:not(.p-ask-sights),html[data-guest] #portal .p-cards,
+html[data-guest] #portal .p-tool[href="#notes"]{display:none}
+html[data-guest] #portal .p-ask-sights{margin-top:0}
+html[data-guest].nogl .p-more{display:none}             /* (without the 3D universe there are no sights to point to) */
+html[data-guest] .set-danger .own,html:not([data-guest]) .set-danger .guest{display:none}
 html[data-locked] #sky{opacity:0}
 #sky{transition:opacity 1.2s ease}
 .gate{
@@ -18,6 +28,29 @@ html[data-locked] #sky{opacity:0}
 .g-logo{width:52px;height:52px;fill:none;stroke:var(--pin);stroke-width:1.5;stroke-linejoin:round;
   filter:drop-shadow(0 0 10px rgba(47,107,255,.55))}
 .g-logo circle{fill:#A8C2FF;stroke:none}
+/* the entry: Nolan's logo (it opens the keypad) and, in the middle, the way in as a guest */
+.g-logo-btn{display:grid;place-items:center;padding:12px;border:0;border-radius:50%;background:none;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:transform .2s var(--spring),filter .3s ease}
+.g-logo-btn .g-logo{transition:width .45s var(--ease),height .45s var(--ease)}
+.gate:not(.pad) .g-logo{width:66px;height:66px}
+@media (hover:hover){.g-logo-btn:hover{filter:brightness(1.35)}}
+.g-logo-btn:active{transform:scale(.93)}
+.g-logo-btn:focus-visible{outline:2px solid var(--pin);outline-offset:4px}
+.g-start{display:flex;flex-direction:column;align-items:center;margin-top:10px;animation:fade-in .5s ease backwards}
+.g-start[hidden],.g-pad[hidden]{display:none}
+.g-guest{
+  font:inherit;font-size:.78rem;font-weight:600;letter-spacing:.32em;text-transform:uppercase;cursor:pointer;
+  padding:15px 34px 15px calc(34px + .32em);border-radius:99px;color:#CFE0FF;
+  background:rgba(47,107,255,.08);border:1px solid rgba(47,107,255,.5);
+  box-shadow:0 0 34px -10px rgba(47,107,255,.75),inset 0 0 18px -10px rgba(47,107,255,.8);
+  transition:background .25s ease,color .2s ease,box-shadow .3s ease,transform .15s var(--spring);
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+}
+@media (hover:hover){.g-guest:hover{background:rgba(47,107,255,.18);color:#fff;box-shadow:0 0 40px -6px rgba(47,107,255,.9),inset 0 0 18px -8px rgba(47,107,255,.9)}}
+.g-guest:active{transform:scale(.96)}
+.g-guest:focus-visible{outline:2px solid #CFE0FF;outline-offset:3px}
+.g-pad{display:flex;flex-direction:column;align-items:center;gap:20px;animation:pad-in .45s var(--ease) backwards}
+@keyframes pad-in{from{opacity:0;transform:translateY(10px)}}
 .g-title{margin:0;font-size:.72rem;font-weight:600;letter-spacing:.34em;text-transform:uppercase;color:#5F89FF}
 .g-dots{display:flex;gap:18px;margin:4px 0 0}
 .g-dot{width:11px;height:11px;border-radius:50%;background:rgba(47,107,255,.18);transition:background .18s ease,box-shadow .25s ease,transform .2s var(--spring)}
@@ -53,9 +86,10 @@ html[data-locked] #sky{opacity:0}
 
 /* right PIN: everything drifts up and away, one after another, into the dark */
 .gate.leaving{background:transparent;transition:background 1s ease}
-.gate.leaving .g-logo,.gate.leaving .g-title,.gate.leaving .g-dots,.gate.leaving .g-msg,.gate.leaving .g-keys button{
+.gate.leaving .g-logo,.gate.leaving .g-title,.gate.leaving .g-dots,.gate.leaving .g-msg,.gate.leaving .g-keys button,.gate.leaving .g-guest{
   animation:drift-away 1.1s cubic-bezier(.5,0,.75,.2) forwards;
 }
+.gate.leaving .g-guest{animation-delay:.1s}
 .gate.leaving .g-logo{animation-delay:0s}
 .gate.leaving .g-title{animation-delay:.05s}
 .gate.leaving .g-dots{animation-delay:.1s}
@@ -95,9 +129,11 @@ html[data-locked] #sky{opacity:0}
 .portal.intro .p-word span:nth-child(5){animation-delay:1.65s}
 @keyframes letter{from{opacity:0;filter:blur(12px);transform:translateY(8px) scale(1.25)}}
 .portal.intro .p-time,.portal.intro .p-greeting{animation:rise 1s 2.1s var(--ease) backwards}
-.portal.intro .p-view{animation:rise 1s 2.5s var(--ease) backwards}
+/* (the same animation as a view's own, only later and slower: when .intro goes, nothing starts again) */
+.portal.intro .p-view{animation:view-in 1s 2.5s var(--ease) backwards}
 .portal.intro .p-card{animation-delay:2.6s}
 .portal.intro .p-card+.p-card{animation-delay:2.75s}
+.portal.intro .p-more{animation:fade-in 1.2s 3s ease backwards}
 
 /* ---------- entering UC3M: the timetable comes forward out of the dark ---------- */
 body.arriving>header.top,body.arriving>nav.bar,body.arriving>div.wrap{animation:arrive-page 1s cubic-bezier(.2,.7,.2,1) backwards}
@@ -146,6 +182,8 @@ body.arriving>div.wrap{animation-delay:.2s}
 .w-stat small{display:inline-flex;align-items:center;gap:4px;font-size:.66rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#80869A;white-space:nowrap}
 .w-stat b{font-size:.98rem;font-weight:600;color:#ECEEF3;font-variant-numeric:tabular-nums}
 .w-sun-ic{width:14px;height:14px;flex:0 0 auto;fill:none;stroke:#E8B872;stroke-width:1.5;stroke-linecap:round}
+/* waiting for the weather: the card has its full shape already, its figures dimmed */
+.w-wait .w-ic,.w-wait .w-temp,.w-wait .w-stat:not(.w-sunstat) b{opacity:.35}
 .portal.intro .p-weather{animation:rise 1s 2.3s var(--ease) backwards}
 @media (max-width:620px){.w-card{max-width:none}.w-temp{font-size:1.8rem}.w-stat small{font-size:.6rem;letter-spacing:.03em}}
 
@@ -158,7 +196,6 @@ body.arriving>div.wrap{animation-delay:.2s}
 /* switching between the pages of home: a soft cross-fade */
 .p-view:not([hidden]){animation:view-in .55s var(--ease) backwards}
 @keyframes view-in{from{opacity:0;transform:translateY(10px) scale(.99)}}
-.portal.intro .p-view{animation:rise 1s 2.5s var(--ease) backwards}
 @media (max-width:620px){.p-bar{top:calc(10px + env(safe-area-inset-top,0px));right:10px}.p-tool{width:38px;height:38px}}
 
 /* ---------- the universe (universe.js) ---------- */
@@ -177,18 +214,8 @@ html.flying #sky{opacity:1;transition:opacity 4.5s ease}
 .p-in{z-index:2}
 .p-bar{z-index:4}
 
-/* cards of the galaxies still to explore */
+/* the sections' cards, side by side (one under the other on a phone) */
 .p-cards{grid-template-columns:repeat(2,1fr)}
-.p-card.soon{border-style:dashed;border-color:rgba(160,180,255,.22)}
-.p-txt .soon-tag{
-  display:inline-flex;align-items:center;gap:7px;padding:3px 10px 3px 8px;border-radius:99px;margin-top:7px;
-  font-size:.74rem;font-weight:700;color:#B9C6FF;background:rgba(159,179,255,.1);border:1px dashed rgba(159,179,255,.4);
-}
-.p-txt .soon-tag::before{content:"";width:6px;height:6px;border-radius:50%;background:#9FB3FF;box-shadow:0 0 8px #9FB3FF}
-.i-galaxy ellipse{fill:none;stroke:currentColor;stroke-width:1.6}
-.i-galaxy ellipse.f{fill:currentColor;fill-opacity:.18}
-.i-galaxy .core{fill:#fff;stroke:none;filter:drop-shadow(0 0 4px currentColor)}
-.i-galaxy .dot{fill:currentColor;stroke:none}
 @media (max-width:620px){.p-cards{grid-template-columns:1fr}}
 
 /* ---------- Log out (in Settings): red ---------- */
@@ -215,21 +242,11 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,.portal::-webkit-scrollbar,body>
 #shift.on,html.shifting #shift{display:block;pointer-events:auto}
 html.shifting #shift{opacity:1}
 
-/* ---------- the black hole, up close (#blackhole) ----------
-   the hero steps aside and the text sits low, so the hole fills the sky above it */
-.portal[data-view=blackhole] .p-top{display:none}
-.portal[data-view=blackhole] .p-in{justify-content:flex-end;padding-bottom:calc(44px + env(safe-area-inset-bottom,0px))}
-.p-hole{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;max-width:520px;margin:0 auto}
-.p-hole h2{margin:0;font-size:1.9rem;font-weight:800;letter-spacing:-.03em;text-shadow:0 2px 20px #000}
-.p-hole p{margin:0 0 6px;color:var(--ink-2);font-size:.92rem;line-height:1.5;text-shadow:0 1px 12px #000}
-.p-card.hole{grid-column:1/-1;border-color:rgba(255,179,107,.28)}
+/* the black hole's icon (its card is one of the sights, home.css) */
 .i-hole .disk{stroke-width:1.5;opacity:.5}
 .i-hole .arc{stroke-width:2.2}
-.i-hole .shadow{fill:#05060A;stroke:#FFE2C2;stroke-width:1.2;filter:drop-shadow(0 0 3px rgba(255,200,150,.7))}
+.i-hole .shadow{fill:#05060A;stroke:#FFE2F4;stroke-width:1.2;filter:drop-shadow(0 0 3px rgba(255,160,220,.7))}
 .i-hole .front{stroke-width:2.6}
-.p-txt .hole-tag{color:#FFC98F;background:rgba(255,179,107,.1);border-color:rgba(255,179,107,.4)}
-.p-txt .hole-tag::before{background:#FFB36B;box-shadow:0 0 8px #FFB36B}
-.p-card.hole .p-txt b{display:block;font-size:1.7rem}
 
 /* ---------- just the sky (view.js) ----------
    the interface fades away and the universe has the screen to itself */

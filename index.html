@@ -17,9 +17,13 @@
   if(s.lang==="en") d.lang="en";
   /* coming back from changing a setting: the passage (js/shift.js) covers the page from the first frame */
   try{ if(sessionStorage.getItem("nolan-shift")) d.classList.add("shifting"); }catch(e){}
-  /* the PIN gate: a device that already typed the right PIN keeps this hash (see js/gate.js) */
-  var k=null; try{ k=localStorage.getItem("nolan-device"); }catch(e){}
-  if(k!=="f9d8f1cd96a7b5ffd4c1f01c7f5f0a7c00940726b33625b4755a1d4f25a91f20") d.setAttribute("data-locked","");
+  /* the PIN gate: a device that already typed the right PIN keeps this hash (see js/gate.js);
+     a guest (this visit only) sees the universe and none of the data */
+  var k=null, g=null; try{ k=localStorage.getItem("nolan-device"); g=sessionStorage.getItem("nolan-guest"); }catch(e){}
+  if(k!=="f9d8f1cd96a7b5ffd4c1f01c7f5f0a7c00940726b33625b4755a1d4f25a91f20") d.setAttribute(g?"data-guest":"data-locked","");
+  /* nothing of the page shows until router.js has chosen what to show (home, or a tab): the first
+     frame is never the wrong page. If a script fails, it shows anyway a moment later */
+  d.setAttribute("data-booting",""); setTimeout(function(){ d.removeAttribute("data-booting"); },3000);
 })();
 </script>
 <link rel="icon" href="favicon.svg?v=43" type="image/svg+xml">
@@ -32,22 +36,22 @@
 <!-- the font does not block the first paint: it applies as soon as it arrives -->
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
-<link rel="stylesheet" href="css/base.css?v=0.69">
-<link rel="stylesheet" href="css/sky.css?v=0.69">
-<link rel="stylesheet" href="css/header.css?v=0.69">
-<link rel="stylesheet" href="css/tabbar.css?v=0.69">
-<link rel="stylesheet" href="css/today.css?v=0.69">
-<link rel="stylesheet" href="css/schedule.css?v=0.69">
-<link rel="stylesheet" href="css/planner.css?v=0.69">
-<link rel="stylesheet" href="css/subjects.css?v=0.69">
-<link rel="stylesheet" href="css/exams.css?v=0.69">
-<link rel="stylesheet" href="css/tasks.css?v=0.69">
-<link rel="stylesheet" href="css/home.css?v=0.69">
-<link rel="stylesheet" href="css/nolan.css?v=0.69">
-<link rel="stylesheet" href="css/settings.css?v=0.69">
-<link rel="stylesheet" href="css/effects.css?v=0.69">
-<link rel="stylesheet" href="css/astral.css?v=0.69">
-<link rel="stylesheet" href="css/cinema.css?v=0.69">
+<link rel="stylesheet" href="css/base.css?v=0.70">
+<link rel="stylesheet" href="css/sky.css?v=0.70">
+<link rel="stylesheet" href="css/header.css?v=0.70">
+<link rel="stylesheet" href="css/tabbar.css?v=0.70">
+<link rel="stylesheet" href="css/today.css?v=0.70">
+<link rel="stylesheet" href="css/schedule.css?v=0.70">
+<link rel="stylesheet" href="css/planner.css?v=0.70">
+<link rel="stylesheet" href="css/subjects.css?v=0.70">
+<link rel="stylesheet" href="css/exams.css?v=0.70">
+<link rel="stylesheet" href="css/tasks.css?v=0.70">
+<link rel="stylesheet" href="css/home.css?v=0.70">
+<link rel="stylesheet" href="css/nolan.css?v=0.70">
+<link rel="stylesheet" href="css/settings.css?v=0.70">
+<link rel="stylesheet" href="css/effects.css?v=0.70">
+<link rel="stylesheet" href="css/astral.css?v=0.70">
+<link rel="stylesheet" href="css/cinema.css?v=0.70">
 </head>
 <body>
 <!-- the passage between two looks, when a setting reloads the page (js/shift.js) -->
@@ -66,18 +70,26 @@
 <canvas id="universe" aria-hidden="true"></canvas>
 
 <!-- the PIN gate (js/gate.js); it is shown only while <html> has data-locked -->
-<div id="gate" class="gate" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+<div id="gate" class="gate" role="dialog" aria-modal="true" aria-label="Nolan">
   <div class="g-in">
-    <svg class="g-logo" viewBox="0 0 64 64" aria-hidden="true"><path d="M18 46V18L46 46V18"/><circle cx="18" cy="46" r="2.6"/><circle cx="18" cy="18" r="2.6"/><circle cx="46" cy="46" r="2.6"/><circle cx="46" cy="18" r="2.6"/></svg>
-    <p class="g-title" id="gateTitle" data-i18n="gate.title">Introduce el PIN</p>
-    <div class="g-dots" aria-hidden="true"><i class="g-dot"></i><i class="g-dot"></i><i class="g-dot"></i><i class="g-dot"></i><i class="g-dot"></i><i class="g-dot"></i></div>
-    <p class="g-msg" id="gateMsg" role="status" aria-live="assertive"></p>
-    <div class="g-keys">
-      <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
-      <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
-      <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
-      <span></span><button type="button" data-k="0">0</button>
-      <button type="button" data-k="del" class="g-del" aria-label="Borrar" data-i18n-aria="gate.delete"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h11v14H9l-6-7z"/><path d="M13 9.5l5 5M18 9.5l-5 5"/></svg></button>
+    <!-- Nolan's logo opens the keypad; in the middle, the way in as a guest -->
+    <button type="button" class="g-logo-btn" id="gateLogo" aria-expanded="false" aria-controls="gatePad" aria-label="Entrar con el PIN" data-i18n-aria="gate.pinAria">
+      <svg class="g-logo" viewBox="0 0 64 64" aria-hidden="true"><path d="M18 46V18L46 46V18"/><circle cx="18" cy="46" r="2.6"/><circle cx="18" cy="18" r="2.6"/><circle cx="46" cy="46" r="2.6"/><circle cx="46" cy="18" r="2.6"/></svg>
+    </button>
+    <div class="g-start" id="gateStart">
+      <button type="button" class="g-guest" id="gateGuest" data-i18n="gate.guest">Invitado</button>
+    </div>
+    <div class="g-pad" id="gatePad" hidden>
+      <p class="g-title" id="gateTitle" data-i18n="gate.title">Introduce el PIN</p>
+      <div class="g-dots" aria-hidden="true"><i class="g-dot"></i><i class="g-dot"></i><i class="g-dot"></i><i class="g-dot"></i><i class="g-dot"></i><i class="g-dot"></i></div>
+      <p class="g-msg" id="gateMsg" role="status" aria-live="assertive"></p>
+      <div class="g-keys">
+        <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
+        <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
+        <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
+        <span></span><button type="button" data-k="0">0</button>
+        <button type="button" data-k="del" class="g-del" aria-label="Borrar" data-i18n-aria="gate.delete"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h11v14H9l-6-7z"/><path d="M13 9.5l5 5M18 9.5l-5 5"/></svg></button>
+      </div>
     </div>
   </div>
 </div>
@@ -256,7 +268,7 @@
 
 </main>
 
-<footer><div class="wrap"><p class="version">v0.69</p></div></footer>
+<footer><div class="wrap"><p class="version">v0.70</p></div></footer>
 </div>
 <div id="debug"></div>
 
@@ -284,12 +296,16 @@
       <div class="p-time" id="homeTime">--:--</div>
       <div class="p-greeting" id="homeGreeting" data-i18n="s.hello">Hola, Nolan</div>
       <div class="p-weather" id="homeWeather" aria-live="polite"></div>
+      <!-- the first screen is the hero alone: the way on is further down -->
+      <button type="button" class="p-more" id="homeMore" aria-label="¿A dónde vamos?" data-i18n-aria="s.whereTo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg>
+      </button>
     </div>
 
     <div class="p-view" data-view="home">
       <p class="p-ask" data-i18n="s.whereTo">¿A dónde vamos?</p>
       <div class="p-cards">
-        <a class="p-card" id="homeUc3m" href="#schedule" data-galaxy="uc3m" style="--ac:#3FD9A4">
+        <a class="p-card" id="homeUc3m" href="#schedule" data-scene="uc3m" style="--ac:#3FD9A4">
           <span class="p-ic"><svg class="i-uni" viewBox="0 0 48 48" aria-hidden="true">
             <path class="f2" d="M5 17 24 6.5 43 17z"/>
             <circle class="seal" cx="24" cy="12.6" r="2"/>
@@ -300,7 +316,7 @@
           <span class="p-info" id="homeUc3mInfo"></span>
           <span class="p-go"><span data-i18n="s.enter">Entrar</span> <em>→</em></span>
         </a>
-        <a class="p-card wip" href="#nolan" data-galaxy="forge" style="--ac:#FFA640">
+        <a class="p-card wip" href="#nolan" data-scene="forge" style="--ac:#FFA640">
           <span class="p-ic"><svg class="i-crane" viewBox="0 0 48 48" aria-hidden="true">
             <path d="M12 44V10M16 44V12M12 40l4-4-4-4 4-4-4-4 4-4-4-4 4-4-4-4"/>
             <path d="M4 12h40M12 10 16 5l2 7M16 5 40 12"/>
@@ -312,34 +328,15 @@
           <span class="p-info"><span data-i18n="s.nolanSoon">Pronto, con lo que me vayas contando.</span></span>
           <span class="p-go"><span data-i18n="s.view">Ver</span> <em>→</em></span>
         </a>
-        <a class="p-card soon" href="#soon/andromeda" data-galaxy="andromeda" style="--ac:#9FB3FF">
-          <span class="p-ic"><svg class="i-galaxy" viewBox="0 0 48 48" aria-hidden="true"><ellipse cx="24" cy="24" rx="19" ry="8" transform="rotate(-24 24 24)"/><ellipse class="f" cx="24" cy="24" rx="11" ry="4.5" transform="rotate(-24 24 24)"/><circle class="core" cx="24" cy="24" r="3"/><circle class="dot" cx="9" cy="14" r="1"/><circle class="dot" cx="39" cy="35" r="1"/><circle class="dot" cx="37" cy="12" r=".8"/></svg></span>
-          <span class="p-txt"><b>Andrómeda</b><span class="soon-tag" data-i18n="s.soonTag">Por explorar</span></span>
-          <span class="p-info"><span data-i18n="s.soonInfo">Una galaxia reservada para lo que venga.</span></span>
-          <span class="p-go"><span data-i18n="s.view">Ver</span> <em>→</em></span>
-        </a>
-        <a class="p-card soon" href="#soon/sombrero" data-galaxy="sombrero" style="--ac:#9FB3FF">
-          <span class="p-ic"><svg class="i-galaxy" viewBox="0 0 48 48" aria-hidden="true"><ellipse cx="24" cy="24" rx="19" ry="8" transform="rotate(-24 24 24)"/><ellipse class="f" cx="24" cy="24" rx="11" ry="4.5" transform="rotate(-24 24 24)"/><circle class="core" cx="24" cy="24" r="3"/><circle class="dot" cx="9" cy="14" r="1"/><circle class="dot" cx="39" cy="35" r="1"/><circle class="dot" cx="37" cy="12" r=".8"/></svg></span>
-          <span class="p-txt"><b>Sombrero</b><span class="soon-tag" data-i18n="s.soonTag">Por explorar</span></span>
-          <span class="p-info"><span data-i18n="s.soonInfo">Una galaxia reservada para lo que venga.</span></span>
-          <span class="p-go"><span data-i18n="s.view">Ver</span> <em>→</em></span>
-        </a>
-        <a class="p-card hole" href="#blackhole" data-galaxy="blackhole" style="--ac:#FFB36B">
-          <span class="p-ic"><svg class="i-hole" viewBox="0 0 48 48" aria-hidden="true"><ellipse class="disk" cx="24" cy="25" rx="21" ry="5.5"/><path class="arc" d="M11.5 23.5a12.5 12.5 0 0 1 25 0"/><circle class="shadow" cx="24" cy="24" r="8.2"/><path class="front" d="M3.4 25.8C9 29 39 29 44.6 25.8"/></svg></span>
-          <span class="p-txt"><b data-i18n="s.hole">Agujero negro</b><span class="soon-tag hole-tag" data-i18n="s.holeTag">De cerca</span></span>
-          <span class="p-info"><span data-i18n="s.holeInfo">Acércate al horizonte de sucesos.</span></span>
-          <span class="p-go"><span data-i18n="s.view">Ver</span> <em>→</em></span>
-        </a>
       </div>
+      <!-- the sights: each one a place the camera flies to and looks at (home.js writes the list) -->
+      <p class="p-ask p-ask-sights" data-i18n="s.explore">Explora el universo</p>
+      <div class="p-sights" id="homeSights"></div>
     </div>
 
     <div class="p-view p-nolan" data-view="nolan" id="nolanView" hidden></div>
-    <div class="p-view p-nolan p-soon" data-view="soon" id="soonView" hidden></div>
-    <div class="p-view p-hole" data-view="blackhole" id="holeView" hidden>
-      <h2 data-i18n="s.hole">Agujero negro</h2>
-      <p data-i18n="hole.text">Aquí la luz se curva: el arco que ves sobre la sombra es la parte de atrás del disco, doblada hacia ti. El lado que gira hacia ti brilla más.</p>
-      <a class="p-back p-back-logo" href="#home" aria-label="Volver al inicio" title="Volver al inicio" data-i18n-aria="nolan.backAria" data-i18n-title="nolan.backAria"><svg class="logo-mark" viewBox="0 0 64 64" aria-hidden="true"><path class="lm-line" d="M17 47V17L47 47V17"/><circle cx="17" cy="47" r="3.2"/><circle cx="17" cy="17" r="3.2"/><circle cx="47" cy="47" r="3.2"/><circle cx="47" cy="17" r="3.2"/></svg></a>
-    </div>
+    <!-- a sight, up close: what it is, a few words, the one before and after, and home (home.js) -->
+    <div class="p-view p-sight-view" data-view="sight" id="sightView" hidden></div>
     <div class="p-view p-page" data-view="notes" id="notes" hidden>
       <a class="p-back p-back-logo p-back-top" href="#home" aria-label="Volver" title="Volver" data-i18n-aria="s.backAria" data-i18n-title="s.backAria"><svg class="logo-mark" viewBox="0 0 64 64" aria-hidden="true"><path class="lm-line" d="M17 47V17L47 47V17"/><circle cx="17" cy="47" r="3.2"/><circle cx="17" cy="17" r="3.2"/><circle cx="47" cy="47" r="3.2"/><circle cx="47" cy="17" r="3.2"/></svg></a>
       <div class="shead"><h2 data-i18n="s.notes.title">Notas para Claude</h2><p data-i18n-html="s.notes.lead">Texto plano que se guarda solo. Claude no puede abrir la nube por su cuenta: cuando quieras que aplique algo, pulsa <b>Copiar notas</b> y pégaselas en el chat.</p></div>
@@ -356,38 +353,38 @@
 </div>
 <!-- just the sky (js/view.js): the way back while the interface is hidden -->
 <button type="button" id="viewExit" class="view-exit" hidden aria-label="Volver" title="Volver" data-i18n-aria="s.viewSkyExit" data-i18n-title="s.viewSkyExit"><svg class="logo-mark" viewBox="0 0 64 64" aria-hidden="true"><path class="lm-line" d="M17 47V17L47 47V17"/><circle cx="17" cy="47" r="3.2"/><circle cx="17" cy="17" r="3.2"/><circle cx="47" cy="47" r="3.2"/><circle cx="47" cy="17" r="3.2"/></svg></button>
-<script src="config.js?v=0.69" onerror="void 0"></script>
-<script src="data.js?v=0.69"></script>
-<script src="eval.js?v=0.69"></script>
-<script src="js/prefs.js?v=0.69"></script>
-<script src="js/i18n.js?v=0.69"></script>
-<script src="js/core.js?v=0.69"></script>
-<script src="js/shift.js?v=0.69"></script>
-<script src="js/gate.js?v=0.69"></script>
-<script src="js/wonders.js?v=0.69"></script>
-<script src="js/universe.js?v=0.69"></script>
-<script src="js/sky.js?v=0.69"></script>
-<script src="js/validate.js?v=0.69"></script>
-<script src="js/derived.js?v=0.69"></script>
-<script src="js/cloud.js?v=0.69"></script>
-<script src="js/header.js?v=0.69"></script>
-<script src="js/astro.js?v=0.69"></script>
-<script src="js/weather.js?v=0.69"></script>
-<script src="js/schedule.js?v=0.69"></script>
-<script src="js/today.js?v=0.69"></script>
-<script src="js/subjects.js?v=0.69"></script>
-<script src="js/faculty.js?v=0.69"></script>
-<script src="js/exams.js?v=0.69"></script>
-<script src="js/tasks.js?v=0.69"></script>
-<script src="js/notes.js?v=0.69"></script>
-<script src="js/planner.js?v=0.69"></script>
-<script src="js/settings.js?v=0.69"></script>
-<script src="js/nolan.js?v=0.69"></script>
-<script src="js/home.js?v=0.69"></script>
-<script src="js/router.js?v=0.69"></script>
-<script src="js/view.js?v=0.69"></script>
-<script src="js/debug.js?v=0.69"></script>
-<script src="js/effects.js?v=0.69"></script>
+<script src="config.js?v=0.70" onerror="void 0"></script>
+<script src="data.js?v=0.70"></script>
+<script src="eval.js?v=0.70"></script>
+<script src="js/prefs.js?v=0.70"></script>
+<script src="js/i18n.js?v=0.70"></script>
+<script src="js/core.js?v=0.70"></script>
+<script src="js/shift.js?v=0.70"></script>
+<script src="js/gate.js?v=0.70"></script>
+<script src="js/wonders.js?v=0.70"></script>
+<script src="js/universe.js?v=0.70"></script>
+<script src="js/sky.js?v=0.70"></script>
+<script src="js/validate.js?v=0.70"></script>
+<script src="js/derived.js?v=0.70"></script>
+<script src="js/cloud.js?v=0.70"></script>
+<script src="js/header.js?v=0.70"></script>
+<script src="js/astro.js?v=0.70"></script>
+<script src="js/weather.js?v=0.70"></script>
+<script src="js/schedule.js?v=0.70"></script>
+<script src="js/today.js?v=0.70"></script>
+<script src="js/subjects.js?v=0.70"></script>
+<script src="js/faculty.js?v=0.70"></script>
+<script src="js/exams.js?v=0.70"></script>
+<script src="js/tasks.js?v=0.70"></script>
+<script src="js/notes.js?v=0.70"></script>
+<script src="js/planner.js?v=0.70"></script>
+<script src="js/settings.js?v=0.70"></script>
+<script src="js/nolan.js?v=0.70"></script>
+<script src="js/home.js?v=0.70"></script>
+<script src="js/router.js?v=0.70"></script>
+<script src="js/view.js?v=0.70"></script>
+<script src="js/debug.js?v=0.70"></script>
+<script src="js/effects.js?v=0.70"></script>
 <!-- the offline copy (sw.js): only when served over the web, not from a file -->
 <script>if("serviceWorker" in navigator&&/^https?:$/.test(location.protocol)) addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));</script>
 </body>

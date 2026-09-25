@@ -4,7 +4,7 @@
    · The page (index.html): from the network first, so a new version is
      seen as soon as there is signal; without signal, the saved copy.
    · Its files (css, js, data, icons): they carry the version in their
-     address (?v=0.69), so the saved copy is always right: served from
+     address (?v=0.70), so the saved copy is always right: served from
      here at once, which also makes the site open instantly.
    · What to keep is read from index.html itself (every href and src, plus
      the icons in the manifest): nothing to update by hand. Each time a
@@ -63,7 +63,8 @@ self.addEventListener("fetch",ev=>{
   if(req.mode==="navigate"&&url.origin===self.location.origin){
     ev.respondWith((async()=>{
       try{
-        const r=await fetch(req);
+        /* asked to the server, not to the browser's own cache: it could keep an old page for minutes */
+        const r=await fetch(req.url,{cache:"no-cache",credentials:"same-origin"});
         if(r.ok&&(url.href===PAGE||/\/(index\.html)?$/.test(url.pathname))){
           const copy=r.clone();
           ev.waitUntil((async()=>{ await (await caches.open(CACHE)).put(PAGE,copy.clone()); await sync(await copy.text()); })());

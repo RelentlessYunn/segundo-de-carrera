@@ -9,7 +9,8 @@
 @media (hover:hover){.checkitem:hover{padding-left:4px}}
 .checkitem input{margin-top:3px;width:17px;height:17px;flex:0 0 auto;accent-color:var(--go);cursor:pointer;transition:transform .14s var(--spring)}
 .checkitem input:active{transform:scale(.8)}
-.checkitem input:checked{animation:pop .35s var(--spring)}
+/* the pop only when you tick it (tasks.js), not when the ticks arrive from the cloud or the tab opens again */
+.checkitem input.just:checked{animation:pop .35s var(--spring)}
 @keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.25)}100%{transform:none}}
 .checkitem label{font-size:.89rem;cursor:pointer;transition:opacity .3s ease}
 .checkitem label b{display:block;font-weight:600}

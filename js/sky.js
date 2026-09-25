@@ -153,7 +153,8 @@
     window.Stars={
       /* true: this sky handles the flight (and calls onArrive) */
       go(to,{animate=true,from,onArrive,onCancel}={}){
-        if(to==="gate") to="home";
+        /* the sights of the 3D universe have no star of their own here (the black hole aside): they live in home's sky */
+        if(to==="gate"||(!COL[to]&&to!=="home")) to="home";
         if(fl&&fl.to===to){ if(onArrive) fl.also.push(onArrive); if(onCancel) fl.cancels.push(onCancel); return true; }
         const was=fl; fl=null;
         if(was){ was.cancels.forEach(fn=>fn()); }
@@ -172,7 +173,7 @@
       busy:()=>!!fl,
       scene:()=>scene
     };
-    if(typeof Universe!=="undefined"){ const s0=Universe.scene(); scene=s0==="gate"?"home":COL[s0]||s0==="home"?s0:"uc3m"; }
+    if(typeof Universe!=="undefined"){ const s0=Universe.scene(); scene=COL[s0]||s0==="home"?s0:s0==="uc3m"?"uc3m":"home"; }
     size();
     c.classList.add("ready");
     let rz=0; window.addEventListener("resize",()=>{ clearTimeout(rz); rz=setTimeout(size,250); });

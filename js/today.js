@@ -56,6 +56,9 @@
   /* ---------- every minute: nothing is rebuilt, only what changes ----------
      Rows are updated in place: focus is kept and no animation replays. */
   function refresh(){
+    /* behind home the page is not drawn at all (sky.css): nothing to measure; the "tab" event
+       brings it up to date when it shows again */
+    if(document.body.classList.contains("portal-open")) return;
     const isToday=shown===todayISO(), m=minutesOf(new Date());
     const rows=$$("#dayList .trow");
     rows.forEach((row,i)=>{
@@ -70,10 +73,9 @@
   /* ---------- red line: on top before class, at the bottom when done, over the rows in between ---------- */
   const left=min=>min<60?t("dur.min",{m:min}):min%60?t("dur.hmin",{h:Math.floor(min/60),m:min%60}):t("dur.h",{h:min/60});
   function nowLine(isToday,m,rows){
-    list.querySelectorAll(".now-line").forEach(x=>x.remove());
     const live=$("#dayLive");
-    live.hidden=true;
-    if(!isToday||!classes.length||rows.length!==classes.length) return;
+    let l=list.querySelector(".now-line");
+    if(!isToday||!classes.length||rows.length!==classes.length){ if(l) l.remove(); live.hidden=true; return; }
     /* with the section hidden rows measure nothing: it is placed again when shown */
     if(!list.offsetParent) return;
     const last=rows[rows.length-1], end=Math.max(...classes.map(c=>c.end));
@@ -85,13 +87,17 @@
       if(m<c.start){ top=y-1; text=t("live.nextIn",{t:left(c.start-m)}); break; }
       if(m<c.end){ top=y+h*((m-c.start)/(c.end-c.start)); text=t("live.left",{t:left(c.end-m)}); break; }
     }
-    const l=document.createElement("div");
-    l.className="now-line"+(mode?" "+mode:"");
-    l.style.top=top+"px";
-    l.innerHTML='<span class="pt"></span>';
-    list.appendChild(l);
+    /* moved and rewritten in place, and only where something changed: a new minute (or the
+       compact header, or coming back to the tab) never makes the line or its words fade in again */
+    if(!l){ l=document.createElement("div"); l.innerHTML='<span class="pt"></span>'; list.appendChild(l); }
+    const cls="now-line"+(mode?" "+mode:""), px=top+"px";
+    if(l.className!==cls) l.className=cls;
+    if(l.style.top!==px) l.style.top=px;
     /* the text goes in the day header: on the line it covered the time or the room */
-    live.textContent=text; live.className="live"+(mode?" "+mode:""); live.hidden=false;
+    const lc="live"+(mode?" "+mode:"");
+    if(live.textContent!==text) live.textContent=text;
+    if(live.className!==lc) live.className=lc;
+    if(live.hidden) live.hidden=false;
   }
 
   /* ---------- what falls in the seven days after the one shown ---------- */

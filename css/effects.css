@@ -37,7 +37,8 @@
 /* idle: after a while without touching anything, self-moving decorations stop (effects.js) */
 body.idle .ag-btn::after,
 body.idle .clock-time .sep,body.idle .week-badge .w-bar u::after,body.idle .live::before,
-body.idle .now-line::after,body.idle .sky-layer,body.idle .shead h2::before,body.idle .prog .track::after,body.idle .i-crane .hook{animation-play-state:paused}
+body.idle .now-line::after,body.idle .sky-layer,body.idle .shead h2::before,body.idle .prog .track::after,body.idle .i-crane .hook,
+body.idle .p-more svg{animation-play-state:paused}
 
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
@@ -51,6 +52,6 @@ body.idle .now-line::after,body.idle .sky-layer,body.idle .shead h2::before,body
 [data-motion=basic] .clock-time .sep,[data-motion=basic] .week-badge .w-bar u::after,
 [data-motion=basic] .live::before,[data-motion=basic] .now-line::after,[data-motion=basic] .prog .track::after,
 [data-motion=basic] .i-crane .hook,[data-motion=basic] .sky-layer,
-[data-motion=basic] .shead h2::before{animation:none!important}
+[data-motion=basic] .shead h2::before,[data-motion=basic] .p-more svg{animation:none!important}
 [data-motion=none] *,[data-motion=none] *::before,[data-motion=none] *::after{animation:none!important;transition:none!important}
 html[data-motion=none]{scroll-behavior:auto}

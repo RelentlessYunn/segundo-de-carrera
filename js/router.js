@@ -1,9 +1,10 @@
 /* ==========================================================
    router.js — routes and tabs.
    · #schedule, #subjects, #exams, #tasks, #faculty: UC3M tabs
-   · #home, #notes, #settings, #blackhole and #nolan (or #nolan/…): the home screen
-     and its pages (home.js); an
-     address without a route (the app's start) also opens home
+   · #home, #notes, #settings, #nolan (or #nolan/…) and the sights (#earth, #moon,
+     #blackhole, #orion…): the home screen and its pages (home.js); an address
+     without a route (the app's start) also opens home; the old #soon/… links
+     go to the galaxies they were (now sights)
    · #debug: debug panel (debug.js); it does not change tab
    Old Spanish links (#horario, #asignaturas…) still work.
    On mobile you can also switch tabs by swiping.
@@ -70,12 +71,16 @@ const Router=(function(){
   }
 
   /* ---------- routes ---------- */
-  const isHome=r=>r==="home"||r==="notes"||r==="settings"||r==="blackhole"||r==="nolan"||r.startsWith("nolan/")||r.startsWith("soon/");
+  const isHome=r=>r==="home"||r==="notes"||r==="settings"||r==="nolan"||r.startsWith("nolan/")||Home.isSight(r);
   function handle(){
     let r=decodeURIComponent(location.hash.slice(1));
     if(r.includes("debug")) return;                    /* handled by debug.js */
     if(!r) r="home";                                   /* the app always starts at home */
+    /* the old "to explore" pages: their galaxies are sights now */
+    if(r.startsWith("soon/")){ r=({"soon/andromeda":"ringgalaxy","soon/sombrero":"edgeon"})[r]||"home"; history.replaceState(null,"","#"+r); }
     if(ALIASES[r]){ r=ALIASES[r]; history.replaceState(null,"","#"+r); }
+    /* a guest sees home, its sights and Settings: none of the pages with data */
+    if(Gate.guest()&&!(r==="home"||r==="settings"||Home.isSight(r))){ r="home"; history.replaceState(null,"","#home"); }
     if(isHome(r)){
       if(!shownOnce) show(last,{quiet:true});          /* behind home, the last tab */
       const [view,...sub]=r.split("/"); Home.open(view,sub.join("/"),last); return;
@@ -88,6 +93,7 @@ const Router=(function(){
   }
   /* go to a tab without filling the history (Back does not walk through tabs) */
   function goTo(tab){
+    if(Gate.guest()){ history.replaceState(null,"","#home"); handle(); return; }   /* (no app for a guest) */
     history.replaceState(null,"","#"+tab);
     Home.close();
     show(tab);
@@ -102,11 +108,12 @@ const Router=(function(){
     if(isMobile()&&before>=0&&after!==before) enter(after>before?-1:1);
   }));
   /* the UC3M card on home takes you back to the tab you were on */
-  $("#homeUc3m").addEventListener("click",ev=>{ ev.preventDefault(); Home.enter(ev.currentTarget,()=>goTo(last)); });
-  /* Escape: closes home or whichever detail panel is open */
+  $("#homeUc3m").addEventListener("click",ev=>{ ev.preventDefault(); Home.enter("uc3m",()=>goTo(last)); });
+  /* Escape goes back: from a sight (or Nolan, Notes, Settings) to where you came from, from home
+     to the app; in the app it closes whichever detail panel is open */
   document.addEventListener("keydown",ev=>{
     if(ev.key!=="Escape") return;
-    if(Home.isOpen()){ goTo(last); return; }
+    if(Home.isOpen()){ const b=Home.back(); if(b){ history.replaceState(null,"",b); handle(); } else if(!Gate.guest()) goTo(last); return; }
     ["today-detail","planner-detail","subjectPeek"].forEach(id=>{ const b=document.getElementById(id); if(b) b.hidden=true; });
   });
 
@@ -187,9 +194,11 @@ const Router=(function(){
   handle();
   if(!Gate.locked()&&Home.isOpen()) Home.intro();      /* the opening, when the app starts at home */
   if(!shownOnce) show("schedule",{quiet:true});        /* e.g. when opened with #debug */
+  document.documentElement.removeAttribute("data-booting");   /* the first view is chosen: now it can be seen */
   /* after loading, the browser jumps to the hash's anchor (#schedule is the weekly
      timetable, not Today): undo it so it always starts at the top */
   window.addEventListener("load",()=>setTimeout(toTop,0));
 
-  return {current:()=>current, last:()=>last, goTo};
+  /* route(): follow the address again (the gate calls it when a guest comes in) */
+  return {current:()=>current, last:()=>last, goTo, route:handle};
 })();

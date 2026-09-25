@@ -51,13 +51,16 @@
     const [sunLabel,sunTime]=nextSun(now,rise,set,riseT);
     const c=data&&data.current, dl=data&&data.daily, k=c?KIND(c.weather_code):null;
     const stat=(label,value)=>`<div class="w-stat"><small>${esc(label)}</small><b>${esc(value)}</b></div>`;
-    const html=`<div class="w-card">`+
+    /* before the weather arrives the card already has its full shape ("—" in each place), so
+       nothing on home moves when it comes */
+    const html=`<div class="w-card${c?"":" w-wait"}">`+
       (c?`<div class="w-main">${svg(ICON[k](c.is_day),"w-ic")}<b class="w-temp">${Math.round(c.temperature_2m)}°</b>`+
           `<div class="w-what"><span>${esc(t("weather."+(k==="rain"?"rain_":k)))}</span><em>${esc(p.name)}</em></div></div>`
-        :`<div class="w-main"><div class="w-what"><em>${esc(p.name)}</em></div></div>`)+
+        :`<div class="w-main">${svg(ICON.cloudy(),"w-ic")}<b class="w-temp">—°</b><div class="w-what"><span>&nbsp;</span><em>${esc(p.name)}</em></div></div>`)+
       `<div class="w-stats">`+
         (dl?stat(t("weather.max"),Math.round(dl.temperature_2m_max[0])+"°")+stat(t("weather.min"),Math.round(dl.temperature_2m_min[0])+"°")+
-            stat(t("weather.rainLabel"),(dl.precipitation_probability_max?dl.precipitation_probability_max[0]:0)+" %"):"")+
+            stat(t("weather.rainLabel"),(dl.precipitation_probability_max?dl.precipitation_probability_max[0]:0)+" %")
+          :stat(t("weather.max"),"—")+stat(t("weather.min"),"—")+stat(t("weather.rainLabel"),"—"))+
         `<div class="w-stat w-sunstat"><small>${svg(SUN,"w-sun-ic")}${esc(sunLabel)}</small><b>${esc(sunTime)}</b></div>`+
       `</div></div>`;
     if(html!==box.dataset.html){ box.dataset.html=html; box.innerHTML=html; }
@@ -82,35 +85,53 @@
       {timeout:9000,maximumAge:30*60000});
   });
 
+  /* only the newest request may change the card: an older, slower answer (the last place, or
+     Getafe) never overwrites the weather of where the device turned out to be */
+  let seq=0, triedAt=0, savedAt=0;
   async function load(p){
-    try{
-      const d=await fetchWeather(p);
-      place=p; data=d;
-      try{ localStorage.setItem(CACHE,JSON.stringify({at:Date.now(),place:p,data:d})); }catch(e){}
-    }catch(e){ place=place||p; }
+    const my=++seq; triedAt=Date.now();
+    let d=null;
+    try{ d=await fetchWeather(p); }catch(e){}
+    if(my!==seq) return;
+    if(d){
+      place=p; data=d; savedAt=Date.now();
+      /* a guest's weather is not kept on the device */
+      if(!Gate.guest()) try{ localStorage.setItem(CACHE,JSON.stringify({at:savedAt,place:p,data:d})); }catch(e){}
+    } else place=place||p;
     draw();
   }
   const far=(a,b)=>Math.hypot(a.lat-b.lat,(a.lon-b.lon)*Math.cos(a.lat*Math.PI/180))>.05;   /* more than ~5 km */
+  /* the location, if the browser already allows it (then there is no need to show Getafe first) */
+  const allowed=()=>navigator.permissions&&navigator.permissions.query?navigator.permissions.query({name:"geolocation"}).then(s=>s.state==="granted",()=>false):Promise.resolve(false);
   async function refresh(){
+    /* a guest: the weather of the default place, without asking where the device is, and nothing kept */
+    if(Gate.guest()){ if(Date.now()-savedAt>FRESH) load(FALLBACK); return; }
     let fresh=false;
     try{
       const saved=JSON.parse(localStorage.getItem(CACHE)||"null");
-      if(saved&&saved.place){ place=saved.place; data=saved.data; draw(); fresh=Date.now()-saved.at<FRESH; }
+      if(saved&&saved.place){ place=saved.place; data=saved.data; savedAt=saved.at; draw(); fresh=Date.now()-saved.at<FRESH; }
     }catch(e){}
+    if(asked){ if(!fresh) load(place||FALLBACK); return; }
+    asked=true;
+    /* nothing saved yet, and the browser already lets us know where it is: that place first, not Getafe */
+    if(!place&&await allowed()){
+      const pos=await locate();
+      if(pos){ const name=await placeName(pos.lat,pos.lon); load({lat:pos.lat,lon:pos.lon,name:name||t("weather.here")}); return; }
+    }
     /* the weather for the last known place (or Getafe) comes at once… */
     if(!fresh) load(place||FALLBACK);
     /* …and if the device says it is somewhere else, the weather follows it */
-    if(asked) return;
-    asked=true;
     const pos=await locate(); if(!pos) return;
-    if(place&&!far(pos,place)&&fresh) return;
+    if(place&&!far(pos,place)) return;               /* the same place: its weather is already there, or on its way */
     const name=await placeName(pos.lat,pos.lon);
     load({lat:pos.lat,lon:pos.lon,name:name||t("weather.here")});
   }
 
   draw();                                          /* the sun, even before the weather arrives */
-  /* only once the PIN is right: asking for the location over the PIN screen would be odd */
+  /* only once the PIN is right (or a guest is in): asking for the location over the PIN screen would be odd */
   Gate.onOpen(()=>refresh());
-  document.addEventListener("minute",()=>{ draw(); if(!document.hidden&&!Gate.locked()){
-    try{ const s=JSON.parse(localStorage.getItem(CACHE)||"null"); if(!s||Date.now()-s.at>FRESH) refresh(); }catch(e){} } });
+  /* every minute: the next sunrise or sunset; and a new reading once the last one is 20 minutes old
+     (without a connection, one try every 20 minutes, not one a minute; again as soon as it is back) */
+  document.addEventListener("minute",()=>{ draw(); if(!document.hidden&&!Gate.locked()&&navigator.onLine!==false&&Date.now()-savedAt>FRESH&&Date.now()-triedAt>FRESH) refresh(); });
+  window.addEventListener("online",()=>{ if(!Gate.locked()&&Date.now()-savedAt>FRESH){ triedAt=0; refresh(); } });
 })();

@@ -21,7 +21,10 @@
     if(!inp.matches("#subjectTasks input, #generalTasks input")) return;
     const id=inp.id, done=inp.checked;
     Cloud.change("done:"+id,{op:"done",args:{id,done}});
+    /* its pop plays once, now (css) */
+    inp.classList.remove("just"); if(done){ void inp.offsetWidth; inp.classList.add("just"); }
   });
+  document.addEventListener("animationend",e=>{ if(e.target.classList&&e.target.classList.contains("just")) e.target.classList.remove("just"); });
 
   /* ticks saved in the old format (by position) are translated once */
   function translator(){
@@ -36,7 +39,7 @@
     if(done.some((id,i)=>id!==(rec.hechas||[])[i]))
       Cloud.change("migrate-done",r=>{ r.hechas=[...new Set((r.hechas||[]).map(translate))]; });
     const s=new Set(done);
-    $$("#subjectTasks input, #generalTasks input").forEach(inp=>{ inp.checked=s.has(inp.id); });
+    $$("#subjectTasks input, #generalTasks input").forEach(inp=>{ const on=s.has(inp.id); if(inp.checked!==on) inp.checked=on; });
   });
 
   /* ---------- your constellation: one star per task, lit when it is done ----------
@@ -44,7 +47,10 @@
      same number of tasks); lines join the lit ones in order. */
   const box=$("#tasksConstellation");
   let shownDone=null;
-  function constellation(){
+  /* user: a task was just ticked here, so its star is born (never for ticks that arrive from the cloud) */
+  function constellation(user){
+    /* measured only where it can be seen: hidden (another tab, or behind home) it is drawn when its tab opens */
+    if($("#tasks").hidden||document.body.classList.contains("portal-open")) return;
     const inputs=$$("#subjectTasks input, #generalTasks input"), n=inputs.length;
     if(!n){ box.innerHTML=""; return; }
     const W=Math.max(320,Math.round(box.clientWidth||1000)), H=110, done=inputs.map(i=>i.checked), count=done.filter(Boolean).length;
@@ -58,7 +64,7 @@
     }
     const stars=pts.map((p,i)=>{
       const sc=inputs[i].closest(".checkitem").style.getPropertyValue("--sc")||"#FFFFFF";
-      const fresh=shownDone&&done[i]&&!shownDone[i];
+      const fresh=user&&shownDone&&done[i]&&!shownDone[i];
       return `<g class="c-star${done[i]?" on":""}${fresh?" fresh":""}" style="--sc:${sc}" transform="translate(${p[0].toFixed(1)} ${p[1].toFixed(1)})">`+
         `<g class="c-pop"><circle r="14" class="halo"/><circle r="${done[i]?3.4:2}" class="core"/></g></g>`;
     }).join("");
@@ -67,7 +73,7 @@
       `<p>${esc(count===n?t("tasks.constellationDone"):tn("tasks.constellation",count,{total:n}))}</p>`;
     shownDone=done;
   }
-  document.addEventListener("change",e=>{ if(e.target.matches("#subjectTasks input, #generalTasks input")) constellation(); });
+  document.addEventListener("change",e=>{ if(e.target.matches("#subjectTasks input, #generalTasks input")) constellation(true); });
   Cloud.onLoad(()=>constellation());
   /* measured when the tab is visible (hidden it has no width) */
   document.addEventListener("tab",e=>{ if(e.detail==="tasks") constellation(); });

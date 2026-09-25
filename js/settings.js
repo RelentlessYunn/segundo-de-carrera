@@ -1,6 +1,6 @@
 /* ==========================================================
    settings.js — the Settings page (#settings, gear icon in the header):
-   language, Effects (animations and quality together), and Log out. Each choice is a segmented control;
+   language, Effects (animations and quality together), and Log out (for a guest: leave guest mode). Each choice is a segmented control;
    saving and applying are done by saveSetting() in prefs.js.
    ========================================================== */
 (function(){
@@ -21,9 +21,11 @@
         `${o[0]==="es"||o[0]==="en"?` lang="${o[0]}"`:""}>${esc(o[1])}</button>`).join("")+
       `</div></div>`).join("")+
       `<p class="set-note">${esc(t("s.set.reload"))}</p>`+
-      /* Log out: this device forgets the PIN and the PIN screen comes back */
-      `<div class="set-row set-danger"><div class="set-txt"><b>${esc(t("s.logout"))}</b><p>${esc(t("s.logoutHelp"))}</p></div>`+
-      `<button type="button" class="logout-btn" id="logout">${esc(t("s.logout"))}</button></div>`;
+      /* Log out: this device forgets the PIN and the PIN screen comes back (a guest: leaves
+         guest mode, back to that screen; css shows the words that fit, cinema.css) */
+      `<div class="set-row set-danger"><div class="set-txt"><b><span class="own">${esc(t("s.logout"))}</span><span class="guest">${esc(t("s.guestExit"))}</span></b>`+
+      `<p><span class="own">${esc(t("s.logoutHelp"))}</span><span class="guest">${esc(t("s.guestExitHelp"))}</span></p></div>`+
+      `<button type="button" class="logout-btn" id="logout"><span class="own">${esc(t("s.logout"))}</span><span class="guest">${esc(t("s.guestExit"))}</span></button></div>`;
   }
   box.addEventListener("click",ev=>{
     if(ev.target.closest("#logout")){ Gate.lock(); return; }

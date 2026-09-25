@@ -10,9 +10,11 @@
   let loaded=!Cloud.enabled;
   if(Cloud.enabled){ box.readOnly=true; box.placeholder=t("notes.loading"); }
 
-  Cloud.onLoad(rec=>{
+  Cloud.onLoad((rec,info)=>{
     /* refreshed from another device, unless you are typing */
-    if(!loaded||document.activeElement!==box) box.value=rec.notas||"";
+    if(!loaded||document.activeElement!==box){ const v=rec.notas||""; if(box.value!==v) box.value=v; }
+    /* this device's copy shows at once, but you can type only once the fresh one has arrived */
+    if(info.copy){ box.placeholder=example; return; }
     loaded=true; box.readOnly=false; box.placeholder=example;
   });
   box.addEventListener("input",()=>{

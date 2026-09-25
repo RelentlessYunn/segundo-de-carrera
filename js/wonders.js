@@ -21,8 +21,12 @@
      camera leaves them behind on its way home): the Earth turning, its
      night side dotted with city lights, auroras over its poles, its thin
      blue air; the Moon beside it in its real phase for today.
+   Each of them (the supernova aside) is also a sight: a place you can fly
+   to and look at whole from home's list (sights: its name, where it is and
+   how big it looks; universe.js frames it).
    Registered in window.UNIVERSE_EXTRAS before universe.js runs, which
-   compiles their programs and calls draw() every frame (see "api" there).
+   compiles their programs and calls draw() every frame (see "api" there);
+   each fades in once its program is ready.
    ========================================================== */
 window.UNIVERSE_EXTRAS=window.UNIVERSE_EXTRAS||[];
 const Wonders=(function(){
@@ -49,16 +53,18 @@ float edgeFade(){ return 1.-smoothstep(.82,1.,max(abs(vQ.x),abs(vQ.y))); }
   let api0=null;
   const big=api=>api.W<760?1.5:1;                     /* a little bigger on a phone, so they still read */
 
-  /* a wonder that sits in the sky seen from home */
-  function skyWonder(id,{at,z,R,rot=0,phase="far",blend="add",shader,uniforms}){
-    const w={id,shaders:{main:shader},
-      layout(api){ w.p=api.world(at,z); },
+  /* a wonder that sits in the sky seen from home. sight: its name as a place you can fly to
+     and look at (universe.js, PLACES), and vis: how much of its square it really fills (so the
+     camera frames what shows, not the empty corners) */
+  function skyWonder(id,{at,z,R,rot=0,phase="far",blend="add",sight,vis=.8,shader,uniforms}){
+    const w={id,shaders:{main:shader},sights:sight?[{id:sight,R:R*vis,p:null}]:[],
+      layout(api){ w.p=api.world(at,z); w.sights.forEach(s=>{ s.p=w.p; s.R=R*big(api)*vis; }); },
       draw(api,ph,t,now){
         if(ph!==phase||!w.p) return;
         api0=api;
         const s=spot(api,w.p,R*big(api)); if(!s) return;
         const u=api.sprite(w.prog.main,s.x,s.y,s.r,s.r,rot);
-        set(u,"uT",t); set(u,"uA",api.fade); set(u,"uS",(id.length*7.31)%10);
+        set(u,"uT",t); set(u,"uA",api.fade*api.appear(w)); set(u,"uS",(id.length*7.31)%10);
         if(uniforms) uniforms(api,u,t,now,s);
         blend==="add"?api.add():api.over();
         api.draw();
@@ -68,7 +74,7 @@ float edgeFade(){ return 1.-smoothstep(.82,1.,max(abs(vQ.x),abs(vQ.y))); }
   }
 
   /* ---------- the Orion Nebula ---------- */
-  skyWonder("orion",{at:{d:[.8,.1],m:[-.12,.3]},z:140,R:13.5,rot:.35,blend:"over",shader:COMMON+`
+  skyWonder("orion",{at:{d:[.8,.1],m:[-.12,.3]},z:140,R:13.5,rot:.35,blend:"over",sight:"orion",vis:.62,shader:COMMON+`
 float warp(vec2 p){ vec2 q=vec2(fbm(p+uS,5),fbm(p+vec2(5.2,1.3)+uS,5)); return fbm(p+2.3*q+vec2(uT*.004,0.),5); }
 void main(){
   vec2 p=vQ*1.15; float r=length(p);
@@ -95,7 +101,7 @@ void main(){
 }`});
 
   /* ---------- the Pleiades ---------- */
-  skyWonder("pleiades",{at:{d:[-.85,-.03],m:[.72,.05]},z:120,R:8,rot:-.2,shader:COMMON+`
+  skyWonder("pleiades",{at:{d:[-.85,-.03],m:[.72,.05]},z:120,R:8,rot:-.2,sight:"pleiades",vis:.68,shader:COMMON+`
 /* the nine brightest (positions and brightness after the real cluster) */
 const vec3 S[9]=vec3[9](vec3(0.,0.,1.),vec3(-.48,.05,.62),vec3(-.5,-.08,.2),vec3(.36,-.1,.58),vec3(.17,.2,.42),
                         vec3(.23,-.26,.5),vec3(.35,-.44,.38),vec3(.49,-.28,.16),vec3(.33,-.56,.14));
@@ -117,14 +123,18 @@ void main(){
     float spk=(exp(-abs(d.x)*420.)+exp(-abs(d.y)*420.))*exp(-r*(9.-5.*b))*b*b;
     C+=vec3(.78,.87,1.)*b*(exp(-r2*9000.)*5.+exp(-r2*900.)*.9+exp(-r*22.)*.22)+vec3(.7,.82,1.)*spk*.9;
   }
-  /* the fainter members, a hundred or so, thinning outwards */
-  vec2 g=floor(p*16.); float hs=h12(g+uS+1.); vec2 f=fract(p*16.)-.5-(vec2(h12(g),h12(g+5.))-.5)*.6;
-  C+=vec3(.82,.88,1.)*step(.8,hs)*exp(-dot(f,f)*110.)*(.3+hs)*exp(-dot(p,p)*1.1);
+  /* the fainter members, a hundred or so, thinning outwards: two scattered layers (one grid alone
+     showed its rows up close), each star anywhere in its cell */
+  for(int k=0;k<2;k++){
+    float sc=k==0?13.:23., sd=uS+1.+float(k)*9.3;
+    vec2 g=floor(p*sc+float(k)*.37); float hs=h12(g+sd); vec2 f=fract(p*sc+float(k)*.37)-.5-(vec2(h12(g+sd+2.1),h12(g+sd+5.3))-.5)*.84;
+    C+=vec3(.82,.88,1.)*step(k==0?.84:.9,hs)*exp(-dot(f,f)*(k==0?140.:220.))*(.25+hs)*exp(-dot(p,p)*1.1)*(k==0?1.:.7);
+  }
   o=vec4(C*uA*edgeFade(),0.);
 }`});
 
   /* ---------- the Ring Nebula ---------- */
-  skyWonder("ringneb",{at:{d:[-.72,.27],m:[-.38,.5]},z:120,R:4.6,rot:.5,shader:COMMON+`
+  skyWonder("ringneb",{at:{d:[-.72,.27],m:[-.38,.5]},z:120,R:4.6,rot:.5,sight:"ring",vis:.62,shader:COMMON+`
 void main(){
   vec2 p=vQ*1.25; vec2 e=p/vec2(1.,.8); float r=length(e), a=atan(e.y,e.x);
   float fil=fbm(vec2(a*2.6,r*9.)+uS,4), grain=fbm(p*7.+uS,4);
@@ -137,14 +147,15 @@ void main(){
 }`});
 
   /* ---------- a star eating its companion ---------- */
-  skyWonder("binary",{at:{d:[.61,.12],m:[.05,-.1]},z:110,R:5.2,blend:"over",shader:COMMON+`
+  skyWonder("binary",{at:{d:[.61,.12],m:[.05,-.1]},z:110,R:5.2,blend:"over",sight:"binary",vis:.74,shader:COMMON+`
 uniform float uPh;    /* where they are on their orbit */
 void main(){
   vec2 p=vQ*1.3; const float ci=.34;                         /* the orbit, seen tilted */
   vec2 A=-.42*vec2(cos(uPh),sin(uPh)*ci), B=.88*vec2(cos(uPh),sin(uPh)*ci);
   float bFront=sin(uPh)<0.?1.:0.;                             /* the white dwarf is in front of the giant */
   vec2 toB=normalize(B-A), dA=p-A;
-  float along=dot(dA,toB), Rg=.4*(1.+.22*smoothstep(0.,.4,along));        /* pulled into a drop */
+  /* pulled into a drop: round all over, drawn out to a point only towards its companion */
+  float ct=dot(dA,toB)/max(length(dA),1e-4), Rg=.4*(1.+.3*pow(max(ct,0.),5.));
   float rg=length(dA)/Rg;
   vec3 C=vec3(0.); float a=0.;
   /* the disk round the white dwarf, and the hot spot where the stream lands */
@@ -154,7 +165,7 @@ void main(){
   vec2 hot=B-toB*.16; dc+=vec3(1.,.9,.8)*exp(-dot(p-hot,p-hot)*900.)*1.5;
   dc+=vec3(.85,.93,1.)*exp(-dot(dB,dB)*9000.)*3.;
   /* the stream: from the giant's tip, curving (the orbit turns under it) onto the disk */
-  float st=0.; vec2 L1=A+toB*Rg*1.02, nrm=vec2(-toB.y,toB.x);
+  float st=0.; vec2 L1=A+toB*.4*1.3*1.02, nrm=vec2(-toB.y,toB.x);     /* from the tip of the drop */
   for(int i=0;i<18;i++){ float s=float(i)/17.; vec2 q=mix(L1,hot,s)+nrm*sin(s*3.1416)*.07;
     st+=exp(-dot(p-q,p-q)*(4000.-2500.*s))*(1.-.4*s); }
   vec3 sc=mix(vec3(1.,.4,.18),vec3(1.,.8,.6),.5)*st*.5*(.7+.5*fbm(p*20.-uT,2));
@@ -174,7 +185,7 @@ void main(){
   /* NGC 4038/4039: two spirals in the middle of crashing. Their pull has thrown out two long
      curved tails of stars (the "antennae"); where their disks meet, the squeezed gas lights
      up in hundreds of pink knots of newborn stars, crossed by lanes of dust. */
-  skyWonder("antennae",{at:{d:[.93,-.76],m:[-.38,-.5]},z:160,R:9,rot:-.3,blend:"over",shader:COMMON+`
+  skyWonder("antennae",{at:{d:[.93,-.76],m:[-.38,-.5]},z:160,R:9,rot:-.3,blend:"over",sight:"antennae",vis:.9,shader:COMMON+`
 float seg(vec2 p,vec2 a,vec2 b){ vec2 pa=p-a, ba=b-a; float h=clamp(dot(pa,ba)/dot(ba,ba),0.,1.); return length(pa-ba*h); }
 /* a tidal tail: a spiral arc thrown out of a disk, wider and fainter as it goes */
 vec2 tail(vec2 p,vec2 c,float th0,float dir,float sd){
@@ -268,9 +279,13 @@ void main(){
   }
   window.UNIVERSE_EXTRAS.push(novaW);
 
-  /* ---------- the Earth and the Moon (where the opening starts) ---------- */
+  /* ---------- the Earth and the Moon (where the opening starts) ----------
+     Far behind home: going back to them is flying back the way the opening came. Each one is a
+     sight of its own (its sphere and a little of its air) */
   const EARTH_P=[-21,13,-392], EARTH_R=15, MOON_P=[22,-16,-350], MOON_R=4.5;
-  const earth={id:"earth",early:true,shaders:{main:COMMON+N3+`
+  const earth={id:"earth",early:true,
+    sights:[{id:"earth",p:EARTH_P,R:EARTH_R*1.05,k:.92},{id:"moon",p:MOON_P,R:MOON_R*1.02,k:.86}],
+    shaders:{main:COMMON+N3+`
 uniform vec3 uL;      /* where the sunlight comes from */
 uniform float uSpin;
 vec3 spin(vec3 n){ float c=cos(uSpin), s=sin(uSpin); vec3 m=vec3(c*n.x+s*n.z,n.y,-s*n.x+c*n.z);
@@ -312,7 +327,7 @@ void main(){
     /* auroras round the poles, over the night: thin green curtains, crimson at their tops */
     float ring=exp(-pow((lat-.87+.015*sin(atan(s.z,s.x)*5.+uT*.05))/.03,2.)), ray=pow(fbm3(s*vec3(22.,2.,22.)+vec3(0.,uT*.15,0.),4),2.5);
     float top=smoothstep(.87,.91,lat);
-    nightC+=mix(vec3(.25,1.,.55),vec3(.95,.25,.45),top)*ring*ray*(1.-day)*1.3;
+    nightC+=mix(vec3(.25,1.,.55),vec3(.95,.25,.45),top)*ring*ray*(1.-day)*.85;
     C=dayC+nightC; a=1.;
     /* the air seen through, thickest towards the edge: a blue veil on the day side */
     float thick=pow(1.-max(-n.z,0.),3.);
@@ -328,35 +343,79 @@ void main(){
   o=vec4(C*uA,a*uA);
 }`,moon:COMMON+N3+`
 uniform vec3 uL;
+/* a field of craters: cells of a 3D grid (s cells per unit), each holding at most one crater, at a
+   random place and of a random size. h: the height (a bowl, a raised rim fading outwards), g: its
+   slope (to shade the relief), br: how fresh (a few young craters are bright inside) */
+void craters(vec3 q,float s,float sd,float depth,inout float h,inout vec3 g,inout float br){
+  vec3 u=q*s, iu=floor(u);
+  for(int z=-1;z<=1;z++) for(int y=-1;y<=1;y++) for(int x=-1;x<=1;x++){
+    vec3 c=iu+vec3(float(x),float(y),float(z));
+    float r0=h31(c+sd);
+    if(r0>.45) continue;                                   /* most cells hold none */
+    vec3 o=c+.5+.7*(vec3(h31(c+sd+1.3),h31(c+sd+2.9),h31(c+sd+4.7))-.5);
+    float R=.2+.32*h31(c+sd+6.1);
+    vec3 dv=u-o; float l=length(dv), d=l/R;
+    if(d>1.8) continue;
+    float hh, dh;
+    if(d<1.){ hh=(d*d-1.)*depth; dh=2.*d*depth; }
+    else { float e=(d-1.)/.3; hh=exp(-e*e)*depth*.45; dh=hh*(-2.*e/.3); }
+    h+=hh; g+=dh*dv/(max(l,1e-4)*R)*s;
+    br+=(1.-smoothstep(.75,1.2,d))*step(r0,.05);
+  }
+}
+/* the rays of a young crater: thin bright streaks thrown out all round it */
+float rays(vec3 n,vec3 c,float reach,float sd){
+  float d=acos(clamp(dot(n,c),-1.,1.));
+  vec3 a=normalize(cross(c,vec3(0.,1.,0.))), b=cross(c,a);
+  float an=atan(dot(n,b),dot(n,a));
+  /* uneven streaks: each fades in and out along its length, so they read as splashes, not spokes */
+  float st=pow(.5+.5*sin(an*13.+sin(an*5.+sd)*2.3+sd),12.)+pow(.5+.5*sin(an*23.+sd*2.),18.)*.5;
+  st*=.35+.65*vn3(vec3(an*6.,d*9.,sd));
+  return st*exp(-d/reach)*smoothstep(.015,.06,d)+exp(-d*d/.0004)*1.2;
+}
 void main(){
   vec2 p=vQ*1.03; float r2=dot(p,p);
   if(r2>=1.){ o=vec4(0.); return; }
   vec3 n=vec3(p.x,p.y,-sqrt(1.-r2)), L=normalize(uL);
-  float maria=smoothstep(.45,.6,fbm3(n*1.6+2.,4));
-  float craters=pow(1.-abs(fbm3(n*9.,4)*2.-1.),6.)*.35+fbm3(n*24.,3)*.25;
-  float alb=(.62-.26*maria)*(.85+craters);
-  float lit=max(dot(n,L),0.), term=smoothstep(-.02,.06,dot(n,L));
-  vec3 C=vec3(.95,.93,.9)*alb*pow(lit,.8)*term*1.2+vec3(.35,.45,.7)*.035*alb*(1.-term);   /* earthshine on the dark side */
-  float e=smoothstep(1.,.97,sqrt(r2));
+  /* the seas: broad smooth plains of old dark lava, with soft ragged shores */
+  float mf=fbm3(n*1.2+vec3(2.,.3,1.1),5)+.06*fbm3(n*6.,3);
+  float maria=smoothstep(.5,.6,mf);
+  /* craters at three sizes, fewer on the seas (they are younger than the highlands) */
+  float h=0., br=0.; vec3 g=vec3(0.);
+  float w=1.-.7*maria;
+  craters(n,2.6,1.,.9*w,h,g,br); craters(n,6.5,7.,.6*w,h,g,br); craters(n,15.,13.,.4*w,h,g,br);
+  /* the relief tilts the surface (in its own plane) and so catches or loses the sunlight */
+  vec3 gt=g-dot(g,n)*n, nb=normalize(n-gt*.028);
+  /* two young craters with rays, where the real ones are (Tycho low in the south, Copernicus left of the middle) */
+  float ry=rays(n,normalize(vec3(-.1,.62,-.78)),.42,1.)+rays(n,normalize(vec3(-.32,-.12,-.94)),.18,4.)*.5;
+  float alb=mix(.66,.3,maria)*(.9+.2*fbm3(n*24.,3))+br*.35+ry*.17;
+  /* how the Moon reflects: nearly as bright at its edge as in its middle (Lommel–Seeliger), not like a matte ball */
+  float ci=dot(nb,L), ce=max(-n.z,.05);
+  float lit=max(ci,0.)/(max(ci,0.)+ce)*2., term=smoothstep(-.03,.05,dot(n,L));
+  vec3 C=vec3(.96,.93,.88)*alb*lit*term*1.05+vec3(.35,.45,.7)*.03*alb*(1.-term);   /* earthshine on the dark side */
+  float e=smoothstep(1.,.985,sqrt(r2));
   o=vec4(C*uA*e,e*uA);
 }`},
     draw(api,ph,t){
       if(ph!=="near") return;
       api0=api;
-      const e=spot(api,EARTH_P,EARTH_R);
-      if(e){
+      const a=api.appear(earth);
+      const drawEarth=e=>{
         const u=api.sprite(earth.prog.main,e.x,e.y,e.r*1.14,e.r*1.14,0);
-        set(u,"uL",.95,-.2,.45); set(u,"uSpin",t*.05); set(u,"uT",t); set(u,"uA",1); set(u,"uS",3.7);
+        set(u,"uL",.95,-.2,.45); set(u,"uSpin",t*.05); set(u,"uT",t); set(u,"uA",a); set(u,"uS",3.7);
         api.over(); api.draw();
-      }
-      const m=spot(api,MOON_P,MOON_R);
-      if(m){
+      };
+      const drawMoon=m=>{
         /* lit as it is tonight: the angle between the Sun and the Moon, seen from here */
         const ph0=typeof Astro!=="undefined"&&Astro.moon?Astro.moon(new Date()).phase:.25, th=ph0*TAU;
         const u=api.sprite(earth.prog.moon,m.x,m.y,m.r*1.03,m.r*1.03,0);
-        set(u,"uL",Math.sin(th),-.05,Math.cos(th)); set(u,"uA",1); set(u,"uT",t);
+        set(u,"uL",Math.sin(th),-.05,Math.cos(th)); set(u,"uA",a); set(u,"uT",t);
         api.over(); api.draw();
-      }
+      };
+      /* the farther one first, so the nearer one covers it where they meet on the screen */
+      const e=spot(api,EARTH_P,EARTH_R), m=spot(api,MOON_P,MOON_R);
+      if(e&&m&&m.d>e.d){ drawMoon(m); drawEarth(e); }
+      else { if(e) drawEarth(e); if(m) drawMoon(m); }
     }};
   window.UNIVERSE_EXTRAS.push(earth);
 

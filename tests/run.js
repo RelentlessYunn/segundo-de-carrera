@@ -2,31 +2,75 @@
    run.js — automatic checks of the site in a real browser.
    Usage (from the project folder):   node tests/run.js
    Needs Playwright with Chromium (npm i playwright). It never touches the
-   real cloud: JSONBin calls are simulated.
+   real cloud or the real weather: JSONBin and Open-Meteo calls are simulated
+   or blocked (config.js may hold real keys).
+   119 checks (without NOLAN_PIN: 115, and 3 skipped), by section:
+   · Loading: no errors, nothing wider than a phone.
+   · PIN and start: the entry screen (logo and guest button; the logo or a
+     typed digit opens the keypad; nothing read from the cloud behind it),
+     wrong and right PIN, the flight home, remembered device, Log out; the
+     flights to UC3M and back, a second click during a trip, Notes and
+     Settings inside home; the sights (a card flies to one, its arrows and
+     the arrow keys go on, Escape goes home, old #soon/… links land home),
+     every sight framed whole on four screens, the black hole's own window.
+   · Tabs and old Spanish links · Today (the red line moved in place, the
+     minute, midnight, dates without a day) · Cloud (failed, slow and normal
+     first reads, this device's copy at once, no ticks popping by
+     themselves, grades with a comma) · Planner.
+   · Home: the window, just the sky, #nolan, the hero alone on the first
+     screen, the opening ending without a blink.
+   · Guest: only the universe (no UC3M, Nolan, Notes or cloud), no pages
+     with data even after reloading, Getafe's weather without the location
+     and not kept, the way out in Settings.
+   · Settings: the passage, English, every text (and every sight's words)
+     translated, English dates, the animation levels.
+   · Astral: weather, the three galaxies (UC3M's golden bar low on the
+     left), the seven wonders, a supernova, the band of our galaxy, the
+     Earth and the Moon (at the opening and as a place of their own), the
+     Moon's phase and meteor showers, Quality = Low and Medium, the tasks
+     constellation.
+   · Compact header, swiping, idle, offline.
    Exits with code 1 if anything fails.
+   The PIN: the repository is public, so the right PIN is never written in
+   this file. The checks that type it read it from the environment:
+       NOLAN_PIN=<the PIN> node tests/run.js
+   Without NOLAN_PIN they are skipped (and say so); every other check runs,
+   with this device already remembered (as a device that typed the PIN is).
    ========================================================== */
 const {chromium}=require("playwright");
 const path=require("path");
+const crypto=require("crypto");
 const PAGE="file://"+path.resolve(__dirname,"..","index.html");
-let failures=0;
-const ok=(c,text)=>{ console.log((c?"  ✔ ":"  ✘ ")+text); if(!c) failures++; };
+let failures=0, checks=0, skipped=0;
+const ok=(c,text)=>{ checks++; console.log((c?"  ✔ ":"  ✘ ")+text); if(!c) failures++; };
+const skip=text=>{ skipped++; console.log(`  – ${text} (skipped: set NOLAN_PIN to run the PIN checks)`); };
 const section=text=>console.log("\n"+text);
 
 /* opens the page at a given time (local time of this computer) */
 const DEVICE="f9d8f1cd96a7b5ffd4c1f01c7f5f0a7c00940726b33625b4755a1d4f25a91f20";
+/* the PIN's hash, as gate.js makes it (a device that typed the right PIN keeps it: DEVICE) */
+const pinHash=pin=>crypto.pbkdf2Sync(pin,"nolan·with-nolan·2026",150000,32,"sha256").toString("hex");
+const PIN=process.env.NOLAN_PIN||"";
+const PIN_OK=/^\d{6}$/.test(PIN)&&pinHash(PIN)===DEVICE;
+const WRONG=["123456","654321"].find(k=>k!==PIN);    /* a PIN that is not the right one */
 async function open(b,{hash="",time="2026-09-21T13:06:00",mobile=false,viewport,clock="fixed",routes,before,settings,locked=false}={}){
   const ctx=await b.newContext({viewport:viewport||(mobile?{width:390,height:844}:{width:1280,height:900}),hasTouch:mobile,isMobile:mobile});
   const p=await ctx.newPage();
-  p.errors=[];
+  p.errors=[]; p.requests=[];
   p.on("pageerror",e=>p.errors.push(e.message));
+  p.on("request",r=>p.requests.push(r.url()));        /* every request the page makes, even the ones routed away */
   await p.route(/fonts\.(googleapis|gstatic)\.com/,r=>r.abort());
+  /* never the real cloud (config.js may hold real keys) nor the real weather: a test that needs
+     them routes its own fake below, which Playwright tries first */
+  await p.route("https://api.jsonbin.io/**",r=>r.abort());
+  await p.route(/open-meteo\.com|bigdatacloud\.net/,r=>r.abort());
   if(routes) await routes(p);
   if(settings) await p.addInitScript(s=>localStorage.setItem("settings",s),JSON.stringify(settings));
   /* this device already knows the PIN, unless the test is about the gate */
   if(!locked) await p.addInitScript(k=>{ if(!sessionStorage.getItem("keep")) localStorage.setItem("nolan-device",k); },DEVICE);
   if(before) await p.addInitScript(before);
   if(clock==="fixed") await p.clock.setFixedTime(new Date(time)); else await p.clock.install({time:new Date(time)});
-  await p.goto(PAGE+(hash?"#"+hash:""),{waitUntil:"load"});
+  await p.goto(PAGE+(hash?"#"+hash:""),{waitUntil:"load",timeout:60000});   /* (a software graphics card can be slow to start) */
   await p.waitForTimeout(clock==="fixed"?900:50);
   return p;
 }
@@ -44,6 +88,15 @@ function fakeCloud(initial,mode,writes){
     });
   };
 }
+/* simulated Open-Meteo: 24°, sunset at 20:13 on 23 Sep */
+const WEATHER={current:{temperature_2m:24.4,weather_code:1,is_day:1},
+  daily:{temperature_2m_max:[28.2,27],temperature_2m_min:[14.1,13],sunrise:["2026-09-23T08:04","2026-09-24T08:05"],sunset:["2026-09-23T20:13","2026-09-24T20:11"],precipitation_probability_max:[5,0]}};
+const fakeWeather=(delay=0)=>async p=>{
+  await p.route("https://api.open-meteo.com/**",async r=>{
+    if(delay) await new Promise(x=>setTimeout(x,delay));
+    await r.fulfill({status:200,contentType:"application/json",body:JSON.stringify(WEATHER)}).catch(()=>{});   /* (the page may be gone) */
+  });
+};
 const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"test",API_KEY:"test"},writable:false}); };
 
 (async()=>{
@@ -57,6 +110,8 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
       banner:!document.getElementById("errorBanner").hidden}));
     ok(!p.errors.length,`${mobile?"mobile":"desktop"}: no JavaScript errors ${p.errors.join(" | ")}`);
     ok(!r.errors.length&&!r.banner,`${mobile?"mobile":"desktop"}: data without errors ${r.errors.join(" | ")}`);
+    ok(await p.evaluate(()=>!document.documentElement.hasAttribute("data-booting")&&getComputedStyle(document.getElementById("portal")).visibility==="visible"),
+      `${mobile?"mobile":"desktop"}: once the first view is chosen the page shows (data-booting is gone)`);
     if(mobile) ok(r.width<=390,`mobile: nothing sticks out of the screen (${r.width}px)`);
     if(r.warnings) console.log(`    (the checker leaves ${r.warnings} warnings in the console)`);
     await p.context().close();
@@ -66,30 +121,58 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
   {
     const p=await open(b,{locked:true,mobile:true});
     ok(await p.evaluate(()=>document.documentElement.hasAttribute("data-locked")&&!document.getElementById("gate").hidden
-      &&getComputedStyle(document.querySelector("body > div.wrap")).visibility==="hidden"),"a new device sees only the PIN screen");
-    for(const k of "123456") await p.click(`#gate [data-k="${k}"]`);
+      &&getComputedStyle(document.querySelector("body > div.wrap")).visibility==="hidden"),"a new device sees only the entry screen");
+    ok(await p.evaluate(()=>document.getElementById("gatePad").hidden&&!document.getElementById("gateStart").hidden&&!!document.getElementById("gateGuest").offsetWidth),
+      "at first: Nolan's logo and the guest button, no keypad");
+    ok(!p.requests.some(u=>/jsonbin/.test(u)),"behind the entry screen nothing is read from the cloud");
+    await p.click("#gateLogo"); await p.waitForTimeout(200);
+    ok(await p.evaluate(()=>!document.getElementById("gatePad").hidden&&document.getElementById("gateStart").hidden&&document.getElementById("gateLogo").getAttribute("aria-expanded")==="true"),
+      "the logo opens the PIN keypad");
+    for(const k of WRONG) await p.click(`#gate [data-k="${k}"]`);
     await p.waitForTimeout(1200);
-    ok(await p.evaluate(()=>document.documentElement.hasAttribute("data-locked")&&/incorrecto/.test(document.getElementById("gateMsg").textContent)),"a wrong PIN keeps it locked");
-    for(const k of "220226") await p.click(`#gate [data-k="${k}"]`);
-    await p.waitForTimeout(2500);
-    ok(await p.evaluate(()=>Universe.busy()&&Universe.scene()==="home"&&document.getElementById("gate").classList.contains("leaving")),"the keypad drifts away and the camera flies into the home galaxy");
-    /* (a slow software graphics card stretches the flight: wait for it to land, not a fixed time) */
-    await p.waitForFunction(()=>!document.documentElement.hasAttribute("data-locked")&&!Universe.busy(),null,{timeout:20000}).catch(()=>{});
-    const r=await p.evaluate(()=>({locked:document.documentElement.hasAttribute("data-locked"),saved:localStorage.getItem("nolan-device"),
-      home:!document.getElementById("portal").hidden,canvas:Universe.busy()}));
-    ok(!r.locked&&r.saved&&r.home&&!r.canvas,"the right PIN opens it, lands on home and the device remembers it");
+    ok(pinHash(WRONG)!==DEVICE&&await p.evaluate(()=>document.documentElement.hasAttribute("data-locked")&&/incorrecto/.test(document.getElementById("gateMsg").textContent)),"a wrong PIN keeps it locked");
+    /* (a NOLAN_PIN that is not the PIN would make the checks below fail for the wrong reason: said here, and not typed) */
+    if(PIN) ok(PIN_OK,"NOLAN_PIN is the PIN (its hash is the one in gate.js)");
+    if(PIN_OK){
+      for(const k of PIN) await p.click(`#gate [data-k="${k}"]`);
+      await p.waitForTimeout(2500);
+      ok(await p.evaluate(()=>Universe.busy()&&Universe.scene()==="home"&&document.getElementById("gate").classList.contains("leaving")),"the keypad drifts away and the camera flies into the home galaxy");
+      /* (a slow software graphics card stretches the flight: wait for it to land, not a fixed time) */
+      await p.waitForFunction(()=>!document.documentElement.hasAttribute("data-locked")&&!Universe.busy(),null,{timeout:20000}).catch(()=>{});
+      const r=await p.evaluate(()=>({locked:document.documentElement.hasAttribute("data-locked"),saved:localStorage.getItem("nolan-device"),
+        home:!document.getElementById("portal").hidden,canvas:Universe.busy()}));
+      ok(!r.locked&&r.saved&&r.home&&!r.canvas,"the right PIN opens it, lands on home and the device remembers it");
+    } else {
+      skip("the keypad drifts away and the camera flies into the home galaxy");
+      skip("the right PIN opens it, lands on home and the device remembers it");
+      /* what a device that typed the right PIN keeps, so the checks below still run */
+      await p.evaluate(k=>localStorage.setItem("nolan-device",k),DEVICE);
+    }
     await p.evaluate(()=>sessionStorage.setItem("keep","1"));
     await p.reload(); await p.waitForTimeout(600);
     ok(await p.evaluate(()=>!document.documentElement.hasAttribute("data-locked")&&document.getElementById("gate").hidden),"the same device is not asked again");
-    ok(!(await p.content()).includes("220226"),"the PIN itself is nowhere in the page");
+    /* no six digits in the page are the PIN: compared with it when it is given, else hashed as gate.js does */
+    const html=await p.content();
+    if(PIN_OK) ok(!html.includes(PIN),"the PIN itself is nowhere in the page");
+    else {
+      const six=new Set();
+      for(const run of html.match(/\d{6,}/g)||[]) for(let i=0;i+6<=run.length;i++) six.add(run.slice(i,i+6));
+      ok(![...six].some(k=>pinHash(k)===DEVICE),`the PIN itself is nowhere in the page (${six.size} runs of six digits hashed)`);
+    }
     await p.goto(PAGE+"#settings"); await p.waitForTimeout(500);
     await p.click("#logout"); await p.waitForTimeout(400);
-    ok(await p.evaluate(()=>document.documentElement.hasAttribute("data-locked")&&!document.getElementById("gate").hidden&&!localStorage.getItem("nolan-device")),
-      "Log out (in Settings) forgets the device and asks for the PIN again");
-    for(const k of "220226") await p.click(`#gate [data-k="${k}"]`);
-    await p.waitForFunction(()=>!document.documentElement.hasAttribute("data-locked")&&!Universe.busy(),null,{timeout:20000}).catch(()=>{});
-    ok(await p.evaluate(()=>!document.documentElement.hasAttribute("data-locked")&&location.hash==="#home"&&!document.querySelector('#portal .p-view[data-view="home"]').hidden),
-      "after logging out from Settings, the PIN lands on home again");
+    ok(await p.evaluate(()=>document.documentElement.hasAttribute("data-locked")&&!document.getElementById("gate").hidden&&!localStorage.getItem("nolan-device")
+      &&document.getElementById("gatePad").hidden),
+      "Log out (in Settings) forgets the device and shows the entry screen again");
+    await p.keyboard.press("7"); await p.waitForTimeout(150);
+    ok(await p.evaluate(()=>!document.getElementById("gatePad").hidden&&document.querySelectorAll("#gate .g-dot.on").length===1),"typing a digit on a keyboard opens the keypad too");
+    await p.keyboard.press("Backspace");
+    if(PIN_OK){
+      for(const k of PIN) await p.click(`#gate [data-k="${k}"]`);
+      await p.waitForFunction(()=>!document.documentElement.hasAttribute("data-locked")&&!Universe.busy(),null,{timeout:20000}).catch(()=>{});
+      ok(await p.evaluate(()=>!document.documentElement.hasAttribute("data-locked")&&location.hash==="#home"&&!document.querySelector('#portal .p-view[data-view="home"]').hidden),
+        "after logging out from Settings, the PIN lands on home again");
+    } else skip("after logging out from Settings, the PIN lands on home again");
     await p.context().close();
   }
   {
@@ -106,16 +189,44 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
       "Notes open from UC3M without leaving its galaxy, and Back returns to the timetable");
     await p.click("#notes .p-back-top"); await p.waitForTimeout(600);
     await p.click("header .home-btn"); await p.waitForTimeout(3200);
+    /* what the second click does is noted in the page itself, right after it (a slow software graphics card
+       makes every evaluate late): the timetable is on its way in, while the camera, on its way from home (c0)
+       to UC3M (c1), still has most of the trip ahead (left: the share of the way still to go) */
+    await p.evaluate(()=>{ const P=document.getElementById("portal"); let n=0; window.__c0=Universe.camera(); window.__skip=null;
+      addEventListener("click",()=>{ if(++n!==2) return; const cam=Universe.camera();
+        setTimeout(()=>{ window.__skip={cam,busy:Universe.busy(),scene:Universe.scene(),hash:location.hash,going:P.hidden||P.classList.contains("leaving")}; },0); },true); });
     await p.click("#homeUc3m"); await p.waitForTimeout(250); await p.mouse.click(640,450);
     /* (home fades out in 280 ms; a slow software graphics card can delay that timer, so wait for it) */
-    await p.waitForFunction(()=>document.getElementById("portal").hidden,null,{timeout:2000}).catch(()=>{});
-    ok(await p.evaluate(()=>document.getElementById("portal").hidden&&location.hash==="#schedule"&&Universe.busy()&&Universe.scene()==="uc3m"),
-      "a second click during the trip shows the timetable at once, while the camera flies on (the sky never jumps)");
+    await p.waitForFunction(()=>document.getElementById("portal").hidden,null,{timeout:4000}).catch(()=>{});
+    const shown=await p.evaluate(()=>document.getElementById("portal").hidden&&location.hash==="#schedule");
+    await p.waitForFunction(()=>!Universe.busy(),null,{timeout:10000}).catch(()=>{});
+    const sk=await p.evaluate(()=>{ const h=window.__skip, c0=window.__c0, c1=Universe.camera(), d=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
+      return h&&{busy:h.busy,scene:h.scene,hash:h.hash,going:h.going,left:+(d(h.cam,c1)/Math.max(1e-6,d(c0,c1))).toFixed(2)}; });
+    ok(shown&&!!sk&&sk.hash==="#schedule"&&sk.going&&sk.busy&&sk.scene==="uc3m"&&sk.left>.3,
+      `a second click during the trip shows the timetable at once, while the camera flies on (the sky never jumps) (${JSON.stringify(sk)})`);
     await p.click("header .home-btn"); await p.waitForTimeout(200);
     ok(await p.evaluate(()=>Universe.scene()==="home"&&!!document.querySelector("header .home-btn .logo-mark")),"the logo takes you home, flying back to the home galaxy");
     await p.waitForTimeout(2800);
-    await p.click('.p-card[data-galaxy="andromeda"]'); await p.waitForFunction(()=>location.hash==="#soon/andromeda"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
-    ok(await p.evaluate(()=>Universe.scene()==="andromeda"&&!document.getElementById("soonView").hidden&&location.hash==="#soon/andromeda"),"a galaxy to explore opens inside its own galaxy");
+    await p.click('.p-sight[data-sight="orion"]'); await p.waitForFunction(()=>location.hash==="#orion"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
+    ok(await p.evaluate(()=>Universe.scene()==="orion"&&!document.getElementById("sightView").hidden&&/Orión/.test(document.querySelector("#sightView h2").textContent)),"a sight's card flies up to it and shows what it is");
+    /* (clicked as soon as the camera stops: the sight is on screen, so its arrows must answer) */
+    await p.click('#sightView .s-arrow[data-dir="next"]'); await p.waitForFunction(()=>location.hash==="#pleiades"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
+    const nx=await p.evaluate(()=>({hash:location.hash,scene:Universe.scene(),h:document.querySelector("#sightView h2").textContent}));
+    ok(nx.scene==="pleiades"&&/Pléyades/.test(nx.h),`its arrow flies on to the next one, as soon as you have landed (${JSON.stringify(nx)})`);
+    /* the keys on their own (not after a failed click): from the Pleiades, once everything has settled */
+    if(nx.hash!=="#pleiades"){ await p.evaluate(()=>{ location.hash="#pleiades"; }); await p.waitForFunction(()=>location.hash==="#pleiades"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{}); }
+    await p.waitForTimeout(1500);
+    await p.keyboard.press("ArrowLeft"); await p.waitForFunction(()=>location.hash==="#orion"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
+    const back=await p.evaluate(()=>Universe.scene());
+    await p.waitForTimeout(1500);
+    await p.keyboard.press("ArrowRight"); await p.waitForFunction(()=>location.hash==="#pleiades"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
+    const fwd=await p.evaluate(()=>Universe.scene());
+    ok(back==="orion"&&fwd==="pleiades",`and the arrow keys go back and forth (${back}, ${fwd})`);
+    await p.keyboard.press("Escape"); await p.waitForTimeout(300);
+    ok(await p.evaluate(()=>location.hash==="#home"&&!document.getElementById("portal").hidden&&Universe.scene()==="home"),"Escape on a sight goes back home (not into the app)");
+    await p.goto(PAGE+"#soon/andromeda"); await p.waitForTimeout(500);
+    ok(await p.evaluate(()=>location.hash==="#ringgalaxy"&&!document.body.textContent.includes("Andrómeda")&&!document.body.textContent.includes("Sombrero")),
+      "no more Andrómeda or Sombrero cards: their galaxies are sights, and the old links fly to them");
     await p.goto(PAGE+"#notes"); await p.waitForTimeout(500);
     ok(await p.evaluate(()=>!document.getElementById("portal").hidden&&!document.getElementById("notes").hidden&&!!document.querySelector("#portal #notesText")),"Notes open inside home");
     await p.goto(PAGE+"#ajustes"); await p.waitForTimeout(500);
@@ -124,27 +235,30 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
   }
   {
     /* on a phone home's content spans the whole width: it must not cover Notes and Settings */
-    const p=await open(b,{hash:"soon/sombrero",mobile:true});
+    const p=await open(b,{hash:"orion",mobile:true});
     const onTop=await p.evaluate(()=>[...document.querySelectorAll("#portal .p-tool")].every(a=>{
       const r=a.getBoundingClientRect(), hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
       return r.width>0&&a.contains(hit);
     }));
     await p.tap("#portal .p-tool.gear-btn"); await p.waitForTimeout(400);
     ok(onTop&&await p.evaluate(()=>location.hash==="#settings"&&!document.getElementById("settings").hidden),
-      "mobile: inside a galaxy, Notes and Settings can be tapped");
+      "mobile: on a sight, Notes and Settings can be tapped");
     await p.context().close();
   }
-  for(const [width,height] of [[390,844],[360,740],[744,1133]]){
-    /* on a phone the edge-on Sombrero is seen whole in its own scene, nearly edge-on and from
-       a little above, high on the screen: not a black bar of dust cut off by both edges */
-    const p=await open(b,{hash:"home",mobile:true,viewport:{width,height}});
-    await p.waitForFunction(()=>Universe.ready(),null,{timeout:20000}).catch(()=>{});
-    await p.click('.p-card[data-galaxy="sombrero"]');
-    await p.waitForFunction(()=>location.hash==="#soon/sombrero"&&!Universe.busy(),null,{timeout:15000}).catch(()=>{});
-    await p.waitForTimeout(300);
-    const v=await p.evaluate(()=>Universe.gl()?Universe.view("sombrero"):{skip:1});
-    ok(!!v&&(v.skip||v.x0>=0&&v.x1<=v.W&&v.y0>=0&&v.cy<v.H*.35&&v.rise>2&&v.rise<10)&&!p.errors.length,
-      `mobile ${width}×${height}: the Sombrero is seen whole and edge-on in its own scene (${JSON.stringify(v)}) ${p.errors.join(" | ")}`);
+  for(const [width,height,mobile] of [[1280,900,false],[390,844,true],[360,740,true],[844,390,true]]){
+    /* every sight is seen whole: in the middle of the screen, above its words, as big as the screen allows */
+    const p=await open(b,{hash:"home",mobile,viewport:{width,height}});
+    await p.waitForFunction(()=>Universe.ready()&&window.UNIVERSE_EXTRAS.every(x=>x.ready||x.broken),null,{timeout:60000}).catch(()=>{});
+    const bad=[];
+    for(const id of await p.evaluate(()=>Home.sights())){
+      await p.evaluate(h=>{ location.hash="#"+h; },id);
+      await p.waitForFunction(h=>location.hash==="#"+h&&!Universe.busy(),id,{timeout:20000}).catch(()=>{});
+      const v=await p.evaluate(h=>{ const pl=Universe.place(h), words=document.querySelector("#sightView .s-fact").getBoundingClientRect();
+        return {scene:Universe.scene(),h:document.querySelector("#sightView h2").textContent,pl,words:Math.round(words.top)}; },id);
+      const pl=v.pl;
+      if(v.scene!==id||!v.h||!pl||Math.abs(pl.x-width/2)>width*.12||pl.y-pl.r*.6<0||pl.y>v.words||pl.r<Math.min(width,height)*.12) bad.push(id+" "+JSON.stringify(v));
+    }
+    ok(!bad.length&&!p.errors.length,`${width}×${height}: every sight is framed whole, above its words ${bad.join(" | ")} ${p.errors.join(" | ")}`);
     await p.context().close();
   }
   for(const mobile of [false,true]){
@@ -153,12 +267,12 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     const seen=await p.evaluate(()=>!Universe.gl()||Universe.hole());
     ok(seen&&!p.errors.length,`${mobile?"mobile":"desktop"}: the black hole is in the sky of home ${p.errors.join(" | ")}`);
     /* its own window: the camera flies up close, the text sits below it */
-    await p.click('.p-card[data-galaxy="blackhole"]');
+    await p.click('.p-sight[data-sight="blackhole"]');
     await p.waitForFunction(()=>location.hash==="#blackhole"&&!Universe.busy(),null,{timeout:12000}).catch(()=>{});
-    const r=await p.evaluate(()=>({scene:Universe.scene(),hash:location.hash,view:!document.getElementById("holeView").hidden,
+    const r=await p.evaluate(()=>({scene:Universe.scene(),hash:location.hash,view:!document.getElementById("sightView").hidden,
       top:getComputedStyle(document.querySelector("#portal .p-top")).display,seen:!Universe.gl()||Universe.hole()}));
     ok(r.scene==="blackhole"&&r.hash==="#blackhole"&&r.view&&r.top==="none"&&r.seen,`${mobile?"mobile":"desktop"}: the black hole card flies up close to it (${JSON.stringify(r)})`);
-    await p.click("#holeView .p-back"); await p.waitForTimeout(3200);
+    await p.click("#sightView .p-back"); await p.waitForTimeout(3200);
     ok(await p.evaluate(()=>Universe.scene()==="home"&&location.hash==="#home"),`${mobile?"mobile":"desktop"}: and back home`);
     await p.context().close();
   }
@@ -190,10 +304,13 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.context().close();
   }
   {
-    const p=await open(b,{time:"2026-09-21T12:28:50",clock:"live"});
+    const p=await open(b,{time:"2026-09-21T12:28:50",clock:"live",hash:"schedule"});
+    await p.evaluate(()=>{ window.__line=document.querySelector(".now-line"); });
     await p.clock.runFor(72000);
     const r=await p.evaluate(()=>[document.querySelector("#clockTime").textContent.replace(/\s/g,""),document.getElementById("dayLive").textContent,document.querySelectorAll(".trow.now").length]);
     ok(r[0]==="12:30"&&r[1]==="quedan 1 h 30 min"&&r[2]===1,`when the minute changes everything updates together (${r.join(" · ")})`);
+    ok(await p.evaluate(()=>!!window.__line&&window.__line===document.querySelector(".now-line")&&!window.__line.getAnimations().length),
+      "the red line moves in place: a new minute never makes it fade in again");
     await p.clock.setSystemTime(new Date("2026-09-21T23:59:50")); await p.clock.runFor(61000);
     ok(/Martes, 22/.test(await p.textContent("#dayTitle")),"at midnight Today moves to the next day");
     await p.context().close();
@@ -233,6 +350,25 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.context().close();
   }
 
+  {
+    /* the copy kept on this device shows at once: ticks do not pop in when the cloud answers */
+    const writes=[];
+    const p=await open(b,{hash:"tasks",routes:fakeCloud(REC,"slow",writes),before:()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"test",API_KEY:"test"},writable:false});
+      localStorage.setItem("nolan-cloud",JSON.stringify({hechas:[],grades:{},notas:"old"}));
+      /* every pop of a tick, whoever made it */
+      window.__pops=[]; addEventListener("animationstart",e=>{ if(e.target.matches&&e.target.matches(".checkitem input")) window.__pops.push(e.target.id); },true); }});
+    const r=await p.evaluate(()=>({notes:document.getElementById("notesText").value,ro:document.getElementById("notesText").readOnly}));
+    ok(r.notes==="old"&&r.ro,`before the cloud answers, this device's copy is already on screen (notes read-only until then) (${JSON.stringify(r)})`);
+    await p.waitForTimeout(3500);
+    const f=await p.evaluate(()=>({ro:document.getElementById("notesText").readOnly,ticks:document.querySelectorAll("#subjectTasks input:checked, #generalTasks input:checked").length,
+      pops:window.__pops,on:document.querySelectorAll("#tasksConstellation .c-star.on").length,born:document.querySelectorAll("#tasksConstellation .c-star.fresh").length}));
+    ok(!f.ro&&f.ticks===2&&!f.pops.length&&f.on===2&&!f.born,`then the fresh copy takes over: its ticks arrive without popping and no star is born by itself (${JSON.stringify(f)})`);
+    await p.locator("#generalTasks input:not(:checked)").first().check(); await p.waitForTimeout(100);
+    const u=await p.evaluate(()=>({pops:window.__pops.length,born:document.querySelectorAll("#tasksConstellation .c-star.fresh").length}));
+    ok(u.pops===1&&u.born===1,`a tick of your own pops, and its star is born (${JSON.stringify(u)})`);
+    await p.context().close();
+  }
+
   section("Planner");
   {
     const p=await open(b,{time:"2026-10-20T10:00:00"});
@@ -265,6 +401,63 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     await p.context().close();
   }
 
+  for(const mobile of [false,true]){
+    /* the first screen of home is the hero alone; where to go is further down */
+    const p=await open(b,{hash:"home",mobile});
+    const r=await p.evaluate(()=>{ const list=document.querySelector('#portal .p-view[data-view="home"]'), top=document.querySelector("#portal .p-top").getBoundingClientRect();
+      return {list:Math.round(list.getBoundingClientRect().top),h:innerHeight,hero:Math.round(top.bottom),more:!!document.getElementById("homeMore").offsetWidth,
+        sights:document.querySelectorAll("#homeSights .p-sight").length}; });
+    await p.click("#homeMore"); await p.waitForTimeout(900);
+    const after=await p.evaluate(()=>{ const r=document.querySelector("#homeUc3m").getBoundingClientRect(); return r.top>=0&&r.top<innerHeight; });
+    ok(r.list>=r.h&&r.more&&r.sights===11&&after,`${mobile?"mobile":"desktop"}: home's first screen is only the hero; the sections and the eleven sights come when you scroll (${JSON.stringify(r)})`);
+    await p.context().close();
+  }
+  {
+    /* the opening plays once: when it ends, nothing on home fades out and in again */
+    const p=await open(b,{hash:"home"});
+    await p.evaluate(()=>{ document.getElementById("portal").classList.add("intro"); });
+    await p.waitForTimeout(300);
+    const v=await p.evaluate(()=>{ document.getElementById("portal").classList.remove("intro");
+      return document.querySelector('#portal .p-view[data-view="home"]').getAnimations().filter(a=>a.playState==="running"&&a.currentTime<200).length; });
+    ok(v===0,"when the opening ends, home's cards do not blink");
+    await p.context().close();
+  }
+
+  section("Guest");
+  {
+    const writes=[];
+    /* (the browser would tell where the device is: a guest must not ask) */
+    const p=await open(b,{locked:true,time:"2026-09-23T16:05:00",before:FAKE_CONFIG,routes:async p=>{
+      await fakeCloud({hechas:["gk_0"],notas:"private"},"normal",writes)(p); await fakeWeather()(p);
+      await p.context().grantPermissions(["geolocation"]); await p.context().setGeolocation({latitude:48.857,longitude:2.352}); }});
+    await p.click("#gateGuest");
+    await p.waitForFunction(()=>!document.documentElement.hasAttribute("data-locked")&&!Universe.busy(),null,{timeout:20000}).catch(()=>{});
+    const r=await p.evaluate(()=>({guest:document.documentElement.hasAttribute("data-guest"),home:!document.getElementById("portal").hidden,
+      greeting:document.getElementById("homeGreeting").textContent,cards:getComputedStyle(document.querySelector("#portal .p-cards")).display,
+      app:getComputedStyle(document.querySelector("header.top")).display,notes:getComputedStyle(document.querySelector('#portal .p-tool[href="#notes"]')).display,
+      sights:getComputedStyle(document.getElementById("homeSights")).display,
+      device:localStorage.getItem("nolan-device")}));
+    r.cloud=p.requests.filter(u=>/jsonbin/.test(u)).length;
+    await p.waitForFunction(()=>/24°/.test(document.getElementById("homeWeather").textContent),null,{timeout:5000}).catch(()=>{});
+    const w=await p.evaluate(()=>({text:document.getElementById("homeWeather").textContent,kept:localStorage.getItem("weather")}));
+    w.located=p.requests.some(u=>/bigdatacloud|latitude=48\.857/.test(u));
+    ok(/24°/.test(w.text)&&/Getafe/.test(w.text)&&!w.kept&&!w.located,`a guest sees the weather of Getafe, without the device's location, and it is not kept (${JSON.stringify(w)})`);
+    ok(r.guest&&r.home&&/invitado/.test(r.greeting)&&r.cards==="none"&&r.app==="none"&&r.notes==="none"&&r.sights!=="none"&&!r.cloud&&!r.device,
+      `the guest button opens the universe with none of the data: no UC3M, no Nolan, no notes, nothing read from the cloud (${JSON.stringify(r)})`);
+    const routes={};
+    for(const h of ["schedule","tasks","notes","nolan","exams"]){ await p.goto(PAGE+"#"+h); await p.waitForTimeout(300); routes[h]=await p.evaluate(()=>location.hash); }
+    await p.reload(); await p.waitForTimeout(600);
+    const again=await p.evaluate(()=>({guest:document.documentElement.hasAttribute("data-guest"),locked:document.documentElement.hasAttribute("data-locked"),hash:location.hash}));
+    ok(Object.values(routes).every(h=>h==="#home")&&again.guest&&!again.locked&&again.hash==="#home"&&!p.requests.some(u=>/jsonbin/.test(u)),
+      `a guest cannot open the pages with data, and stays a guest on reload, still without the cloud (${JSON.stringify(routes)} ${JSON.stringify(again)})`);
+    await p.goto(PAGE+"#settings"); await p.waitForTimeout(400);
+    const label=await p.evaluate(()=>document.getElementById("logout").innerText);
+    await p.click("#logout"); await p.waitForTimeout(400);
+    ok(/invitado/i.test(label)&&await p.evaluate(()=>document.documentElement.hasAttribute("data-locked")&&!document.documentElement.hasAttribute("data-guest")&&!sessionStorage.getItem("nolan-guest")&&!document.getElementById("gateStart").hidden),
+      "Settings has the way out of guest mode, back to the entry screen");
+    await p.context().close();
+  }
+
   section("Settings");
   {
     const p=await open(b,{hash:"settings"});
@@ -285,7 +478,8 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
   }
   for(const lang of ["es","en"]){
     const p=await open(b,{settings:{lang}});
-    for(const h of ["schedule","subjects","exams","tasks","faculty","notes","settings","home","nolan"]){ await p.goto(PAGE+"#"+h); await p.waitForTimeout(250); }
+    /* every page, and every sight's own words (the Moon's with its phase tonight) */
+    for(const h of ["schedule","subjects","exams","tasks","faculty","notes","settings","home","nolan",...await p.evaluate(()=>Home.sights())]){ await p.goto(PAGE+"#"+h); await p.waitForTimeout(250); }
     const r=await p.evaluate(()=>({missing:[...I18N_MISSING],raw:[...document.querySelectorAll("body *")].filter(el=>el.children.length===0&&/^[a-z]+\.[a-zA-Z.]+$/.test(el.textContent.trim())).map(el=>el.textContent)}));
     ok(!r.missing.length&&!r.raw.length&&!p.errors.length,`${lang}: every text has a translation ${r.missing.concat(r.raw).join(", ")}`);
     await p.context().close();
@@ -307,12 +501,18 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
 
   section("Astral");
   {
-    const weather=async p=>{
-      await p.route("https://api.open-meteo.com/**",r=>r.fulfill({status:200,contentType:"application/json",body:JSON.stringify({
-        current:{temperature_2m:24.4,weather_code:1,is_day:1},
-        daily:{temperature_2m_max:[28.2,27],temperature_2m_min:[14.1,13],sunrise:["2026-09-23T08:04","2026-09-24T08:05"],sunset:["2026-09-23T20:13","2026-09-24T20:11"],precipitation_probability_max:[5,0]}})}));
-    };
-    const p=await open(b,{time:"2026-09-23T16:05:00",routes:weather});
+    {
+      /* before the weather arrives its card already has its full shape: nothing on home moves when it comes */
+      const w=await open(b,{time:"2026-09-23T16:05:00",mobile:true,routes:fakeWeather(2500)});
+      const box=()=>w.evaluate(()=>({wait:!!document.querySelector("#homeWeather .w-card.w-wait"),h:Math.round(document.getElementById("homeWeather").getBoundingClientRect().height),
+        temp:(document.querySelector("#homeWeather .w-temp")||{}).textContent}));
+      const before=await box();
+      await w.waitForFunction(()=>!document.querySelector("#homeWeather .w-wait"),null,{timeout:10000}).catch(()=>{});
+      const after=await box();
+      ok(before.wait&&!after.wait&&after.temp==="24°"&&before.h>0&&Math.abs(before.h-after.h)<=1,`the weather card keeps its size when the weather arrives (${JSON.stringify([before,after])})`);
+      await w.context().close();
+    }
+    const p=await open(b,{time:"2026-09-23T16:05:00",routes:fakeWeather()});
     await p.waitForTimeout(1500);
     const r=await p.evaluate(()=>({w:document.getElementById("homeWeather").textContent,
       layers:document.querySelectorAll("#sky .sky-layer").length,shown:getComputedStyle(document.querySelector("#sky .sky-par")).display,
@@ -321,7 +521,9 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     const painted=await p.waitForFunction(()=>Universe.gl()&&Universe.painted()===5,null,{timeout:120000}).then(()=>true,()=>false);
     ok(painted&&await p.evaluate(()=>document.documentElement.classList.contains("gl")&&getComputedStyle(document.getElementById("sky")).display==="none"),"Quality = High: the whole sky and the five galaxies are drawn in 3D by the graphics card (the CSS sky steps aside)");
     const all=await p.waitForFunction(()=>Universe.built().length===8,null,{timeout:60000}).then(()=>true,()=>false);
-    ok(all&&await p.evaluate(()=>{ Universe.seek(120); Universe.shoot(.4); return true; })&&!p.errors.length,"Andrómeda's companions are built too; time, shooting stars and a comet run without errors");
+    ok(all&&await p.evaluate(()=>{ Universe.seek(120); Universe.shoot(.4); return true; })&&!p.errors.length,"the three small companions are built too; time, shooting stars and a comet run without errors");
+    ok(await p.evaluate(()=>{ const G=Universe.GALAXIES; return G.uc3m.at.d[0]<0&&G.uc3m.at.d[1]>0&&G.uc3m.bulge.q[1]<.5&&G.nolan.at.d[0]>0&&Object.keys(G).join()==="nolan,uc3m,forge,ringgalaxy,edgeon"; }),
+      "UC3M's galaxy is the golden barred spiral low on the left; home's is the blue spiral");
     /* the wonders: each one compiled and drawn, a supernova shown, nothing left out */
     await p.waitForFunction(()=>window.UNIVERSE_EXTRAS.every(x=>x.ready||x.broken),null,{timeout:60000}).catch(()=>{});
     await p.waitForTimeout(300);
@@ -332,6 +534,13 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
     ok(await p.evaluate(()=>Universe.band())&&!p.errors.length,"the band of our galaxy crosses the sky, painted once");
     /* the opening: from the Earth and the Moon, the first time in a session */
     ok(await p.evaluate(()=>{ Universe.go("gate",{animate:false}); return Universe.ready(); })&&!p.errors.length,"the Earth and the Moon are drawn at the opening");
+    /* going back to the Earth: the camera flies back behind home, the Earth fills the middle and the
+       black hole, a speck that far away, is not traced over it */
+    await p.evaluate(()=>{ location.hash="#earth"; });
+    await p.waitForFunction(()=>location.hash==="#earth"&&!Universe.busy(),null,{timeout:20000}).catch(()=>{});
+    const earth=await p.evaluate(()=>({scene:Universe.scene(),cam:Universe.camera().z,pl:Universe.place("earth"),moon:Universe.place("moon"),hole:Universe.hole()}));
+    ok(earth.scene==="earth"&&earth.cam<-400&&earth.pl&&Math.abs(earth.pl.x-640)<90&&earth.pl.r>200&&earth.moon&&!earth.hole&&!p.errors.length,
+      `the Earth: a place of its own, far behind home, with the Moon beside it (${JSON.stringify(earth)})`);
     await p.context().close();
     /* the real sky, computed without connection */
     const ast=await (async()=>{ const a=await open(b,{time:"2026-08-12T22:00:00",hash:"schedule"});
@@ -464,6 +673,7 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
   }
 
   await b.close();
-  console.log(failures?`\n${failures} checks failed.`:"\nAll good.");
+  const skips=skipped?`, ${skipped} skipped without NOLAN_PIN`:"";
+  console.log(failures?`\n${failures} of ${checks} checks failed${skips}.`:`\nAll good (${checks} checks${skips}).`);
   process.exit(failures?1:0);
 })();

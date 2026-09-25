@@ -4,6 +4,9 @@
    · Home is the Nolan galaxy: you arrive there after the PIN, flying in
      from deep space. Every section is another galaxy you can see from
      home; entering a section flies the camera into it.
+   · The sights (PLACES): the Earth, the Moon, the black hole, the home
+     galaxy and the wonders of wonders.js can each be flown to and looked
+     at whole, one by one (home.js lists them).
    · Nothing is recalculated frame by frame on the processor. Everything
      is an exact formula of time that the graphics card evaluates:
        – every star follows its own orbit, an ellipse turned a little more
@@ -36,7 +39,8 @@
      the device struggles. Nothing is drawn behind the passage of shift.js. Nothing is drawn while the tab
      is hidden, and life pauses after a while without touching anything.
    · Universe.go(scene, {animate, duration, onArrive, onCancel}) moves the
-     camera. Without animations it simply jumps and everything stands still.
+     camera (the longer the way, the longer the flight, unless a duration is
+     given). Without animations it simply jumps and everything stands still.
      Universe.skip() shows at once what waits for a flight, which flies on; Universe.ready() says whether
      everything is built and on the screen (the passage of shift.js waits).
    · Only with Quality = High. Without WebGL2 (or with Medium or Low) there is
@@ -71,33 +75,30 @@ const Universe=(function(){
      rot: vmax orbital speed (radians/s at the edge), ac core size, pat speed of the
        arms pattern (minus: the arms trail)
      stars: how many of each kind (before the budget) · gain: brightness of each part
-     whole (optional): on a narrow screen its own scene shows it whole and nearly edge-on
-       instead of close up from below (see camFor): rise radians above its disk plane,
-       span its half width (in R) that must fit the screen, y where its centre sits
      star: the colour of its bright star in the sky of stars (Effects = Medium; sky.js) */
   const GALAXIES={
-    /* home: a golden barred spiral (like NGC 1300): a straight bar of old stars through the
-       middle, and two arms that sweep out from its ends (the inner orbits are long and
-       aligned, and hardly turn: that is the bar) */
-    nolan:{kind:"spiral", r:4.6, tilt:.72, roll:-.5, at:{d:[-.7,.62],m:[-.62,.74]}, z:58, seed:11,
-      disk:{h:.3, rc:.3, ex1:.3, ex2:.92, twist:1.9, phi0:.4, hz:.05, warp:.04, floc:.3,
-            young:{h:.4,k:2.2}, hii:{c1:1.5,c2:2.1}, dust:{h:.38,k:2,lag:.14}},
-      bulge:{I:.42, Rb:.13, n:1.1, q:[1,.28,.24]},        /* long and thin: the bar */
-      col:{old:[1,.8,.52], young:[.74,.8,1], hii:[1,.42,.58], core:[1,.76,.48]},
-      rot:{vmax:.016, ac:.06, pat:-.0055},
-      stars:{old:26000, young:9000, hii:800, bulge:9000, halo:1200, gc:9},
-      gain:{disk:.66, young:.6, hii:.5, dust:2.2, bulge:1, stars:1}},
-    /* UC3M: a blue "grand design" spiral seen nearly face-on (like the Whirlpool, M51): two
+    /* home: a blue "grand design" spiral seen nearly face-on (like the Whirlpool, M51): two
        strong, tightly wound arms full of pink knots, and a small yellow companion at the
-       end of one of them (NGC 5195) */
-    uc3m:{kind:"spiral", star:"120,190,255", r:3.9, tilt:.42, roll:.55, at:{d:[.62,-.42],m:[.62,-.56]}, z:60, seed:23,
+       end of one of them (NGC 5195). It is also a sight of its own ("whirlpool", see PLACES) */
+    nolan:{kind:"spiral", r:3.9, tilt:.42, roll:.55, at:{d:[.62,-.42],m:[.62,-.56]}, z:60, seed:23,
       disk:{h:.26, rc:.1, ex1:.7, ex2:.78, twist:6.4, phi0:1.1, hz:.045, warp:.05, floc:.25,
             young:{h:.34,k:2.3}, hii:{c1:1.5,c2:2.2}, dust:{h:.34,k:2.1,lag:.2}},
       bulge:{I:.26, Rb:.055, n:2, q:[1,.95,.8]},
       col:{old:[1,.9,.78], young:[.55,.72,1], hii:[1,.34,.6], core:[1,.86,.66]},
-      rot:{vmax:.05, ac:.05, pat:-.018},             /* it turns visibly: the liveliest of them */
+      rot:{vmax:.05, ac:.05, pat:-.018},             /* it turns visibly */
       stars:{old:18000, young:11000, hii:1200, bulge:6000, halo:900, gc:8},
       gain:{disk:1, young:1.1, hii:.9, dust:2.8, bulge:1, stars:1}},
+    /* UC3M: a golden barred spiral (like NGC 1300), low on the left: a straight bar of old stars
+       through the middle, and two arms that sweep out from its ends (the inner orbits are long
+       and aligned, and hardly turn: that is the bar) */
+    uc3m:{kind:"spiral", star:"255,200,130", r:4.6, tilt:.72, roll:-.5, at:{d:[-.7,.62],m:[-.62,.74]}, z:58, seed:11,
+      disk:{h:.3, rc:.3, ex1:.3, ex2:.92, twist:1.9, phi0:.4, hz:.05, warp:.04, floc:.3,
+            young:{h:.4,k:2.2}, hii:{c1:1.5,c2:2.1}, dust:{h:.38,k:2,lag:.14}},
+      bulge:{I:.42, Rb:.13, n:1.1, q:[1,.28,.24]},        /* long and thin: the bar */
+      col:{old:[1,.8,.52], young:[.74,.8,1], hii:[1,.42,.58], core:[1,.76,.48]},
+      rot:{vmax:.03, ac:.06, pat:-.01},              /* lively: it turns visibly while you look */
+      stars:{old:26000, young:9000, hii:800, bulge:9000, halo:1200, gc:9},
+      gain:{disk:.66, young:.6, hii:.5, dust:2.2, bulge:1, stars:1}},
     /* Nolan (under construction): a big round ember, an amber elliptical */
     forge:{kind:"elliptical", star:"255,176,96", r:3.1, tilt:.6, roll:-.2, at:{d:[-.66,-.5],m:[-.62,-.74]}, z:75, seed:37,
       bulge:{I:.3, Rb:.26, n:3, q:[1,.86,.72]},
@@ -105,9 +106,9 @@ const Universe=(function(){
       rot:{vmax:.008, ac:.2, pat:0},
       stars:{bulge:22000, halo:1500, gc:18},
       gain:{bulge:1, stars:1}},
-    /* Andrómeda: a ring galaxy (like Hoag's Object): a round yellow core, a dark gap, and a
-       nearly perfect ring of young blue stars around it; two small companions nearby */
-    andromeda:{kind:"ring", star:"196,170,255", r:4.4, tilt:.5, roll:-.9, at:{d:[.74,.42],m:[.62,.6]}, z:110, seed:41,
+    /* a ring galaxy (like Hoag's Object): a round yellow core, a dark gap, and a nearly perfect
+       ring of young blue stars around it; two small companions nearby. Not a section: a sight */
+    ringgalaxy:{kind:"ring", r:4.4, tilt:.5, roll:-.9, at:{d:[.74,.42],m:[.62,.6]}, z:110, seed:41,
       disk:{h:.07, rc:.2, ex1:1, ex2:1, twist:0, phi0:0, hz:.03, warp:.015, floc:.55,
             young:{h:.5,k:1}, hii:{c1:9,c2:10}, dust:{h:.6,k:1,lag:0}, ring:{a:.66,w:.075,light:1.4,dust:.3,stars:6000}},
       bulge:{I:.5, Rb:.1, n:2.5, q:[1,1,.95]},
@@ -115,9 +116,8 @@ const Universe=(function(){
       rot:{vmax:.012, ac:.08, pat:0},
       stars:{old:3000, bulge:9000, halo:900, gc:6},
       gain:{disk:.9, young:0, hii:0, dust:1, bulge:1, stars:1}},
-    /* Sombrero: seen edge-on, a big bright bulge and a dark ring of dust */
-    sombrero:{kind:"ring", star:"255,236,206", r:3.6, tilt:1.52, roll:.18, at:{d:[-.44,-.8],m:[.05,-.86]}, z:130, seed:53,
-      whole:{rise:.1, span:1.25, y:-.6},
+    /* a galaxy seen edge-on (like M104): a big bright bulge and a dark ring of dust. A sight too */
+    edgeon:{kind:"ring", r:3.6, tilt:1.52, roll:.18, at:{d:[-.44,-.8],m:[.05,-.86]}, z:130, seed:53,
       disk:{h:.34, rc:.2, ex1:1, ex2:1, twist:0, phi0:0, hz:.028, warp:.02, floc:.4,
             young:{h:.4,k:1}, hii:{c1:9,c2:10}, dust:{h:.5,k:1,lag:0}, ring:{a:.72,w:.085,light:.35,dust:3.2}},
       bulge:{I:.9, Rb:.3, n:3, q:[1,1,.8]},
@@ -128,11 +128,11 @@ const Universe=(function(){
   };
   /* small companions (not scenes): drawn with their host, placed in its own frame */
   const COMPANIONS=[
-    {id:"m32", host:"andromeda", off:[.3,.22,.08], size:.1, tilt:.4, roll:.9, seed:61,
+    {id:"m32", host:"ringgalaxy", off:[.3,.22,.08], size:.1, tilt:.4, roll:.9, seed:61,
       bulge:{I:.25,Rb:.3,n:2.5,q:[1,.84,.8]}, col:{old:[1,.86,.66],core:[1,.88,.7]}, rot:{vmax:.01,ac:.2,pat:0}, stars:{bulge:2200}, gain:{bulge:1,stars:1}},
-    {id:"ngc5195", host:"uc3m", off:[.8,.6,.08], size:.2, tilt:.35, roll:.4, seed:71,
+    {id:"ngc5195", host:"nolan", off:[.8,.6,.08], size:.2, tilt:.35, roll:.4, seed:71,
       bulge:{I:.3,Rb:.3,n:2.2,q:[1,.85,.75]}, col:{old:[1,.82,.58],core:[1,.84,.62]}, rot:{vmax:.008,ac:.2,pat:0}, stars:{bulge:2600}, gain:{bulge:1,stars:1}},
-    {id:"m110", host:"andromeda", off:[-.62,-.55,.1], size:.2, tilt:1.0, roll:-.4, seed:67,
+    {id:"m110", host:"ringgalaxy", off:[-.62,-.55,.1], size:.2, tilt:1.0, roll:-.4, seed:67,
       bulge:{I:.12,Rb:.45,n:1.6,q:[1,.6,.55]}, col:{old:[1,.9,.76],core:[1,.9,.78]}, rot:{vmax:.006,ac:.3,pat:0}, stars:{bulge:2600}, gain:{bulge:.8,stars:1}}
   ];
   const IDS=Object.keys(GALAXIES);
@@ -148,8 +148,19 @@ const Universe=(function(){
   const unit=v=>{ const l=Math.hypot(...v); return v.map(x=>x/l); };
   const SIGHTS={
     bh:{star:"255,120,210", at:{d:[-.36,-.28],m:[-.45,-.1]}, z:90, R:1.5, open:.25, roll:-.1}};
+  /* the sights: places you can fly to and look at whole, one by one (home.js lists them, in its
+     own order). Each is {p: where it is, R: how big it looks (world units), k: a closer or wider
+     look}: the black hole, three galaxies (home's Whirlpool, the ring galaxy, the edge-on one), and the wonders of wonders.js, which
+     bring their own (x.sights, placed by their layout). Filled by layout(). */
+  const PLACES={};
+  /* the galaxies that are sights: which one, and how much of it to frame (R: share of its size;
+     the edge-on one is as wide as its whole disk) */
+  const SIGHT_GALAXIES={whirlpool:{g:"nolan",R:.9}, ringgalaxy:{g:"ringgalaxy",R:.9}, edgeon:{g:"edgeon",R:1.3}};
+  /* every sight's name, known before anything is laid out (the address may ask for one) */
+  const sightIds=()=>["blackhole",...Object.keys(SIGHT_GALAXIES),...EXTRAS.flatMap(x=>(x.sights||[]).map(s=>s.id))];
 
-  /* ---------- the camera and the scenes ---------- */
+  /* ---------- the camera and the scenes ----------
+     scenes: "gate" (deep space, behind the Earth), "home", a galaxy of a section, or a sight (PLACES) */
   let W=0,H=0,F=1;                   /* css px, focal length in px */
   let base={x:0,y:0,z:0};            /* where the camera stands (flights move it) */
   let cam={x:0,y:0,z:0};             /* …plus its gentle float: what is drawn */
@@ -173,6 +184,11 @@ const Universe=(function(){
     EXTRAS.forEach(x=>{ if(x.layout) x.layout(api); });
     const bh=SIGHTS.bh, co=Math.cos(bh.open), so=Math.sin(bh.open);
     bh.n=unit([co*Math.sin(bh.roll),-co*Math.cos(bh.roll),-so]);
+    /* the sights: the black hole with its whole disk (it reaches 19 of the hole's own radii),
+       a galaxy with its arms, and each wonder as big as it is drawn */
+    PLACES.blackhole={p:bh.p,R:bh.R*3.6};
+    Object.entries(SIGHT_GALAXIES).forEach(([k,s])=>{ const w=world[s.g]; PLACES[k]={p:[w.cx,w.cy,w.cz],R:w.R*s.R,turn:.6}; });
+    EXTRAS.forEach(x=>(x.sights||[]).forEach(s=>{ if(s.p) PLACES[s.id]={p:s.p,R:s.R,k:s.k}; }));
   }
   /* a galaxy's frame: local (u,v,w) → world = centre + R · aim · roll · tilt · (u,v,w).
      tilt and roll say how it looks seen from home; "aim" turns it towards home's
@@ -206,42 +222,28 @@ const Universe=(function(){
 
   function camFor(s){
     if(s==="gate") return {x:0,y:0,z:-430};
-    if(s==="blackhole"&&SIGHTS.bh.p){
-      /* straight in front of it, so it sits in the middle of the screen (the text sits below) */
-      const b=SIGHTS.bh, d=b.R*(W<760?11:13);
-      return {x:b.p[0], y:b.p[1], z:b.p[2]-d};
-    }
+    const pl=PLACES[s];
+    if(pl&&pl.p) return sightView(pl);
     if(s==="home"||!GALAXIES[s]||!world[s]) return {x:0,y:0,z:0};
     const w=world[s], r=w.R;
-    if(W<760&&w.g.whole) return wholeView(w,w.g.whole);
     /* close to the galaxy, a little off its centre: the core glows high on the right, over the header;
        on a phone the core sits nearer the middle so the galaxy stays in view */
     return W<760?{x:w.cx-r*.3, y:w.cy+r*1.1, z:w.cz-r*1.9}:{x:w.cx-r*.7, y:w.cy+r*.45, z:w.cz-r*1.9};
   }
-  /* a galaxy that must be seen whole on a narrow screen (the edge-on Sombrero: close up from
-     below, as the others are framed, it overflows both edges and its dust ring becomes a black
-     bar across the header). The camera stands nearly in its disk plane, a little above it,
-     far enough back for the whole disk to fit the width, and turns (yaw, pitch; no roll) so
-     the galaxy sits high on the screen, over the header, like the others. */
-  function wholeView(w,v){
-    const c=[w.cx,w.cy,w.cz], n=unit([w.M[6],w.M[7],w.M[8]]);
-    /* towards home's camera, laid into the disk plane, then lifted by rise to the side that is
-       up on the screen: seen a little from above, the near side of the dust ring crosses the
-       lower half of the bulge, the brim under the crown, as in the real one */
-    const h=unit([-c[0],-c[1],-c[2]]), hn=h[0]*n[0]+h[1]*n[1]+h[2]*n[2], sd=n[1]<0?1:-1;   /* (y points down) */
-    const hp=unit([h[0]-n[0]*hn,h[1]-n[1]*hn,h[2]-n[2]*hn]), cr=Math.cos(v.rise), sr=Math.sin(v.rise)*sd;
-    const dir=[hp[0]*cr+n[0]*sr,hp[1]*cr+n[1]*sr,hp[2]*cr+n[2]*sr];
-    /* far enough for span·R to fill at most 44% of the width on each side, even on the side
-       nearer the camera (seen edge-on, a rim of radius r at distance D spans F·r/√(D²−r²)),
-       and sitting high on the screen (ty off the middle: everything there looks √(1+ty²) wider) */
-    const ty=v.y*(H/2)/F, q=F*Math.sqrt(1+ty*ty)/(W*.44), dist=Math.max(v.span*w.R*Math.sqrt(1+q*q),w.R*1.9);
-    const p=[c[0]+dir[0]*dist,c[1]+dir[1]*dist,c[2]+dir[2]*dist];
-    /* the turn that puts the galaxy's centre at (0, y) on the screen: with R = yaw·pitch (as in
-       orbit), camera coordinates (0, ty, 1)/L lie in world direction
-       (sin yaw·k, sin(a − pitch), cos yaw·k), with a = atan ty and k > 0 */
-    const g=[-dir[0],-dir[1],-dir[2]];
-    const yaw=Math.atan2(g[0],g[2]), pitch=Math.atan(ty)-Math.asin(Math.max(-1,Math.min(1,g[1])));
-    return {x:p[0],y:p[1],z:p[2],yaw,pitch};
+  /* a sight, whole: its radius fills a set share of the screen's shorter side, its centre a
+     little above the middle (its words sit below; on a short screen it is smaller and higher).
+     The camera looks along +z, like home's, or (turn, for a galaxy) part of the way along home's
+     own line of sight to it, so it is seen much as it was designed to be seen from home; never
+     all the way, or the edge of the screen would reach past the far stars. The turn (yaw, pitch;
+     no roll) puts the centre at (0, ty) on the screen, as in orbit(): camera coordinates
+     (0, ty, 1)/L lie in world direction (sin yaw·k, sin(a − pitch), cos yaw·k), a = atan ty, k > 0 */
+  function sightView(pl){
+    const small=W<760, short=H<620;
+    const fit=(small?.4:short?.22:.29)*(pl.k||1), D=pl.R*F/(fit*Math.min(W,H));
+    const ty=-(small?.1:short?.16:.12)*H/F;
+    const g=unit(pl.p), k=pl.turn||0, dir=unit([g[0]*k,g[1]*k,1-k+g[2]*k]);
+    const yaw=Math.atan2(dir[0],dir[2]), pitch=Math.atan(ty)-Math.asin(Math.max(-1,Math.min(1,dir[1])));
+    return {x:pl.p[0]-dir[0]*D, y:pl.p[1]-dir[1]*D, z:pl.p[2]-dir[2]*D, yaw, pitch};
   }
   /* the camera's axes (columns) for a yaw about the vertical and then a pitch about the horizontal */
   function turn(yaw,pitch){
@@ -250,8 +252,8 @@ const Universe=(function(){
   }
   function startScene(){
     if(root.hasAttribute("data-locked")) return "gate";
-    const h=location.hash.slice(1);
-    if(/^blackhole/.test(h)) return "blackhole";
+    const h=decodeURIComponent(location.hash.slice(1));
+    if(sightIds().includes(h)) return h;
     return !h||/^(home|notes|settings|nolan|soon|inicio|notas|ajustes|configuracion)/.test(h)?"home":"uc3m";
   }
 
@@ -285,39 +287,18 @@ const Universe=(function(){
   }
   function pivotFor(s){
     if(GALAXIES[s]&&world[s]) return [world[s].cx,world[s].cy,world[s].cz];
-    if(s==="blackhole"&&SIGHTS.bh.p) return SIGHTS.bh.p;
+    if(PLACES[s]&&PLACES[s].p) return PLACES[s].p;
     return [base.x,base.y,base.z+80];
   }
   function orbit(){
-    const t=life, a=Math.min(1,life/10)*orbitK, sec=GALAXIES[orbitAt]||orbitAt==="blackhole"?1:0;
+    const t=life, a=Math.min(1,life/10)*orbitK, sec=GALAXIES[orbitAt]||PLACES[orbitAt]?1:0;
     if(orbitAt==="gate") return null;
-    /* a galaxy seen whole and edge-on (wholeView) is circled about its own axis, so the camera
-       stays close to its disk plane, and tipped only a little: it keeps its shape while its
-       depth still shows against the sky behind */
-    const wv=wholeAxis(orbitAt);
     const yaw=a*(sec?.15:.075)*(Math.sin(t*.052)*.8+Math.sin(t*.021+1.3)*.2)-ptr.x*.045*orbitK;
-    const pitch=(a*(sec?.07:.04)*Math.sin(t*.039+.7)+ptr.y*.03*orbitK)*(wv?.45:1);
+    const pitch=a*(sec?.07:.04)*Math.sin(t*.039+.7)+ptr.y*.03*orbitK;
     if(Math.abs(yaw)+Math.abs(pitch)<1e-6) return null;
-    const cp=Math.cos(pitch), sp=Math.sin(pitch);
-    if(wv){
-      /* R = turn about the galaxy's axis k (Rodrigues) · turn about the horizontal (pitch) */
-      const k=wv, c=Math.cos(yaw), s=Math.sin(yaw), C=1-c;
-      const A=[c+k[0]*k[0]*C, k[1]*k[0]*C+k[2]*s, k[2]*k[0]*C-k[1]*s,
-               k[0]*k[1]*C-k[2]*s, c+k[1]*k[1]*C, k[2]*k[1]*C+k[0]*s,
-               k[0]*k[2]*C+k[1]*s, k[1]*k[2]*C-k[0]*s, c+k[2]*k[2]*C];
-      return {R:mat3(A,[1,0,0, 0,cp,sp, 0,-sp,cp]), P:pivotFor(orbitAt)};
-    }
-    const cy=Math.cos(yaw), sy=Math.sin(yaw);
+    const cp=Math.cos(pitch), sp=Math.sin(pitch), cy=Math.cos(yaw), sy=Math.sin(yaw);
     /* R = turn about the vertical (yaw) · turn about the horizontal (pitch) */
     return {R:[cy,0,-sy, sy*sp,cp,cy*sp, sy*cp,-sp,cy*cp], P:pivotFor(orbitAt)};
-  }
-  /* the axis a whole-seen galaxy is circled about (its disk's normal, pointing up like the
-     vertical, so a turn goes the same way as for the others), or null */
-  function wholeAxis(s){
-    const w=world[s];
-    if(W>=760||!w||!w.g.whole) return null;
-    const n=unit([w.M[6],w.M[7],w.M[8]]);
-    return n[1]>0?n:n.map(x=>-x);
   }
   /* the camera floats: slow, never quite repeating */
   function float(){
@@ -474,7 +455,7 @@ void main(){
     peak=flux*2.2/(s*s);
   }
   /* capped: close up a star's value could overflow the half-float picture on a phone's graphics card, and
-     infinity times the dust in front (0) is NaN, which shows black (the edge-on Sombrero, first of all) */
+     infinity times the dust in front (0) is NaN, which shows black (an edge-on disk, first of all) */
   gl_PointSize=s; vCol=aCol.rgb; vI=min(peak,250.)*uFade;
 }`;
   const PART_FS=HEAD+`in vec3 vCol; in float vI; out vec4 o;
@@ -1029,7 +1010,7 @@ void main(){
       try{
         /* a wonder that does not compile is left out; the rest of the universe goes on */
         Object.entries(P).forEach(([k,pr])=>{ if(!pr.extra) return;
-          try{ finish(pr); pr.extra.ready=true; }catch(e){ pr.extra.broken=true; delete P[k]; console.warn("universe: wonder",pr.extra.id,"left out:",e.message); } });
+          try{ finish(pr); pr.extra.ready=true; pr.extra.readyAt=-1e9; }catch(e){ pr.extra.broken=true; delete P[k]; console.warn("universe: wonder",pr.extra.id,"left out:",e.message); } });
         Object.values(P).forEach(pr=>{ if(!pr.u) finish(pr); }); done();
       }catch(e){ fail(e); }
     };
@@ -1110,7 +1091,8 @@ void main(){
       const check=()=>{
         if(gen!==extrasGen||lost) return;
         if(ext&&performance.now()-t0<8000&&!prs.every(pr=>gl.getProgramParameter(pr.p,ext.COMPLETION_STATUS_KHR))){ setTimeout(check,40); return; }
-        try{ prs.forEach(finish); x.ready=true; need(); }
+        /* it fades in (as a galaxy does), instead of popping into the sky, unless nobody is looking yet */
+        try{ prs.forEach(finish); x.readyAt=fancy()&&!robot&&!covering()?performance.now():-1e9; x.ready=true; need(); }
         catch(e){ x.broken=true; console.warn("universe: wonder",x.id,"left out:",e.message); }
         setTimeout(step,60);
       };
@@ -1407,7 +1389,7 @@ void main(){
   /* when the page has settled: never in the middle of the first clicks */
   function startBuilding(){
     queue=[]; building++;
-    ["nolan","uc3m","forge","andromeda","sombrero"].forEach(id=>queue.push(q=>{ q.unshift(...buildGalaxy(id,GALAXIES[id])); }));
+    IDS.forEach(id=>queue.push(q=>{ q.unshift(...buildGalaxy(id,GALAXIES[id])); }));
     COMPANIONS.forEach(c=>queue.push(q=>{ q.unshift(...buildGalaxy(c.id,c)); }));
     let started=false; const go=()=>{ if(!started){ started=true; idle(buildNext); } };
     if(document.readyState==="complete"||covering()) go(); else { window.addEventListener("load",go,{once:true}); setTimeout(go,1500); }
@@ -1591,7 +1573,7 @@ void main(){
     gl.uniform1f(u.uExp,1.1); gl.uniform1f(u.uBloomK,TIER.bloom?.55:0); gl.uniform1f(u.uTime,now%100); gl.uniform1f(u.uOutK,1);
     gl.uniform2f(u.uRes,RW,RH);
     const bh=blackHole();
-    gl.uniform4f(u.uBH,bh?bh.q[0]:0,bh?bh.q[1]:0,bh?bh.q[2]:1,bh?starsFade:0);
+    gl.uniform4f(u.uBH,bh?bh.q[0]:0,bh?bh.q[1]:0,bh?bh.q[2]:1,bh?starsFade*bh.a:0);
     gl.uniform4f(u.uBHn,bh?bh.n[0]:0,bh?bh.n[1]:1,bh?bh.n[2]:0,t);
     gl.uniform1f(u.uFpx,F*scale);
     full();
@@ -1604,6 +1586,8 @@ void main(){
     get fade(){ return starsFade; }, get phone(){ return phone; }, get robot(){ return robot; }, get scene(){ return scene; },
     get cam(){ return cam; },
     alive:()=>alive(), onScreen:p=>onScreen(p), need:()=>need(),
+    /* how far a wonder has faded in since it became ready (0 to 1; it asks for frames until 1) */
+    appear(x){ const k=Math.min(1,Math.max(0,(performance.now()-(x.readyAt||0))/1400)); if(k<1) need(); return k*k*(3-2*k); },
     /* a place seen from home (at: fraction of the half screen, computer d / phone m), at depth z */
     world:(at,z)=>{ const a=W<760?at.m:at.d; return [a[0]*(W/2)/F*z, a[1]*(H/2)/F*z, z]; },
     /* a quad on the screen, ready for the program's own settings; draw() then draws it */
@@ -1635,7 +1619,10 @@ void main(){
     if(rpx<1.5||a[0]<-m||a[1]<-m||a[0]>W+m||a[1]>H+m) return null;
     const R=camR, n=s.n, nc=[R[0]*n[0]+R[1]*n[1]+R[2]*n[2], R[3]*n[0]+R[4]*n[1]+R[5]*n[2], R[6]*n[0]+R[7]*n[1]+R[8]*n[2]];
     const q=toCam(s.p,cam,camR), rh=s.R/2.598;
-    return {q:[q[0]/rh,-q[1]/rh,q[2]/rh], n:[nc[0],-nc[1],nc[2]]};
+    /* only a few pixels across (far away, from the Earth or the Moon), it fades out: it is traced
+       over everything, so a speck of it would show through whatever stands in front */
+    const k=Math.min(1,Math.max(0,(rpx-3)/4));
+    return k>0?{q:[q[0]/rh,-q[1]/rh,q[2]/rh], n:[nc[0],-nc[1],nc[2]], a:k*k*(3-2*k)}:null;
   }
 
   function drawGalaxy(w,e,VP,t){
@@ -1767,42 +1754,53 @@ void main(){
   /* ---------- one loop for everything that moves ----------
      It runs only while something needs it: a flight, a galaxy appearing, life
      (every frame on a computer, about 30 a second on a phone), or one frame after a change. */
-  let raf=0, lastT=0, lastDraw=0, dirty=true;
+  let raf=0, lastT=0, lastDraw=0, dirty=true, looping=false, more=false;
   const gaps=[]; let lastAdapt=0;
-  function need(){ dirty=true; kick(); }
-  function kick(){ if(!raf&&ok){ lastT=performance.now(); raf=requestAnimationFrame(loop); } }
+  /* need(): one more frame. Asked while a frame is being drawn (a supernova, a wonder fading in),
+     it is the loop that asks for the next one: starting another loop there made two loops run
+     every frame, then four, then eight… */
+  function need(){ dirty=true; if(looping) more=true; else kick(); }
+  function kick(){ if(!raf&&!looping&&ok){ lastT=performance.now(); raf=requestAnimationFrame(loop); } }
   function appearing(){ const now=performance.now(); return Object.values(G).some(e=>now-e.at<1400); }
   function loop(now){
-    raf=0;
-    if(lost||!ok) return;
+    raf=0; looping=true; more=false;
+    let again=false;
+    try{ again=oneFrame(now); }finally{ looping=false; }
+    if(!raf&&(again||more)) raf=requestAnimationFrame(loop);
+  }
+  /* one turn of the loop; true: the next frame is needed too */
+  function oneFrame(now){
+    if(lost||!ok) return false;
     const dt=Math.min(.1,Math.max(0,(now-lastT)/1000)); lastT=now;
     /* behind the PIN screen nothing is visible: nothing is drawn (the flight starts it) */
-    if(root.hasAttribute("data-locked")&&!anim){ dirty=false; return; }
+    if(root.hasAttribute("data-locked")&&!anim){ dirty=false; return false; }
     /* behind the passage: only the one frame that shows everything is built (ready() waits
        for it); drawing more would only take the graphics card from the passage's stars */
-    if(hidden()){ if(dirty&&!queue.length&&!settled){ dirty=false; render(0); } return; }
+    if(hidden()){ if(dirty&&!queue.length&&!settled){ dirty=false; render(0); } return false; }
     const live=alive();
     if(live) life+=dt;
     steer(dt);
-    let boost=0;
+    /* a flight's last step ends it: that frame is drawn all the same, or the screen could stay
+       on where it came from (a flight whose frames were held back, in a hidden tab, ends at once) */
+    let boost=0; const flying=!!anim;
     if(anim) boost=anim.step(now);
     skyEvents();
-    const busy=!!anim||appearing()||meteors.length>0||comets.length>0;
-    if(!busy&&!live&&!dirty) return;
+    const busy=flying||appearing()||meteors.length>0||comets.length>0;
+    if(!busy&&!live&&!dirty) return false;
     /* while the page scrolls the sky holds still (flights aside): every frame goes to the scrolling */
-    if(!anim&&!dirty&&now-scrolledAt<250){ raf=requestAnimationFrame(loop); return; }
+    if(!flying&&!dirty&&now-scrolledAt<250) return true;
     /* life alone: about 60 a second on a computer (every frame of a 60 Hz screen, every other
        one of a 120 or 144 Hz screen: the drift is far too slow to need more), about 30 on a
        phone (10 under automated tests) */
     const every=robot?(anim?60:100):anim?0:phone?31:13;
     /* every frame for flights and galaxies fading in; shooting stars and comets are smooth at the pace of life */
-    if(anim||appearing()||dirty||now-lastDraw>=every){
+    if(flying||appearing()||dirty||now-lastDraw>=every){
       dirty=false;
       adapt(now);                /* before drawing: a new size wipes the canvas, so this frame must be drawn after it */
       render(boost);
       lastDraw=now;
     }
-    if(busy||live) raf=requestAnimationFrame(loop);
+    return busy||live;
   }
   /* if this device cannot keep up, draw fewer pixels (and more again if there is room) */
   function adapt(now){
@@ -1824,8 +1822,10 @@ void main(){
   /* ---------- moving the camera ---------- */
   const easeInOut=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
   const easeOut=p=>1-Math.pow(1-p,3);
+  /* how long a flight takes: a little longer the farther it goes (to the Earth, far behind home, nearly five seconds) */
+  const flightTime=(a,b)=>Math.round(Math.min(4800,2200+6*Math.hypot(b.x-a.x,b.y-a.y,b.z-a.z)));
   /* onArrive: when the flight is (nearly) there · onCancel: if another flight replaces it first */
-  function go(to,{animate=true,duration=2600,onArrive,onCancel,arriveAt=.85}={}){
+  function go(to,{animate=true,duration,onArrive,onCancel,arriveAt=.85}={}){
     /* already flying there: wait for that same flight to arrive */
     if(anim&&to===scene){ if(onArrive) anim.also.push(onArrive); if(onCancel) anim.cancels.push(onCancel); return; }
     const replaced=anim; anim=null;
@@ -1840,6 +1840,7 @@ void main(){
     const start={...base};
     if(!animate||!fancy()||sameScene){ base={...camFor(to)}; prevCam=null; if(from==="gate") starsFade=1; need(); if(onArrive) onArrive(); return; }
     if(from==="gate"){ flightFromGate=performance.now(); starsFade=0; }
+    if(!duration) duration=flightTime(start,camFor(to));
     const t0=performance.now(); let reached=false;
     /* taking over a moving camera: it starts already moving, so it does not stop and start again */
     const ease=replaced?easeOut:easeInOut;
@@ -1926,6 +1927,10 @@ void main(){
     painted:()=>IDS.filter(id=>G[id]).length, gl:()=>ok, built:()=>Object.keys(G),
     /* hole(): whether the black hole is on the screen now (tests) */
     hole:()=>ok&&!!blackHole(),
+    /* sights(): the names of the places that can be flown to and looked at (home.js lists them) */
+    sights:sightIds,
+    /* place(id): where a sight is on the screen now and how big it looks, in css px (tests) */
+    place:id=>{ const pl=PLACES[id]; if(!ok||!pl||!pl.p) return null; const q=onScreen(pl.p); return q&&{x:q[0],y:q[1],r:pl.R*F/q[2],W,H}; },
     /* shoot(): a shooting star and a comet right now (tests) */
     shoot:at=>{ newMeteor(clock()); newComet(clock(),at||0); need(); },
     /* band(): whether the band of our galaxy has been painted (tests) */
