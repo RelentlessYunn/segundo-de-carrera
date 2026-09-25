@@ -53,7 +53,7 @@ const pinHash=pin=>crypto.pbkdf2Sync(pin,"nolan·with-nolan·2026",150000,32,"sh
 const PIN=process.env.NOLAN_PIN||"";
 const PIN_OK=/^\d{6}$/.test(PIN)&&pinHash(PIN)===DEVICE;
 const WRONG=["123456","654321"].find(k=>k!==PIN);    /* a PIN that is not the right one */
-async function open(b,{hash="",time="2026-09-21T13:06:00",mobile=false,viewport,clock="fixed",routes,before,settings,locked=false}={}){
+async function open(b,{path="",hash="",time="2026-09-21T13:06:00",mobile=false,viewport,clock="fixed",routes,before,settings,locked=false}={}){
   const ctx=await b.newContext({viewport:viewport||(mobile?{width:390,height:844}:{width:1280,height:900}),hasTouch:mobile,isMobile:mobile});
   const p=await ctx.newPage();
   p.errors=[]; p.requests=[];
@@ -71,7 +71,7 @@ async function open(b,{hash="",time="2026-09-21T13:06:00",mobile=false,viewport,
   if(!locked) await p.addInitScript(k=>{ if(!sessionStorage.getItem("keep")) localStorage.setItem("nolan-device",k); },DEVICE);
   if(before) await p.addInitScript(before);
   if(clock==="fixed") await p.clock.setFixedTime(new Date(time)); else await p.clock.install({time:new Date(time)});
-  await p.goto(PAGE+(hash?"#"+hash:""),{waitUntil:"load",timeout:60000});   /* (a software graphics card can be slow to start) */
+  await p.goto(PAGE+path+(hash?"#"+hash:""),{waitUntil:"load",timeout:60000});   /* (a software graphics card can be slow to start) */
   await p.waitForTimeout(clock==="fixed"?900:50);
   return p;
 }
@@ -444,6 +444,13 @@ const FAKE_CONFIG=()=>{ Object.defineProperty(window,"CONFIG",{value:{BIN_ID:"te
   }
 
   section("Guest");
+  {
+    /* a link with ?guest (to share) opens the demo straight away, without the entry screen */
+    const p=await open(b,{locked:true,hash:"home",path:"?guest"});
+    const r=await p.evaluate(()=>({guest:document.documentElement.hasAttribute("data-guest"),locked:document.documentElement.hasAttribute("data-locked"),demo:typeof SUBJECTS!=="undefined"&&!!SUBJECTS.alg}));
+    ok(r.guest&&!r.locked&&r.demo,`a ?guest link opens the demo organizer at once (${JSON.stringify(r)})`);
+    await p.context().close();
+  }
   {
     const writes=[];
     /* (the browser would tell where the device is: a guest must not ask) */

@@ -108,11 +108,12 @@ const Universe=(function(){
       gain:{bulge:1, stars:1}},
     /* a ring galaxy (like Hoag's Object): a round yellow core, a dark gap, and a nearly perfect
        ring of young blue stars around it; two small companions nearby. Not a section: a sight */
-    ringgalaxy:{kind:"ring", r:4.4, tilt:.5, roll:-.9, at:{d:[.74,.42],m:[.62,.6]}, z:110, seed:41,
-      disk:{h:.07, rc:.2, ex1:1, ex2:1, twist:0, phi0:0, hz:.03, warp:.015, floc:.55,
-            young:{h:.5,k:1}, hii:{c1:9,c2:10}, dust:{h:.6,k:1,lag:0}, ring:{a:.66,w:.075,light:1.4,dust:.3,stars:6000}},
-      bulge:{I:.5, Rb:.1, n:2.5, q:[1,1,.95]},
-      col:{old:[.6,.72,1], young:[.62,.75,1], hii:[1,.5,.75], core:[1,.84,.55]},
+    /* (farther, tilted into an ellipse, its ring soft and clumpy: a perfect bright circle read as a drawn blue ring) */
+    ringgalaxy:{kind:"ring", r:4.4, tilt:1.0, roll:-.9, at:{d:[.74,.42],m:[.62,.6]}, z:150, seed:41,
+      disk:{h:.07, rc:.2, ex1:1, ex2:1, twist:0, phi0:0, hz:.03, warp:.03, floc:.85,
+            young:{h:.5,k:1}, hii:{c1:9,c2:10}, dust:{h:.6,k:1,lag:0}, ring:{a:.66,w:.1,light:.7,dust:.35,stars:3500}},
+      bulge:{I:.55, Rb:.11, n:2.5, q:[1,1,.95]},
+      col:{old:[.72,.78,.98], young:[.72,.8,1], hii:[1,.5,.75], core:[1,.84,.55]},
       rot:{vmax:.012, ac:.08, pat:0},
       stars:{old:3000, bulge:9000, halo:900, gc:6},
       gain:{disk:.9, young:0, hii:0, dust:1, bulge:1, stars:1}},

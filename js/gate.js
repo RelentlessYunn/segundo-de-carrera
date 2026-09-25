@@ -113,7 +113,7 @@ const Gate=(function(){
     if(guest()){
       try{ sessionStorage.removeItem(GUEST); }catch(e){}
       /* (a change after # alone is no new page: it must load again) */
-      history.replaceState(null,"",location.pathname+location.search.replace(/([?&])guest&?/,"$1").replace(/[?&]$/,"")+"#home"); location.reload(); return;
+      history.replaceState(null,"",location.pathname+location.search.replace(/([?&])guest\b&?/,"$1").replace(/[?&]$/,"")+"#home"); location.reload(); return;
     }
     try{ localStorage.removeItem(KEY); sessionStorage.removeItem(GUEST); }catch(e){}
     root.removeAttribute("data-guest");

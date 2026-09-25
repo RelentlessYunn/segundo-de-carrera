@@ -317,7 +317,8 @@ Settings are not in the cloud: they are per device (`localStorage`, key `setting
 
 ## Publishing a version
 
-1. Versions are numbered 0.49, 0.50…; the current one is **0.70**. Bump the number in `index.html`: the footer (`v0.70`) and every `?v=0.70` of the code files, all at once. If the logo changes, also bump the `?v=` of the icons in `index.html` and `manifest.webmanifest`: browsers keep favicons cached for a long time and only fetch them again when the URL changes.
+1. Never publish two different versions under the same number: the offline copy keeps each file by its `?v=` for good, so a device would go on mixing the old files with the new page.
+2. Versions are numbered 0.49, 0.50…; the current one is **0.71**. Bump the number in `index.html`: the footer (`v0.71`) and every `?v=0.71` of the code files, all at once. If the logo changes, also bump the `?v=` of the icons in `index.html` and `manifest.webmanifest`: browsers keep favicons cached for a long time and only fetch them again when the URL changes.
 2. Upload the changed files to GitHub, keeping the `js/` and `css/` folders.
 3. GitHub Pages takes a minute or two. The footer number tells you which version you are seeing.
 
